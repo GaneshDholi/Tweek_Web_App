@@ -147,22 +147,19 @@ function renderWeeklyView(baseDate = new Date(), highlightDate = null) {
   const weekdays = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
   const currentDate = new Date();
 
+  // --- Month & Year Header ---
   const monthWithYear = document.getElementById("openCalendarBtn");
   const monthName = months[today.getMonth()];
   const year = today.getFullYear();
   monthWithYear.textContent = `${monthName} ${year}`;
-
-  if (
+  monthWithYear.style.color =
     currentDate.getMonth() !== today.getMonth() ||
-    currentDate.getFullYear() !== today.getFullYear()
-  ) {
-    monthWithYear.style.color = "#5167f4";
-    monthWithYear.style.cursor = "pointer";
-  } else {
-    monthWithYear.style.color = "";
-    monthWithYear.style.cursor = "pointer";
-  }
+      currentDate.getFullYear() !== today.getFullYear()
+      ? "#5167f4"
+      : "";
+  monthWithYear.style.cursor = "pointer";
 
+  // Reset container
   weekContainer.innerHTML = "";
 
   const firstRow = document.createElement("div");
@@ -171,86 +168,157 @@ function renderWeeklyView(baseDate = new Date(), highlightDate = null) {
   const satSunColumn = document.createElement("div");
   satSunColumn.style.display = "flex";
   satSunColumn.style.flexDirection = "column";
-  satSunColumn.style.gap = "10px";
+  satSunColumn.style.gap = "40px";
 
   const monday = new Date(today);
   monday.setDate(today.getDate() - ((today.getDay() + 6) % 7));
 
-  function closeActiveInput() {
-    const allInputs = weekContainer.querySelectorAll('input[type="text"]');
-    allInputs.forEach(input => {
-      const parentBox = input.parentElement;
-      if (input.value.trim() !== "") {
-        parentBox.innerHTML = `
-          <span class="task-text">${input.value.trim()}</span>
-          <img src="./assets/check-button.png" class="check-btn" title="Mark as done" />
-        `;
-        const textSpan = parentBox.querySelector('.task-text');
-        const checkBtn = parentBox.querySelector('.check-btn');
-
-        textSpan.style.whiteSpace = "nowrap";
-        textSpan.style.overflow = "hidden";
-        textSpan.style.textOverflow = "ellipsis";
-        textSpan.style.height = "18px";
-        textSpan.style.textAlign = "left";
-        textSpan.addEventListener("click", (e) => {
-          e.stopPropagation();
-          openEditModal(parentBox);
-        });
-
-        checkBtn.style.width = "18px";
-        checkBtn.style.height = "18px";
-        checkBtn.style.marginLeft = "8px";
-        checkBtn.style.cursor = "pointer";
-        checkBtn.style.verticalAlign = "middle";
-
-        checkBtn.addEventListener("click", (e) => {
-          e.stopPropagation();
-          textSpan.classList.toggle("completed");
-
-          if (textSpan.classList.contains("completed")) {
-            checkBtn.style.opacity = "0.5";
-          } else {
-            checkBtn.style.opacity = "1";
-            textSpan.style.color = "black";
-          }
-        });
-
-        parentBox.title = input.value.trim();
-        parentBox.style.marginTop = "-22px";
-        parentBox.style.display = "flex";
-        parentBox.style.justifyContent = "space-between";
-        parentBox.style.alignItems = "center";
-      } else {
-        parentBox.textContent = "";
-      }
+  // --- Helpers ---
+  function createInput(styles = {}) {
+    const input = document.createElement("input");
+    input.type = "text";
+    Object.assign(input.style, {
+      border: "rgba(255,255,255,0.95)",
+      fontSize: "14px",
+      borderRadius: "6px",
+      backgroundColor: "white",
+      boxShadow: "0 4px 8px rgba(0,0,0,0.1)",
+      outline: "none",
+      height: "100%",
+      marginTop: "0",
+      boxSizing: "border-box",
+      width: "100%",
+      ...styles,
     });
-    activeInput = null;
-    activeBox = null;
+    return input;
   }
 
+  function styleTaskSpan(span, color) {
+    span.style.whiteSpace = "nowrap";
+    span.style.overflow = "hidden";
+    span.style.textOverflow = "ellipsis";
+    span.style.height = "18px";
+    span.style.textAlign = "left";
+    if (color) {
+      span.style.backgroundColor = color;
+      span.style.color = "#fff";
+    }
+  }
+
+  function createCheckBtn(span) {
+    const btn = document.createElement("img");
+    btn.src = "./assets/check-button.png";
+    btn.className = "check-btn";
+    btn.title = "Mark as done";
+    Object.assign(btn.style, {
+      width: "18px",
+      height: "18px",
+      marginLeft: "8px",
+      cursor: "pointer",
+      verticalAlign: "middle",
+    });
+
+    btn.addEventListener("click", (e) => {
+      e.stopPropagation();
+      span.classList.toggle("completed");
+      btn.style.opacity = span.classList.contains("completed") ? "0.5" : "1";
+      span.style.color = span.classList.contains("completed")
+        ? "black"
+        : "black";
+    });
+    return btn;
+  }
+
+  function saveTask(box, text, color = null) {
+    box.innerHTML = "";
+    const span = document.createElement("span");
+    span.className = "task-text";
+    span.textContent = text;
+    styleTaskSpan(span, color);
+    box.append(span, createCheckBtn(span));
+
+    span.addEventListener("click", (e) => {
+      e.stopPropagation();
+      openEditModal(span.textContent.trim(), (newText, newColor) => {
+        if (newText?.trim()) saveTask(box, newText.trim(), newColor);
+      }, box);
+    });
+
+    Object.assign(box.style, {
+      height: "40px",
+      display: "flex",
+      justifyContent: "space-between",
+      alignItems: "center",
+    });
+    box.title = text;
+  }
+
+  function activateInput(box) {
+    const input = createInput();
+    box.textContent = "";
+    box.appendChild(input);
+    input.focus();
+
+    const save = () => {
+      if (input.value.trim()) saveTask(box, input.value.trim());
+      else box.textContent = "";
+    };
+
+    input.addEventListener("blur", () => setTimeout(save, 0));
+    input.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        save();
+        input.blur();
+      }
+    });
+  }
+
+  // --- Weekly Days ---
   for (let offset = 0; offset < 7; offset++) {
     const date = new Date(monday);
     date.setDate(monday.getDate() + offset);
 
     const dayBox = document.createElement("div");
     dayBox.className = "day-box";
-    dayBox.style.padding = "10px";
-    dayBox.style.borderRadius = "8px";
-    dayBox.style.display = "flex";
-    dayBox.style.flexDirection = "column";
-    dayBox.style.minHeight = "210px";
-    dayBox.style.minWidth = "289.484px";
-    dayBox.style.flexGrow = "1";
-    dayBox.style.cursor = "pointer";
+    Object.assign(dayBox.style, {
+      padding: "10px 10px 0",
+      borderRadius: "8px",
+      display: "flex",
+      flexDirection: "column",
+      minHeight: "210px",
+      minWidth: "150px",
+      flexGrow: "1",
+      cursor: "pointer",
+    });
 
     const headerDiv = document.createElement("div");
-    headerDiv.style.marginBottom = "8px";
-    headerDiv.style.display = "flex";
-    headerDiv.style.justifyContent = "space-between";
-    headerDiv.style.width = "105%";
-    headerDiv.style.borderBottom = "2px solid black";
-    headerDiv.style.paddingBottom = "10px";
+    Object.assign(headerDiv.style, {
+      display: "flex",
+      justifyContent: "space-between",
+      borderBottom: "2px solid black",
+      paddingBottom: "7px",
+    });
+    const todoContainer = document.createElement("ul");
+    applyHeaderStyle();
+
+    function applyHeaderStyle() {
+      if (window.innerWidth < 1024) {
+        Object.assign(headerDiv.style, {
+          width: "100%"
+        });
+        Object.assign(todoContainer.style, {
+          width: "100%"
+        })
+      } else {
+        Object.assign(headerDiv.style, {
+          width: "105%"
+        });
+        Object.assign(todoContainer.style, {
+          width: "105%"
+        })
+      }
+    }
 
     const dayNumber = date.getDate().toString().padStart(2, "0");
     const monthNumber = (date.getMonth() + 1).toString().padStart(2, "0");
@@ -263,527 +331,146 @@ function renderWeeklyView(baseDate = new Date(), highlightDate = null) {
     weekdayDiv.textContent = weekdays[offset];
     weekdayDiv.style.color = "#999";
 
-    headerDiv.appendChild(dateDiv);
-    headerDiv.appendChild(weekdayDiv);
+    headerDiv.append(dateDiv, weekdayDiv);
 
-    const todoContainer = document.createElement("ul");
+    // const todoContainer = document.createElement("ul");
     todoContainer.className = "todo-list";
-    todoContainer.style.margin = "20px 0 0 0";
-    todoContainer.style.paddingLeft = "1px";
-    todoContainer.style.paddingTop = "13px";
-    todoContainer.style.flexGrow = "1";
-    todoContainer.style.listStyle = "none";
-    todoContainer.style.width = "105%";
-    todoContainer.style.fontSize = "16px";
-
-
-    //add on the new li on the todo
-    todoContainer.addEventListener("click", (e) => {
-      const textSpan = e.target.closest('.task-text');
-      if (textSpan) {
-        e.stopPropagation();
-        const editableBox = textSpan.closest('li');
-        if (!editableBox) return;
-
-        currentEditableBox = editableBox;
-        modalTextarea.value = textSpan.innerText.trim();
-        editModal();
-      }
+    Object.assign(todoContainer.style, {
+      margin: "0",
+      paddingLeft: "1px",
+      flexGrow: "1",
+      listStyle: "none",
+      fontSize: "16px",
     });
 
-    let limit = offset < 5 ? 11 : 4;
+    const limit = offset < 5 ? 12 : 5;
     for (let i = 0; i < limit; i++) {
-      const li = document.createElement("li");
-      li.textContent = " ";
-      todoContainer.appendChild(li);
+      const taskBox = document.createElement("li");
+      taskBox.style.height = "40px";
+      todoContainer.appendChild(taskBox);
     }
 
-    let isToday = (
+    // highlight today / selected
+    const isToday =
       date.getDate() === currentDate.getDate() &&
       date.getMonth() === currentDate.getMonth() &&
-      date.getFullYear() === currentDate.getFullYear()
-    );
+      date.getFullYear() === currentDate.getFullYear();
 
-    let isSelected = false;
-    if (highlightDate) {
-      isSelected = (
-        date.getDate() === highlightDate.getDate() &&
-        date.getMonth() === highlightDate.getMonth() &&
-        date.getFullYear() === highlightDate.getFullYear()
-      );
-    }
-
-    if (
-      date.getFullYear() === baseDate.getFullYear() &&
-      date.getMonth() === baseDate.getMonth() &&
-      date.getDate() === baseDate.getDate()
-    ) {
-      dayBox.style.color = "#5167F4";
-      dayBox.style.fontWeight = "bold";
-    }
-
-
+    const isSelected =
+      highlightDate &&
+      date.getDate() === highlightDate.getDate() &&
+      date.getMonth() === highlightDate.getMonth() &&
+      date.getFullYear() === highlightDate.getFullYear();
 
     if (isSelected) {
       dateDiv.style.color = "#5167f4";
       weekdayDiv.style.color = "#5167f4";
     } else if (isToday) {
-      dateDiv.style.color = "default";
-      weekdayDiv.style.color = "default";
+      dateDiv.style.color = "";
+      weekdayDiv.style.color = "";
     }
 
-    dayBox.appendChild(headerDiv);
-    dayBox.appendChild(todoContainer);
+    dayBox.append(headerDiv, todoContainer);
 
-    function createInputForBox(box) {
-      const input = document.createElement("input");
-      input.type = "text";
-      input.placeholder = "";
-      input.style.border = "rgba(255, 255, 255, 0.95)";
-      input.style.fontSize = "14px";
-      input.style.borderRadius = "6px";
-      input.style.backgroundColor = "white";
-      input.style.boxShadow = "0 4px 8px rgba(0, 0, 0, 0.1)";
-      input.style.outline = "none";
-      input.style.display = "flex";
-      input.style.justifyContent = "space-between";
-      input.style.height = "42px";
-      input.style.marginTop = "-42px";
-      input.style.boxSizing = "border-box";
-      input.style.width = "100%";
-      return input;
-    }
+    dayBox.addEventListener("click", () => {
+      // Get the index of the clicked day (0=Mon, 5=Sat, 6=Sun)
+      const dayIndex = offset;
 
-    function saveTaskToBox(box, text) {
-      box.innerHTML = `
-      <span class="task-text">${text}</span>
-      <img src="./assets/check-button.png" class="check-btn" title="Mark as done" />
-      `;
-      const textSpan = box.querySelector('.task-text');
-      const checkBtn = box.querySelector('.check-btn');
+      // Find the first visually empty row to type in
+      const emptyBox = [...todoContainer.children].find(
+        (box) => !box.textContent.trim() && !box.querySelector("input")
+      );
 
-      textSpan.style.whiteSpace = "nowrap";
-      textSpan.style.overflow = "hidden";
-      textSpan.style.textOverflow = "ellipsis";
-      textSpan.style.height = "18px";
-      textSpan.style.textAlign = "left";
+      let newRowWasAdded = false;
 
-      checkBtn.style.width = "18px";
-      checkBtn.style.height = "18px";
-      checkBtn.style.marginLeft = "8px";
-      checkBtn.style.cursor = "pointer";
-      checkBtn.style.verticalAlign = "middle";
-
-      checkBtn.addEventListener("click", (e) => {
-        e.stopPropagation();
-        textSpan.classList.toggle("completed");
-
-        if (textSpan.classList.contains("completed")) {
-          checkBtn.style.opacity = "0.5";
-        } else {
-          checkBtn.style.opacity = "1";
-          textSpan.style.color = "black";
-        }
-      });
-
-      textSpan.addEventListener("click", (e) => {
-        e.stopPropagation();
-        openEditModal(textSpan.textContent.trim(), (newText, color) => {
-          if (newText && newText.trim() !== "") {
-            saveTaskToBox(box, newText.trim());
-          }
-
-          const newTextSpan = box.querySelector(".task-text");
-
-          if (color) {
-            newTextSpan.style.backgroundColor = color;
-            newTextSpan.style.color = "#fff";
-          } else {
-            newTextSpan.style.backgroundColor = "";
-            newTextSpan.style.color = "black";
-          }
-        }, box);
-      });
-
-      box.title = text;
-      box.style.marginTop = "-22px";
-      box.style.display = "flex";
-      box.style.justifyContent = "space-between";
-      box.style.alignItems = "center";
-    }
-
-    dayBox.addEventListener("click", (e) => {
-      e.stopPropagation();
-      closeActiveInput();
-
-      const boxes = Array.from(todoContainer.children);
-      let emptyBox = boxes.find(box => box.textContent.trim() === "" && !box.querySelector("input"));
-
-      // creating of new li
-      if (!emptyBox) {
-        const extraLi = document.createElement("li");
-        const input = createInputForBox(extraLi);
-        extraLi.appendChild(input);
-        todoContainer.appendChild(extraLi);
-        input.focus();
-
-        activeInput = input;
-        activeBox = extraLi;
-
-        const saveTask = () => {
-          if (input.value.trim() !== "") {
-            saveTaskToBox(extraLi, input.value.trim());
-          } else {
-            extraLi.textContent = "";
-          }
-          activeInput = null;
-          activeBox = null;
-        };
-
-        input.addEventListener("blur", () => setTimeout(saveTask, 0));
-        input.addEventListener("keydown", (e) => {
-          if (e.key === "Enter") {
-            e.preventDefault();
-            saveTask();
-            input.blur();
-          }
-        });
-        return;
+      // If there's an empty box, use it. Otherwise, create and add a new one.
+      if (emptyBox) {
+        activateInput(emptyBox);
+      } else {
+        const newBox = document.createElement("li");
+        newBox.style.height = "40px";
+        todoContainer.appendChild(newBox);
+        activateInput(newBox);
+        // We only need to sync when a brand new row is created.
+        newRowWasAdded = true;
       }
 
-      const input = createInputForBox(emptyBox);
-      emptyBox.textContent = "";
-      emptyBox.appendChild(input);
-      input.focus();
+      // --- CORRECTED ROW SYNCING LOGIC ---
 
-      activeInput = input;
-      activeBox = emptyBox;
+      // STEP 1: Check if we should sync at all.
+      // Only proceed if a new row was added AND the day we clicked on is NOT Saturday (index 5).
+      if (newRowWasAdded && dayIndex !== 5) {
 
-      const saveTask = () => {
-        if (input.value.trim() !== "") {
-          saveTaskToBox(emptyBox, input.value.trim());
-        } else {
-          emptyBox.textContent = "";
-        }
-        activeInput = null;
-        activeBox = null;
+        const allDayBoxes = [...weekContainer.querySelectorAll(".day-box")];
+        Object.assign(allDayBoxes[5].style, {
+          maxHeight: "250px"
+        })
 
-        const nextBox = boxes.find(box => box.textContent.trim() === "" && !box.querySelector("input"));
-        if (nextBox) {
-          setTimeout(() => {
-            if (!nextBox.querySelector("input")) {
-              const nextInput = createInputForBox(nextBox);
-              nextBox.textContent = "";
-              nextBox.appendChild(nextInput);
-              nextInput.focus();
-              activeInput = nextInput;
-              activeBox = nextBox;
+        // STEP 2: Loop through all the day boxes to potentially add a row to them.
+        allDayBoxes.forEach((otherBox, idx) => {
 
-              nextInput.addEventListener("blur", () => setTimeout(() => {
-                if (nextInput.value.trim() !== "") {
-                  saveTaskToBox(nextBox, nextInput.value.trim());
-                } else {
-                  nextBox.textContent = "";
-                }
-                activeInput = null;
-                activeBox = null;
-              }, 0));
-
-              nextInput.addEventListener("keydown", (e) => {
-                if (e.key === "Enter") {
-                  e.preventDefault();
-                  nextInput.blur();
-                }
-              });
-            }
-          }, 150);
-        }
-      };
-
-      input.addEventListener("blur", () => setTimeout(saveTask, 0));
-      input.addEventListener("keydown", (e) => {
-        if (e.key === "Enter") {
-          e.preventDefault();
-          saveTask();
-          input.blur();
-        }
-      });
+          // STEP 3: Decide whether to add a row to this specific day in the loop.
+          // We add a blank row IF:
+          //   1. It's NOT the day we originally clicked on (idx !== dayIndex)
+          //   2. AND it's also NOT Saturday (idx !== 5)
+          if (idx !== dayIndex && idx !== 5) {
+            const otherTodoContainer = otherBox.querySelector(".todo-list");
+            const newBox = document.createElement("li");
+            newBox.style.height = "40px";
+            otherTodoContainer.appendChild(newBox);
+          }
+        });
+      }
     });
 
-    if (offset < 5) {
-      firstRow.appendChild(dayBox);
-    } else if (offset === 5 || offset === 6) {
-      satSunColumn.appendChild(dayBox);
-    }
+
+    if (offset < 5) firstRow.appendChild(dayBox);
+    else satSunColumn.appendChild(dayBox);
   }
 
   firstRow.appendChild(satSunColumn);
   weekContainer.appendChild(firstRow);
 
-  //someday section
-  function handleTextSpanClick(e) {
-    e.stopPropagation();
-    const textSpan = e.target;
-    const extraBox = textSpan.parentElement;
-
-    openEditModal(textSpan.textContent.trim(), (newText, color) => {
-      if (newText && newText.trim() !== "") {
-        extraBox.innerHTML = `
-          <span class="task-text">${newText.trim()}</span>
-          <img src="./assets/check-button.png" class="check-btn" title="Mark as done" />
-        `;
-        const newTextSpan = extraBox.querySelector('.task-text');
-        const newCheckBtn = extraBox.querySelector('.check-btn');
-
-        if (color) {
-          newTextSpan.style.backgroundColor = color;
-          newTextSpan.style.color = "#fff";
-        } else {
-          newTextSpan.style.backgroundColor = "";
-          newTextSpan.style.color = "black";
-        }
-        newTextSpan.style.whiteSpace = "nowrap";
-        newTextSpan.style.overflow = "hidden";
-        newTextSpan.style.textOverflow = "ellipsis";
-        newTextSpan.style.textAlign = "left";
-        newTextSpan.style.height = "18px";
-
-        newCheckBtn.style.width = "18px";
-        newCheckBtn.style.height = "18px";
-        newCheckBtn.style.marginLeft = "8px";
-        newCheckBtn.style.cursor = "pointer";
-        newCheckBtn.style.verticalAlign = "middle";
-
-        newCheckBtn.addEventListener("click", (e) => {
-          e.stopPropagation();
-          newTextSpan.classList.toggle("completed");
-
-          newCheckBtn.style.opacity = newTextSpan.classList.contains("completed") ? "0.5" : "1";
-          newTextSpan.style.color = "black";
-        });
-
-        newTextSpan.addEventListener("click", handleTextSpanClick);
-      }
-    }, extraBox);
-  }
-
+  // --- Someday Section ---
   const somedayDiv = document.createElement("div");
-  somedayDiv.style.marginTop = "10px";
-  somedayDiv.style.width = "100%";
-  somedayDiv.style.cursor = "pointer";
+  Object.assign(somedayDiv.style, { marginTop: "40px", width: "100%", cursor: "pointer" });
 
   const label = document.createElement("strong");
   label.textContent = "Someday";
-  label.style.color = "#000";
   somedayDiv.appendChild(label);
 
   const taskContainer = document.createElement("div");
-  taskContainer.style.display = "flex";
-  taskContainer.style.flexDirection = "column";
-  taskContainer.style.gap = "10px";
-  taskContainer.style.marginTop = "20px";
-
-  const somedayExtraTasks = document.createElement("div");
-  somedayExtraTasks.className = "someday-extra-tasks";
-  somedayExtraTasks.style.display = "flex";
-  somedayExtraTasks.style.flexDirection = "column";
-  somedayExtraTasks.style.gap = "10px";
+  Object.assign(taskContainer.style, {
+    display: "flex",
+    flexDirection: "column",
+    gap: "10px",
+    marginTop: "10px",
+  });
 
   for (let i = 0; i < 5; i++) {
     const taskBox = document.createElement("div");
-    taskBox.textContent = "";
-    taskBox.style.height = "30px";
-    taskBox.style.borderBottom = "1px solid #e0e0e0";
-    taskBox.style.whiteSpace = "nowrap";
-    taskBox.style.overflow = "hidden";
-    taskBox.style.textOverflow = "ellipsis";
+    Object.assign(taskBox.style, {
+      height: "30px",
+      borderBottom: "1px solid #e0e0e0",
+    });
     taskContainer.appendChild(taskBox);
   }
 
   somedayDiv.appendChild(taskContainer);
-  somedayDiv.appendChild(somedayExtraTasks);
   weekContainer.appendChild(somedayDiv);
 
-  somedayDiv.addEventListener("click", (e) => {
-    e.stopPropagation();
-    closeActiveInput();
-    const boxes = Array.from(taskContainer.children);
-    const emptyBox = boxes.find(box => box.textContent.trim() === "");
-
-    //appnending new on someday text
-    if ((!emptyBox || emptyBox.querySelector("input"))) {
-      const extraBox = document.createElement("div");
-      extraBox.style.height = "30px";
-      extraBox.style.borderBottom = "1px solid #e0e0e0";
-      extraBox.style.whiteSpace = "nowrap";
-      extraBox.style.overflow = "hidden";
-      extraBox.style.textOverflow = "ellipsis";
-      somedayExtraTasks.appendChild(extraBox);
-
-      const input = document.createElement("input");
-      input.type = "text";
-      input.placeholder = "";
-      input.style.border = "rgba(255, 255, 255, 0.95)";
-      input.style.fontSize = "14px";
-      input.style.borderRadius = "6px";
-      input.style.backgroundColor = "white";
-      input.style.boxShadow = "0 4px 8px rgba(0, 0, 0, 0.1)";
-      input.style.outline = "none";
-      input.style.height = "42px";
-      input.style.marginTop = "-15px";
-      input.style.boxSizing = "border-box";
-      input.style.display = "flex";
-      input.style.width = "auto";
-      input.style.overflow = "visible";
-
-      extraBox.textContent = "";
-      extraBox.appendChild(input);
-      input.focus();
-      activeInput = input;
-      activeBox = extraBox;
-
-      const saveTask = () => {
-        if (input.value.trim() !== "") {
-          extraBox.innerHTML = `
-            <span class="task-text">${input.value.trim()}</span>
-            <img src="./assets/check-button.png" class="check-btn" title="Mark as done" />
-          `;
-          const textSpan = extraBox.querySelector('.task-text');
-          const checkBtn = extraBox.querySelector('.check-btn');
-
-          textSpan.style.whiteSpace = "nowrap";
-          textSpan.style.overflow = "hidden";
-          textSpan.style.textOverflow = "ellipsis";
-          textSpan.style.textAlign = "left";
-          textSpan.style.height = "18px";
-          textSpan.addEventListener("click", handleTextSpanClick);
-
-
-          checkBtn.style.width = "18px";
-          checkBtn.style.height = "18px";
-          checkBtn.style.marginLeft = "8px";
-          checkBtn.style.cursor = "pointer";
-          checkBtn.style.verticalAlign = "middle";
-
-          checkBtn.addEventListener("click", (e) => {
-            e.stopPropagation();
-            textSpan.classList.toggle("completed");
-
-            if (textSpan.classList.contains("completed")) {
-              checkBtn.style.opacity = "0.5";
-            } else {
-              checkBtn.style.opacity = "1";
-              textSpan.style.color = "black";
-            }
-          });
-          textSpan.addEventListener("click", handleTextSpanClick);
-          extraBox.title = input.value.trim();
-          extraBox.style.marginTop = "0";
-          extraBox.style.display = "flex";
-          extraBox.style.justifyContent = "space-between";
-          extraBox.style.alignItems = "center";
-        } else {
-          extraBox.textContent = "";
-        }
-
-        activeInput = null;
-        activeBox = null;
-      };
-
-      input.addEventListener("blur", () => setTimeout(saveTask, 0));
-      input.addEventListener("keydown", (e) => {
-        if (e.key === "Enter") {
-          saveTask();
-          input.blur();
-        }
-      });
-      return;
-    }
-
-    if (emptyBox && !emptyBox.querySelector("input")) {
-      const input = document.createElement("input");
-      input.type = "text";
-      input.placeholder = "";
-      input.style.border = "rgba(255, 255, 255, 0.95)";
-      input.style.fontSize = "14px";
-      input.style.borderRadius = "6px";
-      input.style.backgroundColor = "white";
-      input.style.boxShadow = "0 4px 8px rgba(0, 0, 0, 0.1)";
-      input.style.outline = "none";
-      input.style.height = "42px";
-      input.style.marginTop = "-15px";
-      input.style.boxSizing = "border-box";
-      input.style.display = "flex";
-      input.style.width = "auto";
-      input.style.overflow = "visible";
-
-      emptyBox.textContent = "";
-      emptyBox.appendChild(input);
-      input.focus();
-      activeInput = input;
-      activeBox = emptyBox;
-
-      const saveTask = () => {
-        if (input.value.trim() !== "") {
-          emptyBox.innerHTML = `
-            <span class="task-text">${input.value.trim()}</span>
-            <img src="./assets/check-button.png" class="check-btn" title="Mark as done" />
-          `;
-          const textSpan = emptyBox.querySelector('.task-text');
-          const checkBtn = emptyBox.querySelector('.check-btn');
-
-          textSpan.style.whiteSpace = "nowrap";
-          textSpan.style.overflow = "hidden";
-          textSpan.style.textOverflow = "ellipsis";
-          textSpan.style.textAlign = "left";
-          textSpan.style.height = "18px";
-          textSpan.addEventListener("click", handleTextSpanClick);
-
-          checkBtn.style.width = "18px";
-          checkBtn.style.height = "18px";
-          checkBtn.style.marginLeft = "8px";
-          checkBtn.style.cursor = "pointer";
-          checkBtn.style.verticalAlign = "middle";
-
-          checkBtn.addEventListener("click", (e) => {
-            e.stopPropagation();
-            textSpan.classList.toggle("completed");
-
-            if (textSpan.classList.contains("completed")) {
-              checkBtn.style.opacity = "0.5";
-            } else {
-              checkBtn.style.opacity = "1";
-              textSpan.style.color = "black";
-            }
-          });
-
-          emptyBox.title = input.value.trim();
-          emptyBox.style.marginTop = "0";
-          emptyBox.style.display = "flex";
-          emptyBox.style.justifyContent = "space-between";
-          emptyBox.style.alignItems = "center";
-        } else {
-          emptyBox.textContent = "";
-        }
-
-        activeInput = null;
-        activeBox = null;
-      };
-
-      input.addEventListener("blur", () => setTimeout(saveTask, 0));
-      input.addEventListener("keydown", (e) => {
-        if (e.key === "Enter") {
-          saveTask();
-          input.blur();
-        }
-      });
-    }
+  somedayDiv.addEventListener("click", () => {
+    const emptyBox = [...taskContainer.children].find(
+      (box) => !box.textContent.trim() && !box.querySelector("input")
+    );
+    activateInput(emptyBox || taskContainer.appendChild(document.createElement("div")));
   });
-
 }
 
-renderWeeklyView();
 
+document.addEventListener('DOMContentLoaded', () => {
+  renderWeeklyView();
+})
 
 document.getElementById("openCalendarBtn").addEventListener("click", () => {
   currentWeekDate = new Date();
@@ -1074,85 +761,75 @@ document.getElementById("link").addEventListener("click", () => {
   taskNotes.focus();
 });
 
+// account login
 document.addEventListener('DOMContentLoaded', () => {
   const API_BASE_URL = "http://localhost:5000";
 
   // --- DOM ELEMENTS ---
   const authTrigger = document.getElementById('auth-trigger');
-  const otpModalBackdrop = document.getElementById('otp-modal-backdrop');
+  const authModalBackdrop = document.getElementById('auth-modal-backdrop');
   const closeModalBtn = document.getElementById('close-modal-btn');
-  const profileDropdown = document.getElementById('profile-dropdown');
-  const logoutButton = document.getElementById('logout-button');
-
-  // OTP Form Elements
-  const requestForm = document.getElementById('requestForm');
-  const verifyForm = document.getElementById('verifyForm');
-  const nameFieldsContainer = document.getElementById('nameFieldsContainer');
-  const firstNameInput = document.getElementById('firstNameInput');
-  const lastNameInput = document.getElementById('lastNameInput');
-  const phoneInput = document.getElementById('phoneInput');
-  const otpInput = document.getElementById('otpInput');
-  const purposeRadios = document.querySelectorAll('input[name="purpose"]');
-  const requestBtn = document.getElementById('requestBtn');
+  const modalTitle = document.getElementById('modal-title');
   const messageArea = document.getElementById('messageArea');
 
-  // Profile Display Elements
+  // Forms
+  const loginForm = document.getElementById('loginForm');
+  const registerForm = document.getElementById('registerForm');
+  const verifyForm = document.getElementById('verifyForm');
+
+  // Links to switch forms
+  const showRegisterLink = document.getElementById('showRegisterLink');
+  const showLoginLinkFromRegister = document.getElementById('showLoginLinkFromRegister');
+
+  // Profile Display
+  const profileDropdown = document.getElementById('profile-dropdown');
   const dropdownInitials = document.getElementById('dropdown-initials');
   const dropdownFullname = document.getElementById('dropdown-fullname');
+  const logoutButton = document.getElementById('logout-button');
 
   // --- STATE ---
   let isLoggedIn = false;
-  let currentPhone = '';
-  let currentPurpose = '';
-  let sessionRefreshInterval = null; // Holds the timer for session refresh
-  const loginIconSVG = `<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>`;
+  let currentEmailForVerification = ''; // To store email between register and verify steps
+  let sessionRefreshInterval = null;
+  const loginIconSVG = `<svg xmlns="http://www.w.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>`;
 
-  // --- FUNCTIONS ---
+  // --- HELPER FUNCTIONS ---
   function showMessage(message, isError = false) {
     messageArea.textContent = message;
     messageArea.className = isError ? 'message-error' : 'message-success';
-    messageArea.classList.toggle('hidden', !message);
+    messageArea.style.display = message ? 'block' : 'none';
   }
 
-  function togglePurposeUI() {
-    currentPurpose = document.querySelector('input[name="purpose"]:checked').value;
-    nameFieldsContainer.classList.toggle('hidden', currentPurpose !== 'register');
-    firstNameInput.required = currentPurpose === 'register';
-    lastNameInput.required = currentPurpose === 'register';
+  function showView(viewToShow) {
+    // Hide all forms first
+    loginForm.classList.add('hidden');
+    registerForm.classList.add('hidden');
+    verifyForm.classList.add('hidden');
+    // Show the requested form
+    viewToShow.classList.remove('hidden');
+    // Update modal title
+    if (viewToShow === loginForm) modalTitle.textContent = 'Login to Your Account';
+    if (viewToShow === registerForm) modalTitle.textContent = 'Create an Account';
+    if (viewToShow === verifyForm) modalTitle.textContent = 'Verify Your Email';
+    showMessage(''); // Clear any previous messages
   }
 
+  // --- MAIN AUTH LOGIC ---
   function updateAuthState(loggedIn, user = null) {
     isLoggedIn = loggedIn;
-
-    // Always clear any previous timer when the auth state changes
-    if (sessionRefreshInterval) {
-      clearInterval(sessionRefreshInterval);
-    }
+    if (sessionRefreshInterval) clearInterval(sessionRefreshInterval);
 
     if (isLoggedIn && user) {
       const firstName = user.firstName || 'User';
       const lastName = user.lastName || '';
       const initials = (firstName[0] + (lastName[0] || '')).toUpperCase();
-
       authTrigger.innerHTML = initials;
       authTrigger.classList.add('text');
       dropdownInitials.textContent = initials;
       dropdownFullname.textContent = `${firstName} ${lastName}`.trim();
-
-      otpModalBackdrop.classList.add('hidden');
-
-      // Start a timer to refresh the session token periodically
-      // We refresh every 6 days, well before the 7-day cookie expires.
-      sessionRefreshInterval = setInterval(async () => {
-        try {
-          console.log('Refreshing session...');
-          await fetch(`${API_BASE_URL}/auth/refresh-token`, { method: 'POST', credentials: 'include' });
-        } catch (error) {
-          console.error('Failed to refresh session:', error);
-          // Optional: Handle this error, e.g., by logging the user out
-        }
-      }, 6 * 24 * 60 * 60 * 1000); // 6 days in milliseconds
-
+      authModalBackdrop.classList.add('hidden');
+      // Set up token refresh
+      sessionRefreshInterval = setInterval(() => fetch(`${API_BASE_URL}/auth/refresh-token`, { method: 'POST', credentials: 'include' }), 6 * 24 * 60 * 60 * 1000);
     } else {
       authTrigger.innerHTML = loginIconSVG;
       authTrigger.classList.remove('text');
@@ -1162,17 +839,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
   async function checkLoginStatus() {
     try {
-      const response = await fetch(`${API_BASE_URL}/profile`, {
-        method: 'GET',
-        credentials: 'include'
-      });
-      if (!response.ok) {
-        throw new Error('Not authenticated');
-      }
+      const response = await fetch(`${API_BASE_URL}/profile`, { method: 'GET', credentials: 'include' });
+      if (!response.ok) throw new Error('Not authenticated');
       const data = await response.json();
       updateAuthState(true, data.user);
     } catch (error) {
-      console.log('User not logged in.');
       updateAuthState(false);
     }
   }
@@ -1183,56 +854,41 @@ document.addEventListener('DOMContentLoaded', () => {
     if (isLoggedIn) {
       profileDropdown.classList.toggle('hidden');
     } else {
-      otpModalBackdrop.classList.remove('hidden');
+      authModalBackdrop.classList.remove('hidden');
+      showView(loginForm); // Default to login view
+      loginForm.reset();
+      registerForm.reset();
+      verifyForm.reset();
     }
   });
 
-  closeModalBtn.addEventListener('click', () => otpModalBackdrop.classList.add('hidden'));
-  otpModalBackdrop.addEventListener('click', (e) => {
-    if (e.target === otpModalBackdrop) otpModalBackdrop.classList.add('hidden');
-  });
+  closeModalBtn.addEventListener('click', () => authModalBackdrop.classList.add('hidden'));
+  authModalBackdrop.addEventListener('click', (e) => { if (e.target === authModalBackdrop) authModalBackdrop.classList.add('hidden'); });
 
-  purposeRadios.forEach(radio => radio.addEventListener('change', togglePurposeUI));
+  // Form switching links
+  showRegisterLink.addEventListener('click', (e) => { e.preventDefault(); showView(registerForm); });
+  showLoginLinkFromRegister.addEventListener('click', (e) => { e.preventDefault(); showView(loginForm); });
 
-  requestForm.addEventListener('submit', async (e) => {
+  // --- FORM SUBMISSIONS ---
+
+  // Step 1: Register
+  registerForm.addEventListener('submit', async (e) => {
     e.preventDefault();
     showMessage('');
-    requestBtn.disabled = true;
-    requestBtn.textContent = 'Sending...';
-    currentPhone = phoneInput.value;
+    const registerBtn = registerForm.querySelector('button');
+    registerBtn.disabled = true;
+    registerBtn.textContent = 'Registering...';
+
+    currentEmailForVerification = document.getElementById('registerEmail').value;
+    const payload = {
+      firstName: document.getElementById('firstNameInput').value,
+      lastName: document.getElementById('lastNameInput').value,
+      email: currentEmailForVerification,
+      password: document.getElementById('registerPassword').value
+    };
 
     try {
-      const response = await fetch(`${API_BASE_URL}/auth/request-otp`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ phone: currentPhone, purpose: currentPurpose })
-      });
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.message);
-
-      showMessage('OTP sent successfully.');
-      requestForm.classList.add('hidden');
-      verifyForm.classList.remove('hidden');
-      otpInput.focus();
-    } catch (err) {
-      showMessage(err.message, true);
-    } finally {
-      requestBtn.disabled = false;
-      requestBtn.textContent = 'Request OTP';
-    }
-  });
-
-  verifyForm.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    showMessage('');
-    const payload = { phone: currentPhone, purpose: currentPurpose, otp: otpInput.value };
-    if (currentPurpose === 'register') {
-      payload.firstName = firstNameInput.value;
-      payload.lastName = lastNameInput.value;
-    }
-
-    try {
-      const response = await fetch(`${API_BASE_URL}/auth/verify-otp`, {
+      const response = await fetch(`${API_BASE_URL}/auth/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
@@ -1240,30 +896,119 @@ document.addEventListener('DOMContentLoaded', () => {
       const data = await response.json();
       if (!response.ok) throw new Error(data.message);
 
-      updateAuthState(true, data.user);
+      // On success, move to the OTP verification step
+      document.getElementById('otpEmailDisplay').textContent = currentEmailForVerification;
+      showView(verifyForm);
 
     } catch (err) {
       showMessage(err.message, true);
+    } finally {
+      registerBtn.disabled = false;
+      registerBtn.textContent = 'Register';
     }
   });
 
+  // Step 2: Verify OTP
+  verifyForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    showMessage('');
+    const verifyBtn = verifyForm.querySelector('button');
+    verifyBtn.disabled = true;
+    verifyBtn.textContent = 'Verifying...';
+
+    const payload = {
+      email: currentEmailForVerification,
+      otp: document.getElementById('otpInput').value
+    };
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/auth/verify-account`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.message);
+
+      // On success, inform the user and switch to the login form
+      showMessage('Account verified successfully! Please log in.', false);
+      showView(loginForm);
+
+    } catch (err) {
+      showMessage(err.message, true);
+    } finally {
+      verifyBtn.disabled = false;
+      verifyBtn.textContent = 'Verify Account';
+    }
+  });
+
+  // Step 3: Login
+  loginForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    showMessage('');
+    const loginBtn = loginForm.querySelector('button');
+    loginBtn.disabled = true;
+    loginBtn.textContent = 'Logging In...';
+
+    const payload = {
+      email: document.getElementById('loginEmail').value,
+      password: document.getElementById('loginPassword').value
+    };
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
+        body: JSON.stringify(payload)
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.message);
+
+      updateAuthState(true, data.user); // Login successful
+
+    } catch (err) {
+      showMessage(err.message, true);
+    } finally {
+      loginBtn.disabled = false;
+      loginBtn.textContent = 'Login';
+    }
+  });
+
+  // --- Other Listeners (Logout, Password Toggle, etc.) ---
   logoutButton.addEventListener('click', async () => {
     try {
       await fetch(`${API_BASE_URL}/auth/logout`, { method: 'POST', credentials: 'include' });
-    } catch (error) {
-      console.error('Logout failed:', error);
     } finally {
       updateAuthState(false);
     }
   });
 
-  document.addEventListener('click', () => {
-    if (!profileDropdown.classList.contains('hidden')) {
-      profileDropdown.classList.add('hidden');
-    }
+  const toggleRegisterPassword = document.getElementById('toggleRegisterPassword');
+  toggleRegisterPassword.addEventListener('click', function () {
+    const registerPasswordInput = document.getElementById('registerPassword');
+    const type = registerPasswordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+    registerPasswordInput.setAttribute('type', type);
+    document.getElementById('register-eye-open-svg').style.display = (type === 'password') ? 'block' : 'none';
+    document.getElementById('register-eye-closed-svg').style.display = (type === 'password') ? 'none' : 'block';
   });
 
-  togglePurposeUI();
+  // --- INITIALIZATION ---
   checkLoginStatus();
-
 });
+
+
+// : button dropdown
+const menuBtn = document.querySelector(".circle-menu");
+const dropdown = document.querySelector(".dropdown-content");
+
+menuBtn.addEventListener("click", () => {
+  dropdown.classList.toggle("show");
+});
+
+document.addEventListener("click", (e) => {
+  if (!menuBtn.contains(e.target) && !dropdown.contains(e.target)) {
+    dropdown.classList.remove("show");
+  }
+});
+

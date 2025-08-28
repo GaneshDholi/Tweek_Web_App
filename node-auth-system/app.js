@@ -1,52 +1,51 @@
-require('dotenv').config();
 const express = require('express');
 const mongoose = require('mongoose');
 const authRoutes = require('./routes/auth');
 const cookieParser = require('cookie-parser');
 const authMiddleware = require('./middleware/auth');
 const cors = require("cors");
+const connectDB = require('./config/db');
+const dotenv = require('dotenv');
+dotenv.config();
 
 const app = express();
+
+// Middleware
 app.use(express.json());
 app.use(cookieParser());
 app.use(express.static('public'));
 app.use(cors({
-  origin: "http://127.0.0.1:5501",
+  origin: process.env.CLIENT_URL || "[http://127.0.0.1:5501](http://127.0.0.1:5501)", // Use client URL from .env
   credentials: true
 }));
 
+// Connect to MongoDB
+// mongoose.connect(process.env.MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true })
+//   .then(() => console.log('MongoDB connected successfully'))
+//   .catch(err => {
+//     console.error('MongoDB connection error:', err);
+//     process.exit(1);
+//   });
 
-// Connect mongo
-mongoose.connect(process.env.MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true })
-  .then(() => console.log('Mongo connected'))
-  .catch(err => {
-    console.error(err);
-    process.exit(1);
-  });
+// Protected profile route
+connectDB();
 
-// for profile
 app.get('/profile', authMiddleware, (req, res) => {
-  res.json({ message: "Welcome!", user: req.user });
+  // authMiddleware attaches the user object to the request
+  res.json({ message: "Welcome to your profile!", user: req.user });
 });
 
-// Basic health route
-app.get('/', (req, res) => res.send('OTP auth server is running'));
+// Basic health check route
+app.get('/', (req, res) => res.send('Authentication server is up and running'));
 
-// Auth routes
+// Authentication routes
 app.use('/auth', authRoutes);
 
-// Error handler
+// Global error handler
 app.use((err, req, res, next) => {
-  console.error(err);
-  res.status(500).json({ message: 'Server error' });
+  console.error(err.stack);
+  res.status(500).json({ message: 'An unexpected server error occurred.' });
 });
-
-
-app.post('/auth/logout', (req, res) => {
-  res.clearCookie("token");
-  res.json({ message: "Logged out" });
-});
-
 
 const PORT = process.env.PORT || 5000;
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+app.listen(PORT, () => console.log(`Server is running on port ${PORT}`));

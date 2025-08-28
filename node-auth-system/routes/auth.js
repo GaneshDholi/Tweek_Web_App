@@ -2,194 +2,174 @@ const express = require('express');
 const router = express.Router();
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const { body, validationResult } = require('express-validator');
 const rateLimit = require('express-rate-limit');
-const { parsePhoneNumberFromString } = require('libphonenumber-js');
-
-const Otp = require('../models/Otp');
+const otpGenerator = require('otp-generator');
 const User = require('../models/User');
-const { sendSms } = require('../utils/smsProvider');
+const { sendEmail } = require('../utils/emailProvider');
+const authMiddleware = require('../middleware/auth');
 
 
-const OTP_LENGTH = parseInt(process.env.OTP_LENGTH || '6');
-const OTP_TTL_MINUTES = parseInt(process.env.OTP_TTL_MINUTES || '5');
-const RESEND_COOLDOWN = parseInt(process.env.OTP_RESEND_COOLDOWN_SECONDS || '60');
-
-// Basic rate limiter (per IP) for OTP endpoints
-const otpLimiter = rateLimit({
-    windowMs: 15 * 60 * 1000,
+// --- Security & Validation (No changes needed) ---
+const authLimiter = rateLimit({
+    windowMs: 15 * 60 * 1000, // 15 minutes
     max: 10,
-    message: 'Too many OTP requests from this IP, try later'
+    message: 'Too many attempts from this IP, please try again after 15 minutes.',
+    standardHeaders: true,
+    legacyHeaders: false,
 });
 
-function normalizePhone(raw) {
-    const pn = parsePhoneNumberFromString(raw);
-    if (!pn || !pn.isValid()) throw new Error('Invalid phone number');
-    return pn.number;
-}
+const registerValidationRules = [
+    body('firstName').trim().not().isEmpty().withMessage('First name is required.'),
+    body('lastName').trim().not().isEmpty().withMessage('Last name is required.'),
+    body('email').isEmail().normalizeEmail().withMessage('Please provide a valid email.'),
+    body('password').isLength({ min: 8 }).withMessage('Password must be at least 8 characters long.'),
+];
 
-function generateOtp(digits = OTP_LENGTH) {
-    const min = 10 ** (digits - 1);
-    const max = 10 ** digits - 1;
-    return String(Math.floor(Math.random() * (max - min + 1)) + min);
-}
+const loginValidationRules = [
+    body('email').isEmail().normalizeEmail().withMessage('Please provide a valid email.'),
+    body('password').not().isEmpty().withMessage('Password cannot be empty.'),
+];
 
-// POST /auth/request-otp
-// body: { phone, purpose: 'register'|'login' }
-router.post('/request-otp', otpLimiter, async (req, res) => {
+
+// --- FLOW STEP 1: Register with Password & Send OTP ---
+router.post('/register', authLimiter, registerValidationRules, async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        return res.status(400).json({ message: errors.array()[0].msg });
+    }
+
     try {
-        const { phone: rawPhone, purpose } = req.body;
-        if (!rawPhone || !purpose) return res.status(400).json({ message: 'phone and purpose required' });
-        if (!['register', 'login'].includes(purpose)) return res.status(400).json({ message: 'invalid purpose' });
+        const { firstName, lastName, email, password } = req.body;
+        let user = await User.findOne({ email });
 
-        const phone = normalizePhone(rawPhone);
-
-        // If purpose is register and user already exists, suggest login flow instead
-        if (purpose === 'register') {
-            const existing = await User.findOne({ phone });
-            if (existing) return res.status(400).json({ message: 'Phone already registered. Use login.' });
+        if (user && user.isEmailVerified) {
+            return res.status(409).json({ message: 'A verified user with this email already exists.' });
         }
 
-        // If purpose is login and user doesn't exist, suggest register
-        if (purpose === 'login') {
-            const existing = await User.findOne({ phone });
-            if (!existing) return res.status(400).json({ message: 'Phone not found. Please register first.' });
+        const salt = await bcrypt.genSalt(10);
+        const hashedPassword = await bcrypt.hash(password, salt);
+
+        if (user && !user.isEmailVerified) {
+            user.password = hashedPassword;
+            user.firstName = firstName;
+            user.lastName = lastName;
+        } else {
+            user = new User({ firstName, lastName, email, password: hashedPassword, isEmailVerified: false });
         }
+        
+        const otp = otpGenerator.generate(6, { upperCaseAlphabets: false, specialChars: false, lowerCaseAlphabets: false });
+        user.otp = await bcrypt.hash(otp, salt);
+        user.otpExpires = Date.now() + 10 * 60 * 1000; // OTP expires in 10 minutes
+        await user.save();
 
-        // Check existing OTP doc for cooldown
-        const existingOtp = await Otp.findOne({ phone, purpose });
-        const now = new Date();
-        if (existingOtp) {
-            const secondsSinceSent = (now - existingOtp.lastSentAt) / 1000;
-            if (secondsSinceSent < RESEND_COOLDOWN) {
-                return res.status(429).json({ message: `Please wait ${Math.ceil(RESEND_COOLDOWN - secondsSinceSent)}s before requesting again.` });
-            }
-        }
+        const emailHtml = `<h1>Account Verification</h1><p>Your OTP to verify your account is: <strong>${otp}</strong></p><p>This code will expire in 10 minutes.</p>`;
+        await sendEmail({ to: user.email, subject: 'Verify Your Account', html: emailHtml });
+        
+        res.status(201).json({ message: 'Registration initiated. Please check your email for an OTP.' });
 
-        const otp = generateOtp(OTP_LENGTH);
-        const otpHash = await bcrypt.hash(otp, 10);
-
-        const expiresAt = new Date(Date.now() + OTP_TTL_MINUTES * 60 * 1000);
-
-        // Upsert OTP record
-        await Otp.findOneAndUpdate(
-            { phone, purpose },
-            {
-                phone,
-                purpose,
-                otpHash,
-                expiresAt,
-                lastSentAt: now,
-                $inc: { resendCount: 1 },
-                attempts: 0
-            },
-            { upsert: true, new: true }
-        );
-
-        // Send SMS
-        const smsBody = `Your verification code is: ${otp}. It expires in ${OTP_TTL_MINUTES} minutes.`;
-        await sendSms({ to: phone, body: smsBody });
-
-        return res.json({ message: 'OTP sent' });
-    } catch (err) {
-        console.error(err);
-        return res.status(400).json({ message: err.message || 'Error' });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Server error during registration.' });
     }
 });
 
-// POST /auth/verify-otp
-// body: { phone, purpose, otp }
-router.post('/verify-otp', async (req, res) => {
+// --- FLOW STEP 2: Verify Account with OTP ---
+router.post('/verify-account', authLimiter, async (req, res) => {
     try {
-        const { phone: rawPhone, purpose, otp } = req.body;
-        if (!rawPhone || !purpose || !otp) return res.status(400).json({ message: 'phone, purpose, otp required' });
+        const { email, otp } = req.body;
+        if (!email || !otp) {
+            return res.status(400).json({ message: 'Email and OTP are required.' });
+        }
+        
+        const user = await User.findOne({ email });
 
-        const phone = normalizePhone(rawPhone);
-
-        const otpDoc = await Otp.findOne({ phone, purpose });
-        if (!otpDoc) return res.status(400).json({ message: 'No OTP requested for this phone/purpose' });
-
-        const now = new Date();
-        if (now > otpDoc.expiresAt) {
-            await Otp.deleteOne({ _id: otpDoc._id });
-            return res.status(400).json({ message: 'OTP expired. Request a new one.' });
+        if (!user) {
+            return res.status(404).json({ message: 'User not found. Please complete registration first.' });
+        }
+        if (user.isEmailVerified) {
+            return res.status(400).json({ message: 'This account is already verified.' });
+        }
+        if (!user.otp || user.otpExpires < Date.now()) {
+            return res.status(400).json({ message: 'OTP is invalid or has expired. Please try registering again.' });
         }
 
-        // Limit attempts
-        if (otpDoc.attempts >= 5) {
-            await Otp.deleteOne({ _id: otpDoc._id });
-            return res.status(429).json({ message: 'Too many attempts. Request a new OTP.' });
+        const isMatch = await bcrypt.compare(otp, user.otp);
+        if (!isMatch) {
+            return res.status(400).json({ message: 'Invalid OTP.' });
         }
 
-        const match = await bcrypt.compare(otp, otpDoc.otpHash);
-        if (!match) {
-            otpDoc.attempts = (otpDoc.attempts || 0) + 1;
-            await otpDoc.save();
-            return res.status(400).json({ message: 'Invalid OTP' });
+        user.isEmailVerified = true;
+        user.otp = undefined;
+        user.otpExpires = undefined;
+        await user.save();
+
+        res.status(200).json({ message: 'Account verified successfully. You can now log in.' });
+
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Server error during account verification.' });
+    }
+});
+
+
+// --- FLOW STEP 3: Login with Password ---
+router.post('/login', authLimiter, loginValidationRules, async (req, res) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        return res.status(400).json({ message: errors.array()[0].msg });
+    }
+
+    try {
+        const { email, password } = req.body;
+        const user = await User.findOne({ email });
+
+        if (!user) {
+            return res.status(400).json({ message: 'Invalid credentials.' });
+        }
+        if (!user.isEmailVerified) {
+            return res.status(401).json({ message: 'Account not verified. Please check your email for the OTP.' });
         }
 
-        // OTP correct
-        await Otp.deleteOne({ _id: otpDoc._id });
-
-        let user = await User.findOne({ phone });
-        if (purpose === 'register') {
-            if (user) {
-                // maybe they tried to re-register — allow login instead
-            } else {
-                const { firstName, lastName } = req.body; // Get names from request
-                user = new User({
-                    phone,
-                    firstName,
-                    lastName
-                });
-                await user.save();
-            }
+        const isMatch = await bcrypt.compare(password, user.password);
+        if (!isMatch) {
+            return res.status(400).json({ message: 'Invalid credentials.' });
         }
 
-        const payload = { sub: user._id.toString(), phone: user.phone };
+        const payload = { sub: user._id.toString(), email: user.email };
         const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '7d' });
 
-        // Store in cookie instead of only returning
-        res.cookie("token", token, {
-            httpOnly: true,
-            secure: process.env.NODE_ENV === "production",
-            sameSite: "strict",
-            maxAge: 7 * 24 * 60 * 60 * 1000 // 7 days
+        res.cookie("token", token, { httpOnly: true, secure: process.env.NODE_ENV === "production", sameSite: "strict" });
+        res.json({
+            message: 'Logged in successfully',
+            user: { id: user._id, email: user.email, firstName: user.firstName, lastName: user.lastName }
         });
 
-        // routes/auth.js/
-
-        // This new version includes the names in the response
-        return res.json({
-            message: 'Verified',
-            user: {
-                id: user._id,
-                phone: user.phone,
-                firstName: user.firstName,
-                lastName: user.lastName
-            }
-        });
-
-    } catch (err) {
-        console.error(err);
-        return res.status(400).json({ message: err.message || 'Error' });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Server error during login.' });
     }
+});
+
+
+// --- Logout and Refresh Token (No changes needed) ---
+router.post('/logout', (req, res) => {
+    res.clearCookie("token");
+    res.json({ message: "Logged out successfully." });
 });
 
 router.post('/refresh-token', authMiddleware, (req, res) => {
-const user = req.user;
+    const user = req.user;
+    const payload = { sub: user.id, email: user.email };
+    const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '7d' });
 
-const payload = { sub: user.id, phone: user.phone };
-const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '7d' });
-
-res.cookie("token", token, {
-httpOnly: true,
-secure: process.env.NODE_ENV === "production",
-sameSite: "strict",
-maxAge: 7 * 24 * 60 * 60 * 1000 
-});
-
-res.json({ message: 'Session refreshed successfully' });
-
+    res.cookie("token", token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "strict",
+        maxAge: 7 * 24 * 60 * 60 * 1000,
+    });
+    res.json({ message: 'Session refreshed successfully' });
 });
 
 module.exports = router;
