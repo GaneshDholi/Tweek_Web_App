@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Weekly Planner</title>
+    
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;700&display=swap" rel="stylesheet">
+
+    <style>
+        /* --- 1. CSS STYLING --- */
+        :root {
+            --border-color: #f0f0f0;
+            --text-primary: #171717;
+            --text-secondary: #888;
+            --highlight-blue: #277dff;
+            --bg-color: #ffffff;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            margin: 0;
+            padding: 2rem;
+        }
+
+        .planner-container {
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+
+        .planner-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+        }
+
+        .planner-header h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin: 0;
+        }
+
+        .header-nav {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .nav-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            background-color: #f5f5f5;
+            font-size: 1.2rem;
+            color: var(--text-primary);
+            user-select: none;
+        }
+        
+        .nav-icon.dark {
+            background-color: var(--text-primary);
+            color: var(--bg-color);
+        }
+
+        /* Main Week View Layout */
+        .week-view {
+            display: flex;
+            gap: 1rem;
+            /* This is the key property that makes all columns the same height */
+            align-items: stretch; 
+        }
+
+        .day-column, .weekend-column {
+            flex: 1; /* Each column takes equal width */
+            display: flex; /* Make the column a flex container itself */
+            flex-direction: column; /* Stack its children (header, list) vertically */
+        }
+        
+        .weekend-column {
+            gap: 1rem;
+        }
+        
+        .day-box {
+            flex: 1; /* For Sat/Sun to split the space in their column */
+            display: flex; /* Also a flex container */
+            flex-direction: column;
+        }
+
+        .day-header {
+            padding-bottom: 0.75rem;
+            margin-bottom: 0.75rem;
+            border-bottom: 2px solid #f0f0f0;
+            display: flex;
+            align-items: baseline;
+            gap: 0.75rem;
+            font-size: 1rem;
+            font-weight: 700;
+            flex-shrink: 0; /* Prevent the header from shrinking */
+        }
+        
+        .day-header.current-day .date-number,
+        .day-header.current-day .day-name {
+            color: var(--highlight-blue);
+        }
+
+        .task-list {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            display: flex;
+            flex-direction: column;
+            flex-grow: 1; /* THIS IS THE FIX: Allows the list to grow and fill empty space */
+        }
+
+        .task-item {
+            min-height: 38px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            padding: 0 0.25rem;
+        }
+        
+        .task-item:hover {
+            background-color: #f9f9f9;
+        }
+        
+        .task-input {
+            width: 100%;
+            border: none;
+            background: transparent;
+            outline: none;
+            font-family: inherit;
+            font-size: 0.95rem;
+            padding: 8px 0;
+            height: 100%;
+        }
+
+        .task-display {
+            padding: 5px 8px;
+            border-radius: 6px;
+            font-size: 0.95rem;
+            cursor: pointer;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+    </style>
+</head>
+<body>
+
+    <div class="planner-container">
+        <header class="planner-header">
+            <h1 id="month-year-title"></h1>
+            <nav class="header-nav">
+                <div class="nav-icon" title="Account">👤</div>
+                <div class="nav-icon" title="Menu">⋮</div>
+                <div class="nav-icon dark" id="prev-week" title="Previous Week">‹</div>
+                <div class="nav-icon dark" id="next-week" title="Next Week">›</div>
+            </nav>
+        </header>
+
+        <main class="week-view" id="week-view-container"></main>
+    </div>
+
+    <script>
+        // --- 2. JAVASCRIPT LOGIC ---
+        
+        document.addEventListener('DOMContentLoaded', () => {
+            const weekContainer = document.getElementById('week-view-container');
+            const monthYearTitle = document.getElementById('month-year-title');
+            const prevWeekBtn = document.getElementById('prev-week');
+            const nextWeekBtn = document.getElementById('next-week');
+            
+            let currentDate = new Date();
+
+            function renderWeek() {
+                const startOfWeek = new Date(currentDate);
+                const dayOfWeek = startOfWeek.getDay();
+                const diff = startOfWeek.getDate() - dayOfWeek + (dayOfWeek === 0 ? -6 : 1);
+                startOfWeek.setDate(diff);
+
+                monthYearTitle.textContent = startOfWeek.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+
+                let weekdaysHTML = '';
+                let weekendHTML = { sat: '', sun: '' };
+                const today = new Date();
+
+                for (let i = 0; i < 7; i++) {
+                    const dayDate = new Date(startOfWeek);
+                    dayDate.setDate(startOfWeek.getDate() + i);
+
+                    const isCurrentDay = dayDate.toDateString() === today.toDateString();
+                    const dayName = dayDate.toLocaleDateString('en-US', { weekday: 'short' });
+                    const dateNumber = dayDate.getDate();
+
+                    let tasksHTML = '';
+                    for (let j = 0; j < 8; j++) { // Start with 8 empty slots
+                        tasksHTML += `<li class="task-item"></li>`;
+                    }
+                    
+                    const dayHTML = `
+                        <div class="day-header ${isCurrentDay ? 'current-day' : ''}">
+                            <span class="date-number">${dateNumber} ${dayName}</span>
+                        </div>
+                        <ul class="task-list">${tasksHTML}</ul>
+                    `;
+
+                    if (i < 5) {
+                        weekdaysHTML += `<div class="day-column">${dayHTML}</div>`;
+                    } else if (i === 5) {
+                        weekendHTML.sat = `<div class="day-box">${dayHTML}</div>`;
+                    } else {
+                        weekendHTML.sun = `<div class="day-box">${dayHTML}</div>`;
+                    }
+                }
+                
+                weekContainer.innerHTML = `
+                    ${weekdaysHTML}
+                    <div class="weekend-column">
+                        ${weekendHTML.sat}
+                        ${weekendHTML.sun}
+                    </div>
+                `;
+            }
+
+            function activateInput(taskItem, initialValue = '') {
+                taskItem.innerHTML = `<input type="text" class="task-input" value="${initialValue}" />`;
+                const input = taskItem.querySelector('.task-input');
+                input.focus();
+                input.selectionStart = input.selectionEnd = input.value.length;
+            }
+
+            function deactivateInput(input) {
+                const taskItem = input.parentElement;
+                const text = input.value.trim();
+                
+                if (text) {
+                    taskItem.innerHTML = `<span class="task-display">${text}</span>`;
+                } else {
+                    taskItem.innerHTML = '';
+                }
+            }
+
+            // --- Event Listeners ---
+            weekContainer.addEventListener('click', (e) => {
+                const target = e.target;
+                if (target.classList.contains('task-display')) {
+                    activateInput(target.parentElement, target.textContent);
+                    return;
+                }
+                if (target.classList.contains('task-item') && !target.hasChildNodes()) {
+                    activateInput(target);
+                    return;
+                }
+            });
+
+            weekContainer.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter' && e.target.classList.contains('task-input')) {
+                    e.preventDefault();
+                    
+                    const currentInput = e.target;
+                    const currentTaskItem = currentInput.parentElement;
+                    const taskList = currentTaskItem.parentElement;
+                    
+                    let nextTaskItem = currentTaskItem.nextElementSibling;
+                    
+                    if (!nextTaskItem) {
+                        nextTaskItem = document.createElement('li');
+                        nextTaskItem.className = 'task-item';
+                        taskList.appendChild(nextTaskItem);
+                    }
+                    
+                    deactivateInput(currentInput);
+                    activateInput(nextTaskItem);
+                }
+            });
+            
+            weekContainer.addEventListener('focusout', (e) => {
+                if (e.target.classList.contains('task-input')) {
+                    deactivateInput(e.target);
+                }
+            });
+            
+            // Navigation
+            prevWeekBtn.addEventListener('click', () => {
+                currentDate.setDate(currentDate.getDate() - 7);
+                renderWeek();
+            });
+
+            nextWeekBtn.addEventListener('click', () => {
+                currentDate.setDate(currentDate.getDate() + 7);
+                renderWeek();
+            });
+
+            renderWeek();
+        });
+    </script>
+</body>
+</html>
