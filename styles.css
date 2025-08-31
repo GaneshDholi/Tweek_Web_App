@@ -1,5 +1,36 @@
+@font-face {
+  font-family: "Susissenint";
+  src: url("./assets/fonts/SuisseIntl-Bold.woff") format("woff");
+  font-weight: 700;
+  font-style: normal;
+}
+
+@font-face {
+  font-family: "regular";
+  src: url("./assets/fonts/fa-regular-400.woff") format("woff");
+}
+
+@font-face {
+  font-family: "Susissenint";
+  src: url("./assets/fonts/SuisseIntl-Book.woff") format("woff");
+  font-weight: 400;
+  font-style: normal;
+}
+
+:root {
+  --primary-color: #5167F4;
+  --secondary-color: #DCE1FD;
+  --ternery-color: #BE9CF3;
+  --bg-color: #ffffff;
+  --text-color: #000000;
+  --circle-color: #27282B;
+  --border-radius: 8px;
+  --primary-font: "Susissenint";
+  --secondary-font: "regular";
+}
+
 body {
-  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+  font-family: var(--primary-font);
   padding: 1rem;
   background: #ffffff;
 }
@@ -147,12 +178,12 @@ body {
 
 /* The trigger button (⋮) */
 .circle-menu {
-  background-color: #e4e6eb;
+  background-color: var(--ternery-color);
   border: none;
   border-radius: 50%;
-  width: 40px;
-  height: 40px;
-  font-size: 24px;
+  width: 42px;
+  height: 42px;
+  font-size: 20px;
   line-height: 1;
   cursor: pointer;
   display: flex;
@@ -164,14 +195,15 @@ body {
 }
 
 .circle-menu:hover {
-  background-color: #d8dbdf;
+  transform: scale(1.1);
+  transition: transform 0.2s ease-in-out;
 }
 
 .dropdown-content {
   display: none;
   position: absolute;
-  top: 50px;
-  right: 0;
+  top: 65px;
+  right: 20px;
   background-color: white;
   min-width: 220px;
   box-shadow: 0px 8px 16px 0px rgba(0, 0, 0, 0.15);
@@ -221,8 +253,11 @@ body {
   justify-content: center;
   align-items: center;
   font-weight: bold;
-  font-family: Arial, sans-serif;
+  font-family: var(--secondary-font);
   cursor: pointer;
+  border: 1px solid #e2e8f0;
+  background-color: #ffffff;
+  transition: background-color 0.2s;
 }
 
 .circle.text {
@@ -237,14 +272,19 @@ body {
 }
 
 .circle.dark {
-  background-color: #2b2b2b;
+  background-color: var(--circle-color);
   color: white;
   font-size: 40px;
   font-weight: 100;
   text-align: start;
   place-items: self-end;
+  align-items: center;
+  justify-self: center;
 }
 
+.circle.dark svg {
+  color: #ffffff;
+}
 
 .calendar-ui {
   font-family: sans-serif;
@@ -272,9 +312,12 @@ body {
 
 .monthwithyear {
   font-weight: bold;
+  font-size: 36px;
+  line-height: 42px;
+  letter-spacing: -.5px;
 }
 
-.circle {
+/* .circle {
   width: 40px;
   height: 40px;
   border-radius: 50%;
@@ -286,26 +329,30 @@ body {
   border: 1px solid #e2e8f0;
   background-color: white;
   transition: background-color 0.2s;
-}
+} */
 
-.circle:hover {
-  background-color: #f8fafc;
+.circle:hover{
+  transform: scale(1.1);
+  transition: transform 0.2s ease-in-out;
 }
 
 .circle.text {
-  background-color: #eef2ff;
-  color: #4338ca;
+  background-color: var(--secondary-color);
+  color: var(--text-color);
+  font-size: 1rem;
+  font-family: var(--primary-font);
+  font-weight: 400;
   border-color: #c7d2fe;
 }
 
-.circle.dark {
+/* .circle.dark {
   background-color: #f1f5f9;
   font-size: 1.5rem;
   display: flex;
   color: #64748b;
   align-items: center;
   justify-content: center;
-}
+} */
 
 .hidden {
   display: none !important;
@@ -587,10 +634,8 @@ body {
   justify-content: flex-end;
 }
 
-
-
-
 .day-box {
+  font-family: var(--primary-font);
   flex: 1;
   display: flex;
   text-align: center;
@@ -601,6 +646,8 @@ body {
   font-size: 21px;
   box-sizing: border-box;
   transition: all 0.3s ease;
+  font-weight: 700;
+  letter-spacing: -.5px;
 }
 
 .todo-list li {
@@ -667,7 +714,7 @@ body {
 }
 
 
-
+/* Edit modal */
 #modalOverlay {
   position: fixed;
   top: 0;

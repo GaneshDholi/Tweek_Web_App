@@ -5,8 +5,14 @@ const cookieParser = require('cookie-parser');
 const authMiddleware = require('./middleware/auth');
 const cors = require("cors");
 const connectDB = require('./config/db');
+const Tasks = require("./routes/Tasks")
 const dotenv = require('dotenv');
 dotenv.config();
+const allowedOrigins = [
+  "http://127.0.0.1:5501",
+  "http://localhost:5501",
+  "http://127.0.0.1:3000"
+];
 
 const app = express();
 
@@ -14,10 +20,19 @@ const app = express();
 app.use(express.json());
 app.use(cookieParser());
 app.use(express.static('public'));
+
 app.use(cors({
-  origin: process.env.CLIENT_URL || "[http://127.0.0.1:5501](http://127.0.0.1:5501)", // Use client URL from .env
+  origin: function (origin, callback) {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error("CORS not allowed for this origin: " + origin));
+    }
+  },
   credentials: true
 }));
+
+
 
 // Connect to MongoDB
 // mongoose.connect(process.env.MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true })
@@ -41,6 +56,9 @@ app.get('/', (req, res) => res.send('Authentication server is up and running'));
 // Authentication routes
 app.use('/auth', authRoutes);
 
+// task api
+app.use("/api/tasks", authMiddleware, Tasks);
+
 // Global error handler
 app.use((err, req, res, next) => {
   console.error(err.stack);
@@ -49,3 +67,4 @@ app.use((err, req, res, next) => {
 
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => console.log(`Server is running on port ${PORT}`));
+

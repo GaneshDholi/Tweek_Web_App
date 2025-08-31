@@ -57,7 +57,7 @@ router.post('/register', authLimiter, registerValidationRules, async (req, res) 
         } else {
             user = new User({ firstName, lastName, email, password: hashedPassword, isEmailVerified: false });
         }
-        
+
         const otp = otpGenerator.generate(6, { upperCaseAlphabets: false, specialChars: false, lowerCaseAlphabets: false });
         user.otp = await bcrypt.hash(otp, salt);
         user.otpExpires = Date.now() + 10 * 60 * 1000; // OTP expires in 10 minutes
@@ -65,7 +65,7 @@ router.post('/register', authLimiter, registerValidationRules, async (req, res) 
 
         const emailHtml = `<h1>Account Verification</h1><p>Your OTP to verify your account is: <strong>${otp}</strong></p><p>This code will expire in 10 minutes.</p>`;
         await sendEmail({ to: user.email, subject: 'Verify Your Account', html: emailHtml });
-        
+
         res.status(201).json({ message: 'Registration initiated. Please check your email for an OTP.' });
 
     } catch (error) {
@@ -81,7 +81,7 @@ router.post('/verify-account', authLimiter, async (req, res) => {
         if (!email || !otp) {
             return res.status(400).json({ message: 'Email and OTP are required.' });
         }
-        
+
         const user = await User.findOne({ email });
 
         if (!user) {
@@ -139,7 +139,13 @@ router.post('/login', authLimiter, loginValidationRules, async (req, res) => {
         const payload = { sub: user._id.toString(), email: user.email };
         const token = jwt.sign(payload, process.env.JWT_SECRET, { expiresIn: '7d' });
 
-        res.cookie("token", token, { httpOnly: true, secure: process.env.NODE_ENV === "production", sameSite: "strict" });
+        res.cookie("token", token, {
+            httpOnly: true,
+            secure: false, 
+            sameSite: "lax", 
+            maxAge: 7 * 24 * 60 * 60 * 1000 
+        });
+
         res.json({
             message: 'Logged in successfully',
             user: { id: user._id, email: user.email, firstName: user.firstName, lastName: user.lastName }
@@ -165,8 +171,8 @@ router.post('/refresh-token', authMiddleware, (req, res) => {
 
     res.cookie("token", token, {
         httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "strict",
+        secure: false,
+        sameSite: "lax",
         maxAge: 7 * 24 * 60 * 60 * 1000,
     });
     res.json({ message: 'Session refreshed successfully' });

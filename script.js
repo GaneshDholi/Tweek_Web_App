@@ -141,6 +141,8 @@ renderYearCalendar(currentYear);
 
 //weekdays
 const weekContainer = document.getElementById("weekly-view");
+const rootStyles = getComputedStyle(document.documentElement);
+const primaryFont = rootStyles.getPropertyValue("--primary-font").trim();
 
 function renderWeeklyView(baseDate = new Date(), highlightDate = null) {
   const today = baseDate;
@@ -171,7 +173,15 @@ function renderWeeklyView(baseDate = new Date(), highlightDate = null) {
   satSunColumn.style.gap = "40px";
 
   const monday = new Date(today);
-  monday.setDate(today.getDate() - ((today.getDay() + 6) % 7));
+  const dayOfWeek = monday.getDay(); // Sunday = 0, Monday = 1, ..., Saturday = 6
+
+  // Calculate the difference to get to the previous Monday
+  // If today is Sunday (0), we subtract 6 days. Otherwise, we subtract (dayOfWeek - 1) days.
+  const diff = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+  monday.setDate(today.getDate() + diff);
+
+  // Set time to the beginning of the day to avoid timezone issues
+  monday.setHours(0, 0, 0, 0);
 
   // --- Helpers ---
   function createInput(styles = {}) {
@@ -205,11 +215,11 @@ function renderWeeklyView(baseDate = new Date(), highlightDate = null) {
     }
   }
 
-  function createCheckBtn(span) {
+  function createCheckBtn(span, task) {
     const btn = document.createElement("img");
-    btn.src = "./assets/check-button.png";
+    btn.src = "./assets/icons/check-button.png";
     btn.className = "check-btn";
-    btn.title = "Mark as done";
+    btn.title = "Mark as done / undone";
     Object.assign(btn.style, {
       width: "18px",
       height: "18px",
@@ -218,49 +228,207 @@ function renderWeeklyView(baseDate = new Date(), highlightDate = null) {
       verticalAlign: "middle",
     });
 
-    btn.addEventListener("click", (e) => {
+    btn.addEventListener("click", async (e) => {
       e.stopPropagation();
-      span.classList.toggle("completed");
-      btn.style.opacity = span.classList.contains("completed") ? "0.5" : "1";
-      span.style.color = span.classList.contains("completed")
-        ? "black"
-        : "black";
+
+      // This is safe because when you CLICK, the parent will always exist
+      const parentTaskBox = span.parentElement;
+      if (parentTaskBox) {
+        parentTaskBox.classList.toggle("completed");
+        const isCompleted = parentTaskBox.classList.contains("completed");
+
+        // Save the updated status to the database
+        const taskDate = new Date(task.date);
+        const taskText = span.textContent.trim();
+        const taskId = task._id;
+
+        await saveTask(parentTaskBox, taskText, task.color, taskDate, taskId, isCompleted);
+      }
     });
     return btn;
   }
 
-  function saveTask(box, text, color = null) {
+
+  function balanceColumnHeights() {
+    const allDayBoxes = [...document.querySelectorAll(".day-box")];
+    const mainBoxes = allDayBoxes.slice(0, 5); // Mon-Fri
+    const saturdayBox = allDayBoxes[5];
+    const sundayBox = allDayBoxes[6];
+
+    // Safety check to ensure all elements are found
+    if (mainBoxes.length < 5 || !saturdayBox || !sundayBox) {
+      console.error("Aborting balance: Not all day boxes were found on the page.");
+      return;
+    }
+
+    let maxRows = 0;
+
+    // 1. Find the tallest column among Mon-Fri
+    mainBoxes.forEach(box => {
+      const taskCount = box.querySelector('.todo-list').children.length;
+      if (taskCount > maxRows) maxRows = taskCount;
+    });
+
+    // 2. Equalize Mon-Fri heights by adding empty rows
+    mainBoxes.forEach(box => {
+      const todoList = box.querySelector('.todo-list');
+      while (todoList.children.length < maxRows) {
+        const emptyTaskBox = document.createElement("li");
+        emptyTaskBox.style.height = "40px";
+        emptyTaskBox.style.borderBottom = "1px solid #e0e0e0";
+        todoList.appendChild(emptyTaskBox);
+      }
+    });
+
+    // --- REVISED LOGIC FOR WEEKEND ---
+
+    // 3. Measure the final, actual height of a now-balanced weekday column
+    const targetHeight = mainBoxes[0].offsetHeight;
+
+    // 4. Calculate the total height available for the Sunday box
+    const gapBetweenWeekend = 40; // This MUST match the 'gap' style on your satSunColumn
+    const availableHeightForSunday = targetHeight - saturdayBox.offsetHeight - gapBetweenWeekend;
+
+    // 5. Calculate the space available for just the task list (<ul>) inside the Sunday box
+    const sundayHeader = sundayBox.querySelector('div:first-child');
+    if (!sundayHeader) return; // Safety check
+
+    const availableHeightForSundayRows = availableHeightForSunday - sundayHeader.offsetHeight;
+
+    // 6. Calculate how many 40px rows can fit in that available space
+    const rowHeight = 40;
+    // Use Math.max(0, ...) to ensure we don't get a negative number if space is tight
+    const numRowsForSunday = Math.max(0, Math.floor(availableHeightForSundayRows / rowHeight));
+
+    // 7. Add the required number of rows to Sunday's list to fill the space
+    const sundayTodoList = sundayBox.querySelector('.todo-list');
+    // First, remove any extra empty rows that might exist from a previous render
+    while (sundayTodoList.children.length > numRowsForSunday) {
+      if (!sundayTodoList.lastChild.textContent.trim()) { // Only remove empty rows
+        sundayTodoList.removeChild(sundayTodoList.lastChild);
+      } else {
+        break; // Stop if we hit a row with a task
+      }
+    }
+    // Then, add rows until the count is correct
+    while (sundayTodoList.children.length < numRowsForSunday) {
+      const emptyTaskBox = document.createElement("li");
+      emptyTaskBox.style.height = "40px";
+      emptyTaskBox.style.borderBottom = "1px solid #e0e0e0";
+      sundayTodoList.appendChild(emptyTaskBox);
+    }
+  }
+
+
+  // use this for loadTasksFromDB
+  function renderTaskElement(box, task) {
     box.innerHTML = "";
+    box.dataset.id = task._id || "";
+
     const span = document.createElement("span");
     span.className = "task-text";
-    span.textContent = text;
-    styleTaskSpan(span, color);
-    box.append(span, createCheckBtn(span));
+    span.textContent = task.title || task.text || ""; // FIX ✅
+    styleTaskSpan(span, task.color || null);
 
+    const checkBtn = createCheckBtn(span, task);
+
+    box.append(span, checkBtn);
+    if (task.completed) {
+      box.classList.add("completed");
+    }
     span.addEventListener("click", (e) => {
       e.stopPropagation();
-      openEditModal(span.textContent.trim(), (newText, newColor) => {
-        if (newText?.trim()) saveTask(box, newText.trim(), newColor);
-      }, box);
+      openEditModal(span.textContent.trim(), async (newText, newColor, newNotes, newDate) => {
+        if (newText?.trim()) {
+          const taskDate = new Date(task.date);
+          const isCompleted = box.classList.contains("completed");
+          await saveTask(box, newText.trim(), newColor, taskDate, box.dataset.id, isCompleted);
+        }
+      }, box, task.color, new Date(task.date));
     });
 
     Object.assign(box.style, {
       height: "40px",
       display: "flex",
+      borderBottom: "1px solid #e0e0e0",
       justifyContent: "space-between",
       alignItems: "center",
+      fontWeight: "400"
     });
-    box.title = text;
+
+    box.title = task.title || task.text || ""; // FIX ✅
   }
 
-  function activateInput(box) {
+
+
+  async function saveTask(box, text, color = null, taskDate, taskId = null, isCompleted = false) {
+
+    const jsDate = taskDate instanceof Date ? taskDate : new Date(taskDate);
+    if (Number.isNaN(jsDate.getTime())) {
+      console.warn("saveTask called without valid date", { text, taskId, taskDate });
+      return;
+    }
+
+    // New task
+    if (!taskId) {
+      const res = await fetch("http://localhost:5000/api/tasks", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          title: text,
+          description: "",
+          date: taskDate.toISOString()
+        })
+      });
+
+      if (!res.ok) {
+        console.error("Failed to save task", await res.text());
+        return;
+      }
+
+      const newTask = await res.json();
+      box.dataset.id = newTask._id;
+      // render the new task in DOM (call render helper for consistent UI)
+      renderTaskElement(box, newTask);
+      return newTask;
+    }
+
+    // Update existing task
+    const res = await fetch(`http://localhost:5000/api/tasks/${taskId}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({
+        title: text,
+        color,
+        date: taskDate.toISOString(),
+        completed: isCompleted
+      })
+    });
+
+
+    if (!res.ok) {
+      console.error("Failed to update task", await res.text());
+      return;
+    }
+
+    const updated = await res.json();
+    box.dataset.id = updated._id;
+    renderTaskElement(box, updated);
+    return updated;
+  }
+
+
+
+  function activateInput(box, taskDate) {
     const input = createInput();
     box.textContent = "";
     box.appendChild(input);
     input.focus();
 
     const save = () => {
-      if (input.value.trim()) saveTask(box, input.value.trim());
+      if (input.value.trim()) saveTask(box, input.value.trim(), null, taskDate);
       else box.textContent = "";
     };
 
@@ -273,6 +441,7 @@ function renderWeeklyView(baseDate = new Date(), highlightDate = null) {
       }
     });
   }
+
 
   // --- Weekly Days ---
   for (let offset = 0; offset < 7; offset++) {
@@ -329,7 +498,11 @@ function renderWeeklyView(baseDate = new Date(), highlightDate = null) {
 
     const weekdayDiv = document.createElement("div");
     weekdayDiv.textContent = weekdays[offset];
-    weekdayDiv.style.color = "#999";
+    weekdayDiv.style.color = "#000";
+    weekdayDiv.style.textTransform = "capitalize";
+    weekdayDiv.style.opacity = ".2";
+    weekdayDiv.style.fontFamily = primaryFont;
+    weekdayDiv.style.fontWeight = "400";
 
     headerDiv.append(dateDiv, weekdayDiv);
 
@@ -373,56 +546,57 @@ function renderWeeklyView(baseDate = new Date(), highlightDate = null) {
     dayBox.append(headerDiv, todoContainer);
 
     dayBox.addEventListener("click", () => {
-      // Get the index of the clicked day (0=Mon, 5=Sat, 6=Sun)
-      const dayIndex = offset;
-
-      // Find the first visually empty row to type in
       const emptyBox = [...todoContainer.children].find(
         (box) => !box.textContent.trim() && !box.querySelector("input")
       );
 
       let newRowWasAdded = false;
 
-      // If there's an empty box, use it. Otherwise, create and add a new one.
       if (emptyBox) {
-        activateInput(emptyBox);
+        activateInput(emptyBox, date);
       } else {
         const newBox = document.createElement("li");
         newBox.style.height = "40px";
         todoContainer.appendChild(newBox);
-        activateInput(newBox);
-        // We only need to sync when a brand new row is created.
+        activateInput(newBox, date);
         newRowWasAdded = true;
       }
 
-      // --- CORRECTED ROW SYNCING LOGIC ---
+      // All day boxes
+      const allDayBoxes = [...weekContainer.querySelectorAll(".day-box")];
+      const saturdayBox = allDayBoxes[5];
+      const rowHeight = 40; // each row height in px
 
-      // STEP 1: Check if we should sync at all.
-      // Only proceed if a new row was added AND the day we clicked on is NOT Saturday (index 5).
-      if (newRowWasAdded && dayIndex !== 5) {
+      if (newRowWasAdded) {
+        if (offset === 5) {
+          // ✅ Saturday clicked → let it grow with rows
+          const totalRows = saturdayBox.querySelectorAll(".todo-list li").length;
+          saturdayBox.style.maxHeight = `${totalRows * rowHeight}px`;
 
-        const allDayBoxes = [...weekContainer.querySelectorAll(".day-box")];
-        Object.assign(allDayBoxes[5].style, {
-          maxHeight: "250px"
-        })
+          allDayBoxes.forEach((otherBox, idx) => {
+            if (idx !== 5 && idx !== 6) {
+              const otherTodoContainer = otherBox.querySelector(".todo-list");
+              const newBox = document.createElement("li");
+              newBox.style.height = `${rowHeight}`; // keep other rows balanced
+              otherTodoContainer.appendChild(newBox);
+            }
+          });
+        } else {
+          // ✅ Other day clicked → Saturday capped
+          const totalRows = saturdayBox.querySelectorAll(".todo-list li").length;
+          saturdayBox.style.maxHeight = `${totalRows * rowHeight}px`;
 
-        // STEP 2: Loop through all the day boxes to potentially add a row to them.
-        allDayBoxes.forEach((otherBox, idx) => {
-
-          // STEP 3: Decide whether to add a row to this specific day in the loop.
-          // We add a blank row IF:
-          //   1. It's NOT the day we originally clicked on (idx !== dayIndex)
-          //   2. AND it's also NOT Saturday (idx !== 5)
-          if (idx !== dayIndex && idx !== 5) {
-            const otherTodoContainer = otherBox.querySelector(".todo-list");
-            const newBox = document.createElement("li");
-            newBox.style.height = "40px";
-            otherTodoContainer.appendChild(newBox);
-          }
-        });
+          allDayBoxes.forEach((otherBox, idx) => {
+            if (idx !== offset && idx !== 5) {
+              const otherTodoContainer = otherBox.querySelector(".todo-list");
+              const newBox = document.createElement("li");
+              newBox.style.height = `${rowHeight}px`;
+              otherTodoContainer.appendChild(newBox);
+            }
+          });
+        }
       }
     });
-
 
     if (offset < 5) firstRow.appendChild(dayBox);
     else satSunColumn.appendChild(dayBox);
@@ -433,10 +607,17 @@ function renderWeeklyView(baseDate = new Date(), highlightDate = null) {
 
   // --- Someday Section ---
   const somedayDiv = document.createElement("div");
-  Object.assign(somedayDiv.style, { marginTop: "40px", width: "100%", cursor: "pointer" });
+  Object.assign(somedayDiv.style, {
+    marginTop: "40px",
+    width: "100%",
+    cursor: "pointer"
+  });
 
   const label = document.createElement("strong");
   label.textContent = "Someday";
+  label.style.fontFamily = primaryFont;
+  label.style.fontWeight = "700";
+  label.style.fontSize = "21px";
   somedayDiv.appendChild(label);
 
   const taskContainer = document.createElement("div");
@@ -463,8 +644,61 @@ function renderWeeklyView(baseDate = new Date(), highlightDate = null) {
     const emptyBox = [...taskContainer.children].find(
       (box) => !box.textContent.trim() && !box.querySelector("input")
     );
-    activateInput(emptyBox || taskContainer.appendChild(document.createElement("div")));
+    activateInput(emptyBox || taskContainer.appendChild(document.createElement("div")), new Date());
   });
+
+  async function loadTasksFromDB() {
+    try {
+      const res = await fetch("http://localhost:5000/api/tasks", {
+        method: "GET",
+        credentials: "include"
+      });
+
+      if (!res.ok) {
+        console.error("Failed to fetch tasks", await res.text());
+        return;
+      }
+      const tasks = await res.json();
+      const allDayBoxes = [...weekContainer.querySelectorAll(".day-box")];
+
+      const weekStart = monday;
+      const weekEnd = new Date(monday);
+      weekEnd.setDate(monday.getDate() + 6);
+
+      // Normalize DB format and skip invalid days
+      tasks.forEach(task => {
+        const taskDate = new Date(task.date);
+
+        if (taskDate < weekStart || taskDate > weekEnd) return;
+
+        let jsDay = taskDate.getDay();
+        let idx = (jsDay === 0) ? 6 : jsDay - 1;
+        console.log(idx)
+        const todoList = allDayBoxes[idx].querySelector(".todo-list");
+
+        // find first empty slot (no text and no input)
+        let box = [...todoList.children].find(
+          li => !li.textContent.trim() && !li.querySelector("input")
+        );
+
+        // if no empty slot, create one
+        if (!box) {
+          box = document.createElement("li");
+          box.style.height = "40px";
+          todoList.appendChild(box);
+        }
+
+        // Render task into the chosen box (no DB calls here)
+        renderTaskElement(box, task);
+      });
+      balanceColumnHeights();
+    } catch (err) {
+      console.error("Error loading tasks from DB:", err);
+    }
+  }
+
+
+  loadTasksFromDB();
 }
 
 
@@ -545,114 +779,125 @@ const editModal = document.getElementById("editModal");
 const modalOverlay = document.getElementById("modalOverlay");
 const modalTextarea = document.getElementById("taskTitle");
 const taskNotes = document.getElementById("taskNotes");
+const modalDateContainer = document.querySelector('.modal-date');
+const deleteBtn = document.querySelector('#editModal .modal-actions button[title="Delete"]');
+const colorButton = document.querySelector('button[title="Select Color"]');
+const colorPicker = document.getElementById('colorPicker');
+const taskCircle = document.getElementById('taskCircle');
 
+// --- STATE VARIABLES ---
 let currentEditableBox = null;
+let selectedTaskColor = null;
+let flatpickrInstance = null;
+let onSaveCallback = null;
+let currentTaskDate = null;
 
-function openEditModal(oldText, callback, editableBox = null, currentColor = null) {
-  const modal = editModal;
-  const overlay = modalOverlay;
-  const textarea = modalTextarea;
+// --- DATE & CALENDAR LOGIC (FLATPICKR) ---
+function formatDate(date) {
+  const options = { weekday: 'short', day: 'numeric', month: 'short' };
+  return date.toLocaleDateString('en-US', options);
+}
 
+// Initialize Flatpickr on the date container in the header
+if (modalDateContainer) {
+  flatpickrInstance = flatpickr(modalDateContainer, {
+    dateFormat: "Y-m-d", // A standard format for the backend
+    onChange: function (selectedDates) {
+      if (calendarDateText && selectedDates[0]) {
+        currentTaskDate = selectedDates[0]; // Update the current date
+        calendarDateText.textContent = formatDate(currentTaskDate);
+      }
+    }
+  });
+}
+
+function setModalDate(date) {
+  currentTaskDate = date; // Set the current date for the modal
+  if (calendarDateText) {
+    calendarDateText.textContent = formatDate(date);
+  }
+  if (flatpickrInstance) {
+    flatpickrInstance.setDate(date, false); // false = don't trigger onChange
+  }
+}
+
+// --- MODAL CORE FUNCTIONS ---
+// Make sure your main script calls openEditModal with the task date
+// Example: openEditModal(task.title, myCallback, taskElement, task.color, new Date(task.date));
+window.openEditModal = function (oldText, callback, editableBox = null, currentColor = null, taskDate = new Date()) {
   currentEditableBox = editableBox;
   selectedTaskColor = currentColor;
-  textarea.value = oldText;
-  modal.style.display = "block";
-  overlay.style.display = "block";
+  onSaveCallback = callback;
 
+  modalTextarea.value = oldText;
+  modalOverlay.style.display = "block";
+  editModal.style.display = "block";
+
+  setModalDate(taskDate); // Set the date when the modal opens
+
+  // Handle color
   if (selectedTaskColor) {
     colorPicker.value = selectedTaskColor;
-    if (taskCircle) {
-      taskCircle.style.backgroundColor = selectedTaskColor;
-    }
+    if (taskCircle) taskCircle.style.backgroundColor = selectedTaskColor;
   } else {
     colorPicker.value = "#000000";
-    if (taskCircle) {
-      taskCircle.style.backgroundColor = "";
-    }
+    if (taskCircle) taskCircle.style.backgroundColor = 'transparent';
   }
 
-  if (taskCircle && selectedTaskColor) {
-    taskCircle.style.backgroundColor = selectedTaskColor;
-  } else if (taskCircle) {
-    taskCircle.style.backgroundColor = 'transparent';
-  }
+  setTimeout(() => editModal.classList.add("show"), 10);
 
-
-  setTimeout(() => modal.classList.add("show"), 10);
-
-  function saveAndClose() {
-    const newText = textarea.value;
-    const notes = taskNotes.value;
-    const color = selectedTaskColor;
-    callback(newText, color, notes);
-    closeModal();
-  }
-
-  function closeModal() {
-    modal.classList.remove("show");
-    overlay.style.display = "none";
-    overlay.removeEventListener("click", overlayClickHandler);
-    setTimeout(() => {
-      modal.style.display = "none";
-    }, 300);
-  }
-
-  function overlayClickHandler(e) {
-    if (e.target === overlay) {
-      saveAndClose();
-    }
-  }
-  overlay.addEventListener("click", overlayClickHandler);
-
-  textarea.focus();
+  modalOverlay.addEventListener("click", handleOverlayClick);
+  modalTextarea.focus();
 }
 
 function closeEditModal() {
   editModal.classList.remove("show");
-  modalOverlay.style.display = "none";
-  modalTextarea.value = "";
-  currentEditableBox = null;
+  modalOverlay.removeEventListener("click", handleOverlayClick);
   setTimeout(() => {
+    modalOverlay.style.display = "none";
     editModal.style.display = "none";
   }, 300);
 }
 
+function saveAndClose() {
+  if (typeof onSaveCallback === 'function') {
+    const newText = modalTextarea.value;
+    const notes = taskNotes.value;
+    const color = selectedTaskColor;
+    // Pass the potentially updated date back in the callback
+    onSaveCallback(newText, color, notes, currentTaskDate);
+  }
+  closeEditModal();
+}
 
-const deleteBtn = document.querySelector('#editModal .modal-actions button[title="Delete"]');
+function handleOverlayClick(e) {
+  if (e.target === modalOverlay) {
+    saveAndClose();
+  }
+}
 
+// --- EVENT LISTENERS ---
 if (deleteBtn) {
-  deleteBtn.addEventListener('click', function () {
+  deleteBtn.addEventListener('click', async () => {
     if (currentEditableBox) {
-      const parent = currentEditableBox.parentElement;
-      if (parent) {
-        parent.removeChild(currentEditableBox);
-        const newBox = document.createElement(currentEditableBox.tagName);
-        newBox.textContent = "";
-        parent.appendChild(newBox);
+      const taskId = currentEditableBox.dataset.id;
+      if (taskId) {
+        await fetch(`http://localhost:5000/api/tasks/${taskId}`, { method: "DELETE" });
+        currentEditableBox.remove();
       }
       closeEditModal();
     }
   });
 }
 
-const colorButton = document.querySelector('button[title="Select Color"]');
-const colorPicker = document.getElementById('colorPicker');
-const taskCircle = document.getElementById('taskCircle');
-
-let selectedTaskColor = null;
-
 if (colorButton) {
-  colorButton.addEventListener('click', () => {
-    colorPicker.click();
-  });
+  colorButton.addEventListener('click', () => colorPicker.click());
 }
 
 if (colorPicker) {
   colorPicker.addEventListener('change', (e) => {
     selectedTaskColor = e.target.value;
-    if (taskCircle) {
-      taskCircle.style.backgroundColor = selectedTaskColor;
-    }
+    if (taskCircle) taskCircle.style.backgroundColor = selectedTaskColor;
     if (currentEditableBox) {
       const textSpan = currentEditableBox.querySelector('.task-text');
       if (textSpan) {
@@ -848,9 +1093,12 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-  // --- EVENT LISTENERS ---
+  // --- AUTH TRIGGER ---
   authTrigger.addEventListener('click', (e) => {
     e.stopPropagation();
+
+    dropdown.classList.remove('show');
+
     if (isLoggedIn) {
       profileDropdown.classList.toggle('hidden');
     } else {
@@ -890,6 +1138,7 @@ document.addEventListener('DOMContentLoaded', () => {
     try {
       const response = await fetch(`${API_BASE_URL}/auth/register`, {
         method: 'POST',
+        credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       });
@@ -924,6 +1173,7 @@ document.addEventListener('DOMContentLoaded', () => {
     try {
       const response = await fetch(`${API_BASE_URL}/auth/verify-account`, {
         method: 'POST',
+        credentials: 'include',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       });
@@ -966,7 +1216,9 @@ document.addEventListener('DOMContentLoaded', () => {
       if (!response.ok) throw new Error(data.message);
 
       updateAuthState(true, data.user); // Login successful
-
+      if (typeof renderWeeklyView === 'function') {
+        renderWeeklyView();
+      }
     } catch (err) {
       showMessage(err.message, true);
     } finally {
@@ -981,6 +1233,9 @@ document.addEventListener('DOMContentLoaded', () => {
       await fetch(`${API_BASE_URL}/auth/logout`, { method: 'POST', credentials: 'include' });
     } finally {
       updateAuthState(false);
+      if (typeof renderWeeklyView === 'function') {
+        renderWeeklyView();
+      }
     }
   });
 
@@ -998,15 +1253,23 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 
+
 // : button dropdown
 const menuBtn = document.querySelector(".circle-menu");
 const dropdown = document.querySelector(".dropdown-content");
-
-menuBtn.addEventListener("click", () => {
+const authTrigger = document.getElementById('auth-trigger');
+const profileDropdown = document.getElementById('profile-dropdown');
+// --- CIRCLE MENU ---
+menuBtn.addEventListener("click", (e) => {
+  e.stopPropagation();
+  profileDropdown.classList.add('hidden');
   dropdown.classList.toggle("show");
 });
 
 document.addEventListener("click", (e) => {
+  if (!authTrigger.contains(e.target) && !profileDropdown.contains(e.target)) {
+    profileDropdown.classList.add("hidden");
+  }
   if (!menuBtn.contains(e.target) && !dropdown.contains(e.target)) {
     dropdown.classList.remove("show");
   }
