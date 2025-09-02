@@ -82,7 +82,7 @@ body {
   font-size: 36px;
   line-height: 42px;
   letter-spacing: -.5px;
-  --primary-accent: #5167F4;
+  --primary-accent: var(--primary-color);
   cursor: pointer;
   font-weight: 800;
   color: var(--primary-accent);
@@ -526,19 +526,6 @@ body {
   box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
 }
 
-.modal-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 1.5rem;
-}
-
-.modal-header h3 {
-  margin: 0;
-  font-size: 1.5rem;
-  color: #1a202c;
-}
-
 .close-btn {
   font-size: 2rem;
   border: none;
@@ -754,9 +741,15 @@ body {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  font-weight: 600;
-  font-size: 14px;
+  font-family: var(--primary-font);
+  font-weight: 400;
+  font-size: 16px;
 }
+
+.modal-header .modal-date {
+  display: flex;
+  gap: 8px;
+  }
 
 .taskTitle {
   border: none;
@@ -862,6 +855,63 @@ body {
 .completed {
   text-decoration: line-through;
   opacity: 0.3;
+}
+
+/* Shrink the flatpickr calendar */
+/* 🔹 Shrink the whole calendar */
+.flatpickr-calendar {
+  font-size: 12px !important;     /* smaller text */
+  transform: scale(0.85);         /* shrink entire calendar */
+  transform-origin: top left;     /* anchor scaling */
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  border-radius: 6px;
+  border: 1px solid black;
+  top: 147px;
+  left: 500px;
+}
+
+/* 🔹 Day cells */
+.flatpickr-day {
+  width: 26px;
+  height: 26px;
+  line-height: 26px;
+  font-size: 12px;
+  border-radius: 4px;
+}
+
+/* Highlighted day (today/selected) */
+.flatpickr-day.selected,
+.flatpickr-day.startRange,
+.flatpickr-day.endRange {
+  background: #007bff !important; /* blue highlight */
+  color: #fff !important;
+}
+
+.flatpickr-day.today {
+  border: 1px solid #007bff !important;
+  font-weight: bold;
+}
+
+/* 🔹 Month navigation */
+.flatpickr-months .flatpickr-month {
+  height: 28px;
+  font-size: 13px;
+}
+
+/* Month & year input */
+.flatpickr-current-month {
+  font-size: 13px;
+}
+
+.flatpickr-current-month input.cur-year {
+  font-size: 13px;
+  height: 20px;
+}
+
+.flatpickr-weekday {
+  font-size: 11px;
+  font-weight: 600;
+  color: #555;
 }
 
 

@@ -336,15 +336,18 @@ function renderWeeklyView(baseDate = new Date(), highlightDate = null) {
     if (task.completed) {
       box.classList.add("completed");
     }
+
     span.addEventListener("click", (e) => {
       e.stopPropagation();
-      openEditModal(span.textContent.trim(), async (newText, newColor, newNotes, newDate) => {
-        if (newText?.trim()) {
-          const taskDate = new Date(task.date);
-          const isCompleted = box.classList.contains("completed");
-          await saveTask(box, newText.trim(), newColor, taskDate, box.dataset.id, isCompleted);
-        }
-      }, box, task.color, new Date(task.date));
+      openEditModal(
+        task.title,
+        (newText, newColor, newNotes, newDate) => {
+          handleTaskSave(box, newText, newColor, newNotes, newDate);
+        },
+        box,
+        task.color,
+        new Date(task.date)
+      );
     });
 
     Object.assign(box.style, {
@@ -361,12 +364,25 @@ function renderWeeklyView(baseDate = new Date(), highlightDate = null) {
 
 
 
-  async function saveTask(box, text, color = null, taskDate, taskId = null, isCompleted = false) {
+  async function saveTask(box, text, color = null, taskDate, taskId = null, isCompleted = false, isSomeday = false) {
 
     const jsDate = taskDate instanceof Date ? taskDate : new Date(taskDate);
     if (Number.isNaN(jsDate.getTime())) {
       console.warn("saveTask called without valid date", { text, taskId, taskDate });
       return;
+    }
+
+    // Prepare payload
+    const payload = {
+      title: text,
+      description: "",
+      color,
+      completed: isCompleted,
+      isSomeday
+    };
+
+    if (!isSomeday) {
+      payload.date = jsDate.toISOString();  // only attach date for normal tasks
     }
 
     // New task
@@ -375,11 +391,7 @@ function renderWeeklyView(baseDate = new Date(), highlightDate = null) {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
-        body: JSON.stringify({
-          title: text,
-          description: "",
-          date: taskDate.toISOString()
-        })
+        body: JSON.stringify(payload)
       });
 
       if (!res.ok) {
@@ -399,12 +411,7 @@ function renderWeeklyView(baseDate = new Date(), highlightDate = null) {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       credentials: "include",
-      body: JSON.stringify({
-        title: text,
-        color,
-        date: taskDate.toISOString(),
-        completed: isCompleted
-      })
+      body: JSON.stringify(payload)
     });
 
 
@@ -428,9 +435,17 @@ function renderWeeklyView(baseDate = new Date(), highlightDate = null) {
     input.focus();
 
     const save = () => {
-      if (input.value.trim()) saveTask(box, input.value.trim(), null, taskDate);
-      else box.textContent = "";
+      if (input.value.trim()) {
+        if (taskDate) {
+          saveTask(box, input.value.trim(), null, taskDate);
+        } else {
+          saveTask(box, input.value.trim(), null, null, null, false, true);
+        }
+      } else {
+        box.textContent = "";
+      }
     };
+
 
     input.addEventListener("blur", () => setTimeout(save, 0));
     input.addEventListener("keydown", (e) => {
@@ -450,8 +465,11 @@ function renderWeeklyView(baseDate = new Date(), highlightDate = null) {
 
     const dayBox = document.createElement("div");
     dayBox.className = "day-box";
+
+    dayBox.dataset.dateColumn = date.toISOString().split('T')[0];
+
     Object.assign(dayBox.style, {
-      padding: "10px 10px 0",
+      padding: "0 10px",
       borderRadius: "8px",
       display: "flex",
       flexDirection: "column",
@@ -539,8 +557,8 @@ function renderWeeklyView(baseDate = new Date(), highlightDate = null) {
       dateDiv.style.color = "#5167f4";
       weekdayDiv.style.color = "#5167f4";
     } else if (isToday) {
-      dateDiv.style.color = "";
-      weekdayDiv.style.color = "";
+      dateDiv.style.color = "#5167f4";
+      weekdayDiv.style.color = "#5167f4";
     }
 
     dayBox.append(headerDiv, todoContainer);
@@ -565,11 +583,10 @@ function renderWeeklyView(baseDate = new Date(), highlightDate = null) {
       // All day boxes
       const allDayBoxes = [...weekContainer.querySelectorAll(".day-box")];
       const saturdayBox = allDayBoxes[5];
-      const rowHeight = 40; // each row height in px
+      const rowHeight = 40;
 
       if (newRowWasAdded) {
         if (offset === 5) {
-          // ✅ Saturday clicked → let it grow with rows
           const totalRows = saturdayBox.querySelectorAll(".todo-list li").length;
           saturdayBox.style.maxHeight = `${totalRows * rowHeight}px`;
 
@@ -577,12 +594,11 @@ function renderWeeklyView(baseDate = new Date(), highlightDate = null) {
             if (idx !== 5 && idx !== 6) {
               const otherTodoContainer = otherBox.querySelector(".todo-list");
               const newBox = document.createElement("li");
-              newBox.style.height = `${rowHeight}`; // keep other rows balanced
+              newBox.style.height = `${rowHeight}`;
               otherTodoContainer.appendChild(newBox);
             }
           });
         } else {
-          // ✅ Other day clicked → Saturday capped
           const totalRows = saturdayBox.querySelectorAll(".todo-list li").length;
           saturdayBox.style.maxHeight = `${totalRows * rowHeight}px`;
 
@@ -610,7 +626,8 @@ function renderWeeklyView(baseDate = new Date(), highlightDate = null) {
   Object.assign(somedayDiv.style, {
     marginTop: "40px",
     width: "100%",
-    cursor: "pointer"
+    cursor: "pointer",
+    height: "40px"
   });
 
   const label = document.createElement("strong");
@@ -631,7 +648,7 @@ function renderWeeklyView(baseDate = new Date(), highlightDate = null) {
   for (let i = 0; i < 5; i++) {
     const taskBox = document.createElement("div");
     Object.assign(taskBox.style, {
-      height: "30px",
+      height: "40px",
       borderBottom: "1px solid #e0e0e0",
     });
     taskContainer.appendChild(taskBox);
@@ -644,8 +661,16 @@ function renderWeeklyView(baseDate = new Date(), highlightDate = null) {
     const emptyBox = [...taskContainer.children].find(
       (box) => !box.textContent.trim() && !box.querySelector("input")
     );
-    activateInput(emptyBox || taskContainer.appendChild(document.createElement("div")), new Date());
+
+    const targetBox = emptyBox || (() => {
+      const newBox = document.createElement("div");
+      taskContainer.appendChild(newBox);
+      return newBox;
+    })();
+
+    activateInput(targetBox, null);
   });
+
 
   async function loadTasksFromDB() {
     try {
@@ -667,6 +692,20 @@ function renderWeeklyView(baseDate = new Date(), highlightDate = null) {
 
       // Normalize DB format and skip invalid days
       tasks.forEach(task => {
+        // render into Someday container
+        if (task.isSomeday) {
+          let box = [...taskContainer.children].find(
+            li => !li.textContent.trim() && !li.querySelector("input")
+          );
+          if (!box) {
+            box = document.createElement("div");
+            taskContainer.appendChild(box);
+          }
+          renderTaskElement(box, task);
+          return;
+        }
+
+        // --- Normal weekly task logic ---
         const taskDate = new Date(task.date);
 
         if (taskDate < weekStart || taskDate > weekEnd) return;
@@ -729,10 +768,6 @@ nextweek.addEventListener("click", () => {
 
 const taskTitleInput = document.querySelector('.modal-date');
 
-function formatDate(date) {
-  const options = { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' };
-  return date.toLocaleDateString('en-US', options);
-}
 const calendarDateText = document.querySelector('.calendar-date-text');
 const modalDate = document.querySelector('.modal-date');
 
@@ -794,9 +829,14 @@ let currentTaskDate = null;
 
 // --- DATE & CALENDAR LOGIC (FLATPICKR) ---
 function formatDate(date) {
-  const options = { weekday: 'short', day: 'numeric', month: 'short' };
-  return date.toLocaleDateString('en-US', options);
+  if (!(date instanceof Date) || isNaN(date)) return "";
+  const weekday = date.toLocaleDateString('en-US', { weekday: 'short' });
+  const day = date.getDate();
+  const month = date.toLocaleDateString('en-US', { month: 'short' });
+  const year = date.getFullYear();
+  return `${weekday}, ${day} ${month} ${year}`;
 }
+
 
 // Initialize Flatpickr on the date container in the header
 if (modalDateContainer) {
@@ -812,42 +852,122 @@ if (modalDateContainer) {
 }
 
 function setModalDate(date) {
-  currentTaskDate = date; // Set the current date for the modal
+  if (!(date instanceof Date) || isNaN(date)) return;
+
+  currentTaskDate = date;
+
   if (calendarDateText) {
     calendarDateText.textContent = formatDate(date);
   }
+
   if (flatpickrInstance) {
-    flatpickrInstance.setDate(date, false); // false = don't trigger onChange
+    flatpickrInstance.setDate(date, false); // false = don’t trigger onChange again
   }
 }
 
+
 // --- MODAL CORE FUNCTIONS ---
-// Make sure your main script calls openEditModal with the task date
-// Example: openEditModal(task.title, myCallback, taskElement, task.color, new Date(task.date));
-window.openEditModal = function (oldText, callback, editableBox = null, currentColor = null, taskDate = new Date()) {
+const openEditModal = function (
+  oldText,
+  callback,
+  editableBox = null,
+  currentColor = null,
+  taskDate = new Date()
+) {
+  // Store state
   currentEditableBox = editableBox;
-  selectedTaskColor = currentColor;
+  selectedTaskColor = currentColor || "#000000";
   onSaveCallback = callback;
 
-  modalTextarea.value = oldText;
-  modalOverlay.style.display = "block";
-  editModal.style.display = "block";
-
-  setModalDate(taskDate); // Set the date when the modal opens
+  // Prefill modal fields
+  modalTextarea.value = oldText || "";
+  taskNotes.value = currentEditableBox?.dataset.notes || ""; // keep notes if stored in dataset
+  setModalDate(taskDate);
 
   // Handle color
-  if (selectedTaskColor) {
-    colorPicker.value = selectedTaskColor;
-    if (taskCircle) taskCircle.style.backgroundColor = selectedTaskColor;
-  } else {
-    colorPicker.value = "#000000";
-    if (taskCircle) taskCircle.style.backgroundColor = 'transparent';
+  colorPicker.value = selectedTaskColor;
+  if (taskCircle) {
+    taskCircle.style.backgroundColor =
+      currentColor ? selectedTaskColor : "transparent";
   }
 
+  // Show modal
+  modalOverlay.style.display = "block";
+  editModal.style.display = "block";
   setTimeout(() => editModal.classList.add("show"), 10);
 
-  modalOverlay.addEventListener("click", handleOverlayClick);
+  // Focus textarea
   modalTextarea.focus();
+
+  // Ensure only one overlay listener is active
+  modalOverlay.removeEventListener("click", handleOverlayClick);
+  modalOverlay.addEventListener("click", handleOverlayClick);
+};
+
+async function handleTaskSave(box, newText, color, notes, newDate) {
+  // 'box' is the original <li> element of the task.
+  if (!box) return;
+
+  const taskId = box.dataset.id;
+  if (!taskId) return;
+
+  // 1. UPDATE THE SERVER (This part is correct)
+  try {
+    const response = await fetch(`http://localhost:5000/api/tasks/${taskId}`, {
+      method: "PUT",
+      headers: {
+        "Authorization": `Bearer ${localStorage.getItem("token")}`,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        title: newText,
+        notes: notes,
+        color: color,
+        date: newDate.toISOString()
+      }),
+      credentials: "include"
+    });
+
+    if (!response.ok) {
+        throw new Error('Server update failed');
+    }
+
+    // 2. UPDATE THE TASK ELEMENT'S DATA (This part is correct)
+    const textSpan = box.querySelector('.task-text');
+    if (textSpan) textSpan.textContent = newText;
+    box.dataset.notes = notes;
+    const newDateString = newDate.toISOString().split('T')[0];
+    box.dataset.date = newDateString;
+
+    // 3. MOVE THE ELEMENT TO THE FIRST EMPTY SLOT IN THE NEW COLUMN
+    const newDateColumn = document.querySelector(`[data-date-column="${newDateString}"]`);
+
+    if (newDateColumn) {
+      const todoList = newDateColumn.querySelector('.todo-list');
+      if (todoList) {
+        // ✅ --- START OF CHANGES ---
+
+        // Find the first available empty row (an <li> with no text content)
+        const emptySlot = [...todoList.children].find(li => !li.textContent.trim());
+
+        if (emptySlot) {
+          // If an empty slot is found, replace it with your task box.
+          emptySlot.parentNode.replaceChild(box, emptySlot);
+        } else {
+          // If no empty slots are found, add the task to the end as a fallback.
+          todoList.appendChild(box);
+        }
+        
+        // ✅ --- END OF CHANGES ---
+      }
+    } else {
+      // If the new date column isn't visible, remove the task.
+      box.remove();
+    }
+
+  } catch (error) {
+    console.error("Failed to save task:", error);
+  }
 }
 
 function closeEditModal() {
@@ -864,7 +984,6 @@ function saveAndClose() {
     const newText = modalTextarea.value;
     const notes = taskNotes.value;
     const color = selectedTaskColor;
-    // Pass the potentially updated date back in the callback
     onSaveCallback(newText, color, notes, currentTaskDate);
   }
   closeEditModal();
@@ -882,7 +1001,14 @@ if (deleteBtn) {
     if (currentEditableBox) {
       const taskId = currentEditableBox.dataset.id;
       if (taskId) {
-        await fetch(`http://localhost:5000/api/tasks/${taskId}`, { method: "DELETE" });
+        await fetch(`http://localhost:5000/api/tasks/${taskId}`, {
+          method: "DELETE",
+          headers: {
+            "Authorization": `Bearer ${localStorage.getItem("token")}`,
+            "Content-Type": "application/json"
+          },
+          credentials: "include"
+        });
         currentEditableBox.remove();
       }
       closeEditModal();
