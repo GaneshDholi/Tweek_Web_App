@@ -1,170 +1,183 @@
 const express = require("express");
 const router = express.Router();
-const Task = require("../models/Task");
+const mongoose = require('mongoose');
+const UserTasksProfile = require("../models/userTasksProfile"); // The only model you need
+const User = require("../models/User"); // Needed to get user's name on profile creation
 
-// Get tasks for the week
-router.get("/", async (req, res) => {
-  try {
-    const tasks = await Task.find({ userId: req.user.id });
-    res.json(tasks);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-
+// Helper function to get the week number
 function getWeekNumber(d) {
-  d = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
-  d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7));
-  const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
-  const weekNo = Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
-  return `${d.getUTCFullYear()}-W${weekNo}`;
+    d = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+    d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7));
+    const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+    const weekNo = Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+    return `${d.getUTCFullYear()}-W${String(weekNo).padStart(2, '0')}`;
 }
 
+// --- READ OPERATIONS ---
 
-// Add a task
-router.post("/", async (req, res) => {
-  try {
-    const { title, description, date, isSomeday = false } = req.body;
-    const userId = req.user.id; // assuming you use JWT/Auth middleware
-
-    let jsDate = null;
-    let weekId = null;
-    let monthId = null;
-
-    if (!isSomeday) {
-      jsDate = new Date(date);
-      weekId = getWeekNumber(jsDate);
-      monthId = `${jsDate.getFullYear()}-${(jsDate.getMonth() + 1)
-        .toString()
-        .padStart(2, "0")}`;
-    }
-
-    const task = new Task({
-      userId,
-      title,
-      description,
-      date: jsDate,
-      weekId,
-      monthId,
-      isSomeday
-    });
-
-    await task.save();
-    res.status(201).json(task);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-// GET /tasks/day/:date
-router.get("/day/:date", async (req, res) => {
-  try {
-    const userId = req.user.id;
-    const dayStart = new Date(req.params.date);
-    const dayEnd = new Date(dayStart);
-    dayEnd.setDate(dayStart.getDate() + 1);
-
-    const tasks = await Task.find({
-      userId,
-      date: { $gte: dayStart, $lt: dayEnd },
-    });
-
-    res.json(tasks);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-//fetching someday
-router.get("/someday", async (req, res) => {
-  try {
-    const tasks = await Task.find({ userId: req.user.id, isSomeday: true });
-    res.json(tasks);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
-
-// GET /tasks/week/:weekId
+// GET TASKS FOR A SPECIFIC WEEK
 router.get("/week/:weekId", async (req, res) => {
-  try {
-    const userId = req.user.id;
-    const tasks = await Task.find({ userId, weekId: req.params.weekId });
-    res.json(tasks);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
+    try {
+        const userId = req.user.id;
+        const weekId = req.params.weekId;
+
+        const userProfile = await UserTasksProfile.findOne({ userId }).select('weeklyTasks');
+        if (!userProfile) {
+            return res.json([]); // No profile means no tasks
+        }
+
+        const tasksForWeek = userProfile.weeklyTasks.get(weekId);
+        res.json(tasksForWeek || []);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
 });
 
-
-// GET /tasks/month/:monthId
-router.get("/month/:monthId", async (req, res) => {
-  try {
-    const userId = req.user.id;
-    const tasks = await Task.find({ userId, monthId: req.params.monthId });
-    res.json(tasks);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
+// GET SOMEDAY TASKS
+router.get("/someday", async (req, res) => {
+    try {
+        const userId = req.user.id;
+        const userProfile = await UserTasksProfile.findOne({ userId }).select('somedayTasks');
+        res.json(userProfile ? userProfile.somedayTasks : []);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
 });
 
+// --- WRITE OPERATIONS ---
 
-// Toggle complete / update
+// ADD A TASK
+router.post("/", async (req, res) => {
+    try {
+        const userId = req.user.id;
+        const { title, date, completed = false, oldWeekId, oldIsSomeday } = req.body;
+        
+        // Create the new sub-task object that will be saved
+        const newSubTask = {
+            _id: new mongoose.Types.ObjectId(),
+            title,
+            date: isSomeday ? null : new Date(date),
+            completed
+        };
+
+        // Find the user's name for the profile document
+        const user = await User.findById(userId);
+        if (!user) return res.status(404).json({ error: "User not found" });
+        const userName = `${user.firstName} ${user.lastName}`;
+
+        let updateOperation;
+        if (isSomeday) {
+            // If it's a someday task, push to the somedayTasks array
+            updateOperation = { $push: { somedayTasks: newSubTask } };
+        } else {
+            // If it's a weekly task, push to the correct week in the map
+            const weekId = getWeekNumber(new Date(date));
+            // Use dot notation to update the map
+            updateOperation = { $push: { [`weeklyTasks.${weekId}`]: newSubTask } };
+        }
+
+        // Find the profile and update it, or create it if it's the user's first task
+        await UserTasksProfile.findOneAndUpdate(
+            { userId },
+            { ...updateOperation, $setOnInsert: { userName } },
+            { upsert: true, new: true }
+        );
+
+        res.status(201).json(newSubTask);
+
+    } catch (err) {
+        console.error("Error in POST /:", err);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// UPDATE A TASK
 router.put("/:id", async (req, res) => {
-  try {
-    console.log("--- UPDATE REQUEST RECEIVED ---");
-    console.log("Task ID from params:", req.params.id);
-    console.log("User ID from auth:", req.user.id); // Is this correct?
-    console.log("Data from body:", req.body);
+    // This operation is very complex and inefficient with this data model.
+    // It requires reading the entire document, modifying it in JS, and saving it back.
+    // The frontend MUST provide context about where the task currently is.
+    try {
+        const userId = req.user.id;
+        const taskId = req.params.id;
+        const { title, date, completed, oldWeekId, oldIsSomeday } = req.body;
 
-    const { title, description, date, completed, isSomeday = false } = req.body;
+        const userProfile = await UserTasksProfile.findOne({ userId });
+        if (!userProfile) return res.status(404).json({ error: "Task profile not found." });
 
-    let updateData = { title, description, completed, isSomeday };
+        let taskToUpdate;
+        let taskIndex = -1;
 
-    if (!isSomeday && date) {
-      const jsDate = new Date(date);
-      updateData.date = jsDate;
-      updateData.weekId = getWeekNumber(jsDate);
-      updateData.monthId = `${jsDate.getFullYear()}-${(jsDate.getMonth() + 1).toString().padStart(2, "0")}`;
-    } else {
-      updateData.date = null;
-      updateData.weekId = null;
-      updateData.monthId = null;
+        // Step 1: Find and remove the task from its old location
+        if (oldIsSomeday) {
+            taskIndex = userProfile.somedayTasks.findIndex(t => t._id.toString() === taskId);
+            if (taskIndex !== -1) [taskToUpdate] = userProfile.somedayTasks.splice(taskIndex, 1);
+        } else if (oldWeekId) {
+            const oldTasksArray = userProfile.weeklyTasks.get(oldWeekId) || [];
+            taskIndex = oldTasksArray.findIndex(t => t._id.toString() === taskId);
+            if (taskIndex !== -1) {
+                [taskToUpdate] = oldTasksArray.splice(taskIndex, 1);
+                userProfile.weeklyTasks.set(oldWeekId, oldTasksArray);
+            }
+        }
+        
+        if (!taskToUpdate) return res.status(404).json({ error: "Task not found in its original location." });
+
+        // Step 2: Update the task's properties
+        const isNowSomeday = !date;
+        taskToUpdate.title = title;
+        taskToUpdate.date = isNowSomeday ? null : new Date(date);
+        taskToUpdate.completed = completed;
+
+        // Step 3: Add the updated task to its new location
+        if (isNowSomeday) {
+            userProfile.somedayTasks.push(taskToUpdate);
+        } else {
+            const newWeekId = getWeekNumber(new Date(date));
+            const newTasksArray = userProfile.weeklyTasks.get(newWeekId) || [];
+            newTasksArray.push(taskToUpdate);
+            userProfile.weeklyTasks.set(newWeekId, newTasksArray);
+        }
+
+        // Step 4: Save the entire giant document
+        await userProfile.save();
+        res.json(taskToUpdate);
+
+    } catch (err) {
+        console.error("Error in PUT /:id:", err);
+        res.status(500).json({ error: err.message });
     }
-
-    const updatedTask = await Task.findOneAndUpdate(
-      { _id: req.params.id, userId: req.user.id },
-      { $set: updateData },
-      { new: true }
-    );
-
-    console.log("Result from findOneAndUpdate:", updatedTask); // IMPORTANT: What does this print?
-
-    if (!updatedTask) {
-      console.log("!!! Task not found in DB, sending 404.");
-      return res.status(404).json({ error: "Task not found or user not authorized." });
-    }
-
-    res.json(updatedTask);
-  } catch (err) {
-    console.error("!!! ERROR IN PUT ROUTE:", err);
-    res.status(500).json({ error: err.message });
-  }
 });
 
-
-
-// DELETE task
+// DELETE A TASK
 router.delete("/:id", async (req, res) => {
-  try {
-    await Task.findOneAndDelete({ _id: req.params.id, userId: req.user.id });
-    res.json({ message: "Task deleted" });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
+    try {
+        const userId = req.user.id;
+        const taskId = req.params.id;
+        // Frontend MUST provide context on where to find the task
+        const { weekId, isSomeday } = req.body; 
+
+        let updateOperation;
+        if (isSomeday) {
+            updateOperation = { $pull: { somedayTasks: { _id: taskId } } };
+        } else if (weekId) {
+            updateOperation = { $pull: { [`weeklyTasks.${weekId}`]: { _id: taskId } } };
+        } else {
+            return res.status(400).json({ error: "weekId or isSomeday flag is required." });
+        }
+
+        const result = await UserTasksProfile.updateOne({ userId }, updateOperation);
+
+        if (result.modifiedCount === 0) {
+            return res.status(404).json({ error: "Task not found to delete." });
+        }
+
+        res.json({ message: "Task deleted successfully" });
+    } catch (err) {
+        console.error("Error in DELETE /:id:", err);
+        res.status(500).json({ error: err.message });
+    }
 });
 
+// NOTE: A month-based view is not efficient with this model and has been removed.
 
 module.exports = router;

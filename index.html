@@ -7,8 +7,8 @@
   <link rel="stylesheet" href="styles.css">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/flatpickr/dist/flatpickr.min.css">
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/mdbassit/Coloris@latest/dist/coloris.min.css" />
   <script src="https://cdn.jsdelivr.net/npm/flatpickr"></script>
-
 </head>
 
 <body>
@@ -93,14 +93,14 @@
           </ul>
         </div>
         <div id="prevweek" class="circle dark">
-          <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 24 24" width="24" height="24" role="img"
-            aria-label="Chevron left">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 24 24" width="24" height="24"
+            role="img" aria-label="Chevron left">
             <path d="M15.41 7.41 14 6l-6 6 6 6 1.41-1.41L10.83 12z" />
           </svg>
         </div>
         <div id="nextweek" class="circle dark">
-          <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 24 24" width="24" height="24" role="img"
-            aria-label="Chevron right">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 24 24" width="24" height="24"
+            role="img" aria-label="Chevron right">
             <path d="M8.59 16.59 10 18l6-6-6-6-1.41 1.41L13.17 12z" />
           </svg>
         </div>
@@ -159,7 +159,6 @@
 
   <!-- edit modal -->
   <div id="modalOverlay"></div>
-
   <div id="editModal">
     <div class="modal-header">
       <span class="modal-date">
@@ -204,15 +203,23 @@
               d="M7.128 7.586c.355-.569.972-.948 1.66-.948.663 0 1.28.38 1.635.948a1.93 1.93 0 0 1 0 1.897 1.91 1.91 0 0 1-1.636.948 1.92 1.92 0 0 1-1.66-.948 1.93 1.93 0 0 1 0-1.897Zm-.972 2.466a3.017 3.017 0 0 0 2.631 1.517 3.007 3.007 0 0 0 2.608-1.517 3.02 3.02 0 0 0 0-3.035C10.85 6.093 9.854 5.5 8.787 5.5c-1.09 0-2.086.593-2.631 1.517a3.019 3.019 0 0 0 0 3.035Zm9.269 1.327v1.518c0 .331.237.569.569.569a.562.562 0 0 0 .569-.57V11.38h1.517a.562.562 0 0 0 .57-.569.577.577 0 0 0-.57-.569h-1.517V8.724a.577.577 0 0 0-.569-.569.562.562 0 0 0-.569.57v1.516h-1.517a.562.562 0 0 0-.57.57c0 .331.238.568.57.568h1.517Z"
               clip-rule="evenodd"></path>
           </svg></button>
-        <button title="More" data-tooltip="More"><svg xmlns="http://www.w3.org/2000/svg" width="22" height="22"
-            fill="none">
+        <button id="moreOptionsBtn" title="More" data-tooltip="More"><svg xmlns="http://www.w3.org/2000/svg" width="22"
+            height="22" fill="none">
             <path fill="currentColor"
               d="M15.875 11.5c0 .422-.234.773-.563.984a1.08 1.08 0 0 1-1.124 0 1.122 1.122 0 0 1 0-1.945 1.079 1.079 0 0 1 1.124 0c.329.211.563.563.563.961Zm-3.75 0c0 .422-.234.773-.563.984a1.08 1.08 0 0 1-1.124 0 1.122 1.122 0 0 1 0-1.945 1.079 1.079 0 0 1 1.124 0c.329.211.563.563.563.961ZM7.25 12.625c-.422 0-.773-.21-.984-.563a1.079 1.079 0 0 1 0-1.124c.21-.329.562-.563.984-.563.398 0 .75.234.96.563.212.351.212.796 0 1.124-.21.352-.562.563-.96.563Z">
             </path>
-          </svg></button>
+            </svg></button>
+          <!-- 3 dot dropdown -->
+        <div id="moreOptionsMenu" class="options-menu">
+          <ul>
+            <li><button type="button">Tomorrow</button></li>
+            <li><button type="button">Next week</button></li>
+            <li><button type="button">Duplicate</button></li>
+          </ul>
+        </div>
       </div>
     </div>
-    <input type="color" id="colorPicker" style="display:none;">
+    <input type="text" id="colorPicker" class="visually-hidden">
 
     <div class="modal-content2">
       <input id="taskTitle" class="taskTitle" type="text" placeholder="Task title..." />
@@ -292,7 +299,7 @@
     </div>
   </div>
 
-
+  <script src="https://cdn.jsdelivr.net/gh/mdbassit/Coloris@latest/dist/coloris.min.js"></script>
   <script src="script.js"></script>
 </body>
 

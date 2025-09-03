@@ -673,64 +673,66 @@ function renderWeeklyView(baseDate = new Date(), highlightDate = null) {
 
 
   async function loadTasksFromDB() {
-    try {
-      const res = await fetch("http://localhost:5000/api/tasks", {
-        method: "GET",
-        credentials: "include"
-      });
+    // Helper function to get the weekId on the frontend
+    function getWeekNumber(d) {
+      d = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+      d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7));
+      const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+      const weekNo = Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+      return `${d.getUTCFullYear()}-W${String(weekNo).padStart(2, '0')}`;
+    }
 
-      if (!res.ok) {
-        console.error("Failed to fetch tasks", await res.text());
+    try {
+      // Determine the weekId for the current view (using the 'monday' variable from your main function)
+      const currentWeekId = getWeekNumber(monday);
+
+      // Define the two API endpoints we need
+      const weeklyTasksUrl = `http://localhost:5000/api/tasks/week/${currentWeekId}`;
+      const somedayTasksUrl = `http://localhost:5000/api/tasks/someday`;
+
+      // Fetch both sets of data in parallel for maximum speed
+      const [weeklyRes, somedayRes] = await Promise.all([
+        fetch(weeklyTasksUrl, { credentials: 'include' }),
+        fetch(somedayTasksUrl, { credentials: 'include' })
+      ]);
+
+      if (!weeklyRes.ok || !somedayRes.ok) {
+        console.error("Failed to fetch tasks");
         return;
       }
-      const tasks = await res.json();
+
+      const weeklyTasks = await weeklyRes.json();
+      const somedayTasks = await somedayRes.json();
+
+      // --- Render Weekly Tasks ---
       const allDayBoxes = [...weekContainer.querySelectorAll(".day-box")];
-
-      const weekStart = monday;
-      const weekEnd = new Date(monday);
-      weekEnd.setDate(monday.getDate() + 6);
-
-      // Normalize DB format and skip invalid days
-      tasks.forEach(task => {
-        // render into Someday container
-        if (task.isSomeday) {
-          let box = [...taskContainer.children].find(
-            li => !li.textContent.trim() && !li.querySelector("input")
-          );
-          if (!box) {
-            box = document.createElement("div");
-            taskContainer.appendChild(box);
-          }
-          renderTaskElement(box, task);
-          return;
-        }
-
-        // --- Normal weekly task logic ---
+      weeklyTasks.forEach(task => {
         const taskDate = new Date(task.date);
-
-        if (taskDate < weekStart || taskDate > weekEnd) return;
-
         let jsDay = taskDate.getDay();
         let idx = (jsDay === 0) ? 6 : jsDay - 1;
-        console.log(idx)
         const todoList = allDayBoxes[idx].querySelector(".todo-list");
 
-        // find first empty slot (no text and no input)
         let box = [...todoList.children].find(
           li => !li.textContent.trim() && !li.querySelector("input")
         );
-
-        // if no empty slot, create one
-        if (!box) {
-          box = document.createElement("li");
-          box.style.height = "40px";
-          todoList.appendChild(box);
+        if (box) {
+          renderTaskElement(box, task);
         }
-
-        // Render task into the chosen box (no DB calls here)
-        renderTaskElement(box, task);
       });
+
+      // --- Render Someday Tasks ---
+      // 'taskContainer' is the variable for your someday list from the main function
+      somedayTasks.forEach(task => {
+        let box = [...taskContainer.children].find(
+          div => !div.textContent.trim() && !div.querySelector("input")
+        );
+        if (box) {
+          renderTaskElement(box, task);
+        }
+      });
+
       balanceColumnHeights();
+
     } catch (err) {
       console.error("Error loading tasks from DB:", err);
     }
@@ -837,14 +839,24 @@ function formatDate(date) {
   return `${weekday}, ${day} ${month} ${year}`;
 }
 
+function autoResizeTextarea(element) {
+  element.style.height = 'auto';
+  element.style.height = element.scrollHeight + 'px';
+}
+
+if (taskNotes) {
+  taskNotes.addEventListener('input', function () {
+    autoResizeTextarea(this);
+  });
+}
 
 // Initialize Flatpickr on the date container in the header
 if (modalDateContainer) {
   flatpickrInstance = flatpickr(modalDateContainer, {
-    dateFormat: "Y-m-d", // A standard format for the backend
+    dateFormat: "Y-m-d",
     onChange: function (selectedDates) {
       if (calendarDateText && selectedDates[0]) {
-        currentTaskDate = selectedDates[0]; // Update the current date
+        currentTaskDate = selectedDates[0];
         calendarDateText.textContent = formatDate(currentTaskDate);
       }
     }
@@ -882,6 +894,7 @@ const openEditModal = function (
   // Prefill modal fields
   modalTextarea.value = oldText || "";
   taskNotes.value = currentEditableBox?.dataset.notes || ""; // keep notes if stored in dataset
+  autoResizeTextarea(taskNotes);
   setModalDate(taskDate);
 
   // Handle color
@@ -929,7 +942,7 @@ async function handleTaskSave(box, newText, color, notes, newDate) {
     });
 
     if (!response.ok) {
-        throw new Error('Server update failed');
+      throw new Error('Server update failed');
     }
 
     // 2. UPDATE THE TASK ELEMENT'S DATA (This part is correct)
@@ -957,7 +970,7 @@ async function handleTaskSave(box, newText, color, notes, newDate) {
           // If no empty slots are found, add the task to the end as a fallback.
           todoList.appendChild(box);
         }
-        
+
         // ✅ --- END OF CHANGES ---
       }
     } else {
@@ -1016,23 +1029,32 @@ if (deleteBtn) {
   });
 }
 
+// Initialize the custom color picker when the page loads
+Coloris({
+  el: '#colorPicker',
+  theme: 'default',
+  themeMode: 'dark',
+  alpha: false,
+  format: 'hex'
+});
+
 if (colorButton) {
   colorButton.addEventListener('click', () => colorPicker.click());
 }
 
-if (colorPicker) {
-  colorPicker.addEventListener('change', (e) => {
-    selectedTaskColor = e.target.value;
-    if (taskCircle) taskCircle.style.backgroundColor = selectedTaskColor;
-    if (currentEditableBox) {
-      const textSpan = currentEditableBox.querySelector('.task-text');
-      if (textSpan) {
-        textSpan.style.backgroundColor = selectedTaskColor;
-        textSpan.style.color = "#fff";
-      }
+document.addEventListener('coloris:pick', event => {
+  selectedTaskColor = event.detail.color;
+  if (taskCircle) {
+    taskCircle.style.backgroundColor = selectedTaskColor;
+  }
+  if (currentEditableBox) {
+    const textSpan = currentEditableBox.querySelector('.task-text');
+    if (textSpan) {
+      textSpan.style.backgroundColor = selectedTaskColor;
+      textSpan.style.color = "#fff";
     }
-  });
-}
+  }
+});
 
 function insertAtCursor(textArea, openTag, closeTag = "") {
   const start = textArea.selectionStart;
@@ -1131,6 +1153,36 @@ document.getElementById("link").addEventListener("click", () => {
   taskNotes.selectionStart = taskNotes.selectionEnd = cursorPos;
   taskNotes.focus();
 });
+
+//3dot menu
+// Get the button and the menu elements
+const moreOptionsBtn = document.getElementById('moreOptionsBtn');
+const moreOptionsMenu = document.getElementById('moreOptionsMenu');
+
+// Ensure both elements exist before adding listeners
+if (moreOptionsBtn && moreOptionsMenu) {
+
+  // --- Logic to TOGGLE the menu ---
+  moreOptionsBtn.addEventListener('click', (event) => {
+    // This stops the click from immediately being caught by the 'window' listener
+    event.stopPropagation();
+
+    // Toggle the 'show' class on the menu
+    moreOptionsMenu.classList.toggle('show');
+  });
+
+  // --- Logic to CLOSE the menu when clicking outside ---
+  window.addEventListener('click', (event) => {
+    // If the menu is currently shown...
+    if (moreOptionsMenu.classList.contains('show')) {
+      // ...and the click was NOT on the button or inside the menu...
+      if (!moreOptionsBtn.contains(event.target) && !moreOptionsMenu.contains(event.target)) {
+        // ...then hide the menu.
+        moreOptionsMenu.classList.remove('show');
+      }
+    }
+  });
+}
 
 // account login
 document.addEventListener('DOMContentLoaded', () => {

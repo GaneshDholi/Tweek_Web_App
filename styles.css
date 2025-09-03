@@ -331,7 +331,7 @@ body {
   transition: background-color 0.2s;
 } */
 
-.circle:hover{
+.circle:hover {
   transform: scale(1.1);
   transition: transform 0.2s ease-in-out;
 }
@@ -541,6 +541,11 @@ body {
   gap: 1rem;
 }
 
+#authFlow .modal-header {
+  display: flex;
+  justify-content: space-between;
+}
+
 #authFlow input {
   background-color: white;
   border: 1px solid #d1d5db;
@@ -700,6 +705,70 @@ body {
   color: #007bff;
 }
 
+/* 3dot modal in edit modal */
+/* Make the button container a positioning reference point */
+.modal-actions {
+  position: relative;
+}
+
+/* Styles for the dropdown menu container */
+.options-menu {
+  /* Hide by default */
+  display: none; 
+  opacity: 0;
+  visibility: hidden;
+  
+  /* Positioning */
+  position: absolute;
+  top: 110%; /* Place it slightly below the button */
+  right: 0;
+  z-index: 1000;
+
+  /* Appearance */
+  width: 180px;
+  background-color: #ffffff;
+  border-radius: 8px;
+  padding: 6px;
+  border: 1px solid #eee;
+  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+  
+  /* Smooth transition */
+  transform: translateY(-10px);
+  transition: opacity 0.2s ease, transform 0.2s ease, visibility 0.2s;
+}
+
+/* This class will be added by JavaScript to show the menu */
+.options-menu.show {
+  display: block;
+  opacity: 1;
+  visibility: visible;
+  transform: translateY(0);
+}
+
+/* Clean up the list inside the menu */
+.options-menu ul {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+/* Style for each clickable item in the menu */
+.options-menu ul button {
+  width: 100%;
+  background: none;
+  border: none;
+  padding: 10px 12px;
+  text-align: left;
+  font-size: 14px;
+  cursor: pointer;
+  border-radius: 5px;
+  color: #333;
+}
+
+/* Hover effect for menu items */
+.options-menu ul button:hover {
+  background-color: #f5f5f5;
+}
 
 /* Edit modal */
 #modalOverlay {
@@ -715,11 +784,12 @@ body {
 
 #editModal {
   position: fixed;
-  top: 25%;
+  top: 40%;
   left: 50%;
   transform: translate(-50%, -50%);
   width: 512px;
-  height: 277.656px;
+  min-height: 277.656px;
+  height: auto;
   max-width: 90vw;
   background: rgb(221, 225, 251);
   border-radius: 8px;
@@ -737,7 +807,7 @@ body {
 
 #editModal .modal-header {
   padding: 11px 16px;
-  margin-bottom: 60px;
+  margin-bottom: 40px;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -746,10 +816,16 @@ body {
   font-size: 16px;
 }
 
+#editModal .modal-content2 {
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start; 
+}
+
 .modal-header .modal-date {
   display: flex;
   gap: 8px;
-  }
+}
 
 .taskTitle {
   border: none;
@@ -802,6 +878,11 @@ body {
 
 #editModal .modal-content {
   padding: 20px;
+}
+
+#taskNotes {
+  box-sizing: content-box;
+  min-height: 40px;
 }
 
 #editModal textarea {
@@ -860,10 +941,13 @@ body {
 /* Shrink the flatpickr calendar */
 /* 🔹 Shrink the whole calendar */
 .flatpickr-calendar {
-  font-size: 12px !important;     /* smaller text */
-  transform: scale(0.85);         /* shrink entire calendar */
-  transform-origin: top left;     /* anchor scaling */
-  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  font-size: 12px !important;
+  /* smaller text */
+  transform: scale(0.85);
+  /* shrink entire calendar */
+  transform-origin: top left;
+  /* anchor scaling */
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   border-radius: 6px;
   border: 1px solid black;
   top: 147px;
@@ -883,7 +967,8 @@ body {
 .flatpickr-day.selected,
 .flatpickr-day.startRange,
 .flatpickr-day.endRange {
-  background: #007bff !important; /* blue highlight */
+  background: #007bff !important;
+  /* blue highlight */
   color: #fff !important;
 }
 
@@ -912,6 +997,24 @@ body {
   font-size: 11px;
   font-weight: 600;
   color: #555;
+}
+
+/* color picker */
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+#clr-picker {
+  left: 650px !important;
+  top: 320px !important;
 }
 
 
