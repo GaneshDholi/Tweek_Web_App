@@ -8,6 +8,11 @@ const UserSchema = new mongoose.Schema({
     isEmailVerified: { type: Boolean, default: false },
     otp: { type: String },
     otpExpires: { type: Date },
+    canViewTasksOf: [{
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User'
+    }]
 }, { timestamps: true });
+
 
 module.exports = mongoose.model('User', UserSchema);

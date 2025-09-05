@@ -366,10 +366,12 @@ function renderWeeklyView(baseDate = new Date(), highlightDate = null) {
 
   async function saveTask(box, text, color = null, taskDate, taskId = null, isCompleted = false, isSomeday = false) {
 
-    const jsDate = taskDate instanceof Date ? taskDate : new Date(taskDate);
-    if (Number.isNaN(jsDate.getTime())) {
-      console.warn("saveTask called without valid date", { text, taskId, taskDate });
-      return;
+    if (!isSomeday) {
+      const jsDate = taskDate instanceof Date ? taskDate : new Date(taskDate);
+      if (Number.isNaN(jsDate.getTime())) {
+        console.warn("saveTask called without valid date", { text, taskId, taskDate });
+        return;
+      }
     }
 
     // Prepare payload
@@ -382,6 +384,7 @@ function renderWeeklyView(baseDate = new Date(), highlightDate = null) {
     };
 
     if (!isSomeday) {
+      const jsDate = taskDate instanceof Date ? taskDate : new Date(taskDate);
       payload.date = jsDate.toISOString();  // only attach date for normal tasks
     }
 
@@ -402,6 +405,9 @@ function renderWeeklyView(baseDate = new Date(), highlightDate = null) {
       const newTask = await res.json();
       box.dataset.id = newTask._id;
       // render the new task in DOM (call render helper for consistent UI)
+      if (!newTask.isSomeday) {
+            newTask.date = payload.date;
+        }
       renderTaskElement(box, newTask);
       return newTask;
     }
@@ -422,6 +428,9 @@ function renderWeeklyView(baseDate = new Date(), highlightDate = null) {
 
     const updated = await res.json();
     box.dataset.id = updated._id;
+    if (!updated.isSomeday) {
+        updated.date = payload.date;
+    }
     renderTaskElement(box, updated);
     return updated;
   }
@@ -673,7 +682,7 @@ function renderWeeklyView(baseDate = new Date(), highlightDate = null) {
 
 
   async function loadTasksFromDB() {
-    // Helper function to get the weekId on the frontend
+    // Helper function to get the weekId on the frontend (no changes needed here)
     function getWeekNumber(d) {
       d = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
       d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7));
@@ -683,17 +692,20 @@ function renderWeeklyView(baseDate = new Date(), highlightDate = null) {
     }
 
     try {
-      // Determine the weekId for the current view (using the 'monday' variable from your main function)
-      const currentWeekId = getWeekNumber(monday);
+      const currentWeekId = getWeekNumber(monday); // Assuming 'monday' is available in this scope
 
-      // Define the two API endpoints we need
       const weeklyTasksUrl = `http://localhost:5000/api/tasks/week/${currentWeekId}`;
       const somedayTasksUrl = `http://localhost:5000/api/tasks/someday`;
 
-      // Fetch both sets of data in parallel for maximum speed
       const [weeklyRes, somedayRes] = await Promise.all([
-        fetch(weeklyTasksUrl, { credentials: 'include' }),
-        fetch(somedayTasksUrl, { credentials: 'include' })
+        fetch(weeklyTasksUrl, {
+          credentials: 'include',
+          headers: { "Authorization": `Bearer ${localStorage.getItem("token")}` }
+        }),
+        fetch(somedayTasksUrl, {
+          credentials: 'include',
+          headers: { "Authorization": `Bearer ${localStorage.getItem("token")}` }
+        })
       ]);
 
       if (!weeklyRes.ok || !somedayRes.ok) {
@@ -701,33 +713,41 @@ function renderWeeklyView(baseDate = new Date(), highlightDate = null) {
         return;
       }
 
-      const weeklyTasks = await weeklyRes.json();
+      // The response is now an array of user profiles
+      const weeklyDataByUser = await weeklyRes.json();
       const somedayTasks = await somedayRes.json();
 
-      // --- Render Weekly Tasks ---
+      // --- Render Weekly Tasks (UPDATED LOGIC) ---
       const allDayBoxes = [...weekContainer.querySelectorAll(".day-box")];
-      weeklyTasks.forEach(task => {
-        const taskDate = new Date(task.date);
-        let jsDay = taskDate.getDay();
-        let idx = (jsDay === 0) ? 6 : jsDay - 1;
-        const todoList = allDayBoxes[idx].querySelector(".todo-list");
 
-        let box = [...todoList.children].find(
-          li => !li.textContent.trim() && !li.querySelector("input")
-        );
-        if (box) {
-          renderTaskElement(box, task);
-        }
+      // 1. Loop through each user profile from the API response
+      weeklyDataByUser.forEach(userProfile => {
+        // 2. Then, loop through the tasks for that specific user
+        userProfile.tasks.forEach(task => {
+          const taskDate = new Date(task.date);
+          let jsDay = taskDate.getDay();
+          let idx = (jsDay === 0) ? 6 : jsDay - 1; // Monday = 0, ..., Sunday = 6
+          const todoList = allDayBoxes[idx].querySelector(".todo-list");
+
+          // Find the next available empty list item to render the task in
+          let box = [...todoList.children].find(
+            li => !li.textContent.trim() && !li.querySelector("input")
+          );
+          if (box) {
+            // Pass the userName to the render function to optionally display it
+            renderTaskElement(box, task, userProfile.userName);
+          }
+        });
       });
 
-      // --- Render Someday Tasks ---
-      // 'taskContainer' is the variable for your someday list from the main function
+
+      // --- Render Someday Tasks (NO CHANGES NEEDED) ---
       somedayTasks.forEach(task => {
         let box = [...taskContainer.children].find(
           div => !div.textContent.trim() && !div.querySelector("input")
         );
         if (box) {
-          renderTaskElement(box, task);
+          renderTaskElement(box, task); // Someday tasks don't have a separate owner to display
         }
       });
 
@@ -924,6 +944,20 @@ async function handleTaskSave(box, newText, color, notes, newDate) {
   const taskId = box.dataset.id;
   if (!taskId) return;
 
+  // ✅ FIX: Determine the task's original location and status before sending the request.
+  function getWeekNumber(d) {
+    d = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+    d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7));
+    const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+    const weekNo = Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+    return `${d.getUTCFullYear()}-W${String(weekNo).padStart(2, '0')}`;
+  }
+
+  const parentDayBox = box.closest('.day-box');
+  const oldIsSomeday = !parentDayBox;
+  const oldWeekId = oldIsSomeday ? null : getWeekNumber(new Date(parentDayBox.dataset.dateColumn));
+  const isCompleted = box.classList.contains('completed');
+
   // 1. UPDATE THE SERVER (This part is correct)
   try {
     const response = await fetch(`http://localhost:5000/api/tasks/${taskId}`, {
@@ -934,9 +968,10 @@ async function handleTaskSave(box, newText, color, notes, newDate) {
       },
       body: JSON.stringify({
         title: newText,
-        notes: notes,
-        color: color,
-        date: newDate.toISOString()
+        date: newDate ? newDate.toISOString() : null, // Handle moving to someday
+        completed: isCompleted,
+        oldIsSomeday: oldIsSomeday,
+        oldWeekId: oldWeekId
       }),
       credentials: "include"
     });
@@ -958,7 +993,6 @@ async function handleTaskSave(box, newText, color, notes, newDate) {
     if (newDateColumn) {
       const todoList = newDateColumn.querySelector('.todo-list');
       if (todoList) {
-        // ✅ --- START OF CHANGES ---
 
         // Find the first available empty row (an <li> with no text content)
         const emptySlot = [...todoList.children].find(li => !li.textContent.trim());
@@ -970,8 +1004,6 @@ async function handleTaskSave(box, newText, color, notes, newDate) {
           // If no empty slots are found, add the task to the end as a fallback.
           todoList.appendChild(box);
         }
-
-        // ✅ --- END OF CHANGES ---
       }
     } else {
       // If the new date column isn't visible, remove the task.
