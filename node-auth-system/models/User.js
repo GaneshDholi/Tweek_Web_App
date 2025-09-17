@@ -11,6 +11,10 @@ const UserSchema = new mongoose.Schema({
     canViewTasksOf: [{
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User'
+    }],
+     sharedWith: [{ // This is new: a list of users I have shared my tasks with
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'User'
     }]
 }, { timestamps: true });
 

@@ -174,14 +174,39 @@ function renderWeeklyView(baseDate = new Date(), highlightDate = null) {
 
   const monday = new Date(today);
   const dayOfWeek = monday.getDay(); // Sunday = 0, Monday = 1, ..., Saturday = 6
+  let tasksByDate = new Map();
 
   // Calculate the difference to get to the previous Monday
-  // If today is Sunday (0), we subtract 6 days. Otherwise, we subtract (dayOfWeek - 1) days.
   const diff = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
   monday.setDate(today.getDate() + diff);
 
   // Set time to the beginning of the day to avoid timezone issues
   monday.setHours(0, 0, 0, 0);
+
+  // Add this new helper function inside your renderWeeklyView function
+
+  function balanceRows() {
+    const weekdayColumns = Array.from(document.querySelectorAll(".day-box")).slice(0, 5);
+    const todoLists = weekdayColumns.map(col => col.querySelector('.todo-list'));
+
+    // 1. Find the maximum number of rows in any weekday column
+    let maxRows = 0;
+    todoLists.forEach(list => {
+      if (list.children.length > maxRows) {
+        maxRows = list.children.length;
+      }
+    });
+
+    // 2. Ensure all weekday columns have the same number of rows
+    todoLists.forEach(list => {
+      while (list.children.length < maxRows) {
+        const newBox = document.createElement("li");
+        newBox.style.height = "40px";
+        newBox.style.borderBottom = "1px solid #e0e0e0";
+        list.appendChild(newBox);
+      }
+    });
+  }
 
   // --- Helpers ---
   function createInput(styles = {}) {
@@ -242,7 +267,14 @@ function renderWeeklyView(baseDate = new Date(), highlightDate = null) {
         const taskText = span.textContent.trim();
         const taskId = task._id;
 
-        await saveTask(parentTaskBox, taskText, task.color, taskDate, taskId, isCompleted);
+        const success = await updateTaskStatus(taskId, isCompleted);
+        if (!success) {
+          alert("Failed to update task. Please try again.");
+          // Toggle the class back to its original state
+          parentTaskBox.classList.toggle("completed");
+        }
+
+        // await saveTask(parentTaskBox, taskText, task.color, taskDate, taskId, success ? isCompleted : !isCompleted);
       }
     });
     return btn;
@@ -319,6 +351,34 @@ function renderWeeklyView(baseDate = new Date(), highlightDate = null) {
     }
   }
 
+  // Add this new function to your script.js
+  async function updateTaskStatus(taskId, isCompleted) {
+    try {
+      const response = await fetch(`http://localhost:5000/api/tasks/${taskId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem("token")}`
+        },
+        credentials: 'include',
+        // Only send the field that is changing
+        body: JSON.stringify({ completed: isCompleted })
+      });
+
+      if (!response.ok) {
+        // If the server fails, log the error and return false
+        console.error('Failed to update task status on the server.');
+        return false;
+      }
+
+      console.log(`Task ${taskId} status updated to: ${isCompleted}`);
+      return true; // Return true on success
+
+    } catch (error) {
+      console.error('Network error while updating task status:', error);
+      return false; // Return false on network failure
+    }
+  }
 
   // use this for loadTasksFromDB
   function renderTaskElement(box, task) {
@@ -362,8 +422,6 @@ function renderWeeklyView(baseDate = new Date(), highlightDate = null) {
     box.title = task.title || task.text || ""; // FIX ✅
   }
 
-
-
   async function saveTask(box, text, color = null, taskDate, taskId = null, isCompleted = false, isSomeday = false) {
 
     if (!isSomeday) {
@@ -406,8 +464,8 @@ function renderWeeklyView(baseDate = new Date(), highlightDate = null) {
       box.dataset.id = newTask._id;
       // render the new task in DOM (call render helper for consistent UI)
       if (!newTask.isSomeday) {
-            newTask.date = payload.date;
-        }
+        newTask.date = payload.date;
+      }
       renderTaskElement(box, newTask);
       return newTask;
     }
@@ -429,13 +487,11 @@ function renderWeeklyView(baseDate = new Date(), highlightDate = null) {
     const updated = await res.json();
     box.dataset.id = updated._id;
     if (!updated.isSomeday) {
-        updated.date = payload.date;
+      updated.date = payload.date;
     }
     renderTaskElement(box, updated);
     return updated;
   }
-
-
 
   function activateInput(box, taskDate) {
     const input = createInput();
@@ -455,13 +511,71 @@ function renderWeeklyView(baseDate = new Date(), highlightDate = null) {
       }
     };
 
-
     input.addEventListener("blur", () => setTimeout(save, 0));
+
     input.addEventListener("keydown", (e) => {
       if (e.key === "Enter") {
         e.preventDefault();
         save();
-        input.blur();
+
+        const currentBox = input.parentElement;
+        const container = currentBox.parentElement;
+        if (!container) return;
+
+        const siblings = Array.from(container.children);
+        const currentIndex = siblings.indexOf(currentBox);
+
+        let nextBox = null;
+
+        for (let i = currentIndex + 1; i < siblings.length; i++) {
+          if (!siblings[i].textContent.trim() && !siblings[i].querySelector('input')) {
+            nextBox = siblings[i];
+            break;
+          }
+        }
+
+        if (!nextBox) {
+          const newBox = document.createElement(currentBox.tagName);
+          newBox.style.height = "40px";
+          if (currentBox.tagName.toLowerCase() === 'li') {
+            newBox.style.borderBottom = "1px solid #e0e0e0";
+          }
+          container.appendChild(newBox);
+          nextBox = newBox;
+        }
+        if (nextBox) {
+          activateInput(nextBox, taskDate);
+        }
+
+        if (newRowWasAdded) {
+          // if (offset === 5) {
+          //   const totalRows = saturdayBox.querySelectorAll(".todo-list li").length;
+          //   saturdayBox.style.maxHeight = `${totalRows * rowHeight}px`;
+
+          //   allDayBoxes.forEach((otherBox, idx) => {
+          //     if (idx !== 5 && idx !== 6) {
+          //       const otherTodoContainer = otherBox.querySelector(".todo-list");
+          //       const newBox = document.createElement("li");
+          //       newBox.style.height = `${rowHeight}`;
+          //       otherTodoContainer.appendChild(newBox);
+          //     }
+          //   });
+          // } else {
+          //   const totalRows = saturdayBox.querySelectorAll(".todo-list li").length;
+          //   saturdayBox.style.maxHeight = `${totalRows * rowHeight}px`;
+
+          //   allDayBoxes.forEach((otherBox, idx) => {
+          //     if (idx !== offset && idx !== 5) {
+          //       const otherTodoContainer = otherBox.querySelector(".todo-list");
+          //       const newBox = document.createElement("li");
+          //       newBox.style.height = `${rowHeight}px`;
+          //       otherTodoContainer.appendChild(newBox);
+          //     }
+          //   });
+          // }
+          balanceRows();
+        }
+
       }
     });
   }
@@ -471,6 +585,8 @@ function renderWeeklyView(baseDate = new Date(), highlightDate = null) {
   for (let offset = 0; offset < 7; offset++) {
     const date = new Date(monday);
     date.setDate(monday.getDate() + offset);
+    const dateString = date.toISOString().split('T')[0];
+    const tasksForThisDay = tasksByDate.get(dateString) || [];
 
     const dayBox = document.createElement("div");
     dayBox.className = "day-box";
@@ -482,7 +598,6 @@ function renderWeeklyView(baseDate = new Date(), highlightDate = null) {
       borderRadius: "8px",
       display: "flex",
       flexDirection: "column",
-      minHeight: "210px",
       minWidth: "150px",
       flexGrow: "1",
       cursor: "pointer",
@@ -543,12 +658,25 @@ function renderWeeklyView(baseDate = new Date(), highlightDate = null) {
       fontSize: "16px",
     });
 
-    const limit = offset < 5 ? 12 : 5;
+    // --- Dynamic row limits ---
+    const minWeekdayRows = 12;
+    const minWeekendRows = 5;
+
+
+    // Count how many tasks we already have (if loaded from DB)
+    const taskCount = tasksForThisDay.length;
+
+    // Decide how many rows to render initially
+    const minLimit = offset < 5 ? minWeekdayRows : minWeekendRows;
+    const limit = Math.max(minLimit, taskCount);  // ensure at least min
+    console.log({ offset, taskCount, limit });
+
     for (let i = 0; i < limit; i++) {
       const taskBox = document.createElement("li");
       taskBox.style.height = "40px";
       todoContainer.appendChild(taskBox);
     }
+
 
     // highlight today / selected
     const isToday =
@@ -595,31 +723,32 @@ function renderWeeklyView(baseDate = new Date(), highlightDate = null) {
       const rowHeight = 40;
 
       if (newRowWasAdded) {
-        if (offset === 5) {
-          const totalRows = saturdayBox.querySelectorAll(".todo-list li").length;
-          saturdayBox.style.maxHeight = `${totalRows * rowHeight}px`;
+        // if (offset === 5) {
+        //   const totalRows = saturdayBox.querySelectorAll(".todo-list li").length;
+        //   saturdayBox.style.maxHeight = `${totalRows * rowHeight}px`;
 
-          allDayBoxes.forEach((otherBox, idx) => {
-            if (idx !== 5 && idx !== 6) {
-              const otherTodoContainer = otherBox.querySelector(".todo-list");
-              const newBox = document.createElement("li");
-              newBox.style.height = `${rowHeight}`;
-              otherTodoContainer.appendChild(newBox);
-            }
-          });
-        } else {
-          const totalRows = saturdayBox.querySelectorAll(".todo-list li").length;
-          saturdayBox.style.maxHeight = `${totalRows * rowHeight}px`;
+        //   allDayBoxes.forEach((otherBox, idx) => {
+        //     if (idx !== 5 && idx !== 6) {
+        //       const otherTodoContainer = otherBox.querySelector(".todo-list");
+        //       const newBox = document.createElement("li");
+        //       newBox.style.height = `${rowHeight}`;
+        //       otherTodoContainer.appendChild(newBox);
+        //     }
+        //   });
+        // } else {
+        //   const totalRows = saturdayBox.querySelectorAll(".todo-list li").length;
+        //   saturdayBox.style.maxHeight = `${totalRows * rowHeight}px`;
 
-          allDayBoxes.forEach((otherBox, idx) => {
-            if (idx !== offset && idx !== 5) {
-              const otherTodoContainer = otherBox.querySelector(".todo-list");
-              const newBox = document.createElement("li");
-              newBox.style.height = `${rowHeight}px`;
-              otherTodoContainer.appendChild(newBox);
-            }
-          });
-        }
+        //   allDayBoxes.forEach((otherBox, idx) => {
+        //     if (idx !== offset && idx !== 5) {
+        //       const otherTodoContainer = otherBox.querySelector(".todo-list");
+        //       const newBox = document.createElement("li");
+        //       newBox.style.height = `${rowHeight}px`;
+        //       otherTodoContainer.appendChild(newBox);
+        //     }
+        //   });
+        // }
+        balanceRows();
       }
     });
 
@@ -723,21 +852,31 @@ function renderWeeklyView(baseDate = new Date(), highlightDate = null) {
       // 1. Loop through each user profile from the API response
       weeklyDataByUser.forEach(userProfile => {
         // 2. Then, loop through the tasks for that specific user
-        userProfile.tasks.forEach(task => {
-          const taskDate = new Date(task.date);
-          let jsDay = taskDate.getDay();
-          let idx = (jsDay === 0) ? 6 : jsDay - 1; // Monday = 0, ..., Sunday = 6
-          const todoList = allDayBoxes[idx].querySelector(".todo-list");
+        userProfile.tasks
+          .sort((a, b) => new Date(a.date) - new Date(b.date))
+          .forEach(task => {
+            const taskDate = new Date(task.date);
+            let jsDay = taskDate.getDay();
+            let idx = (jsDay === 0) ? 6 : jsDay - 1; // Monday = 0, ..., Sunday = 6
+            const todoList = allDayBoxes[idx].querySelector(".todo-list");
 
-          // Find the next available empty list item to render the task in
-          let box = [...todoList.children].find(
-            li => !li.textContent.trim() && !li.querySelector("input")
-          );
-          if (box) {
-            // Pass the userName to the render function to optionally display it
-            renderTaskElement(box, task, userProfile.userName);
-          }
-        });
+            const dateString = new Date(task.date).toISOString().split('T')[0];
+            if (!tasksByDate.has(dateString)) {
+              tasksByDate.set(dateString, []);
+            }
+            tasksByDate.get(dateString).push(task);
+
+            // Find the next available empty list item to render the task in
+            let box = [...todoList.children].find(
+              li => !li.textContent.trim() && !li.querySelector("input")
+            );
+            if (box) {
+              // Pass the userName to the render function to optionally display it
+              renderTaskElement(box, task, userProfile.userName);
+            }
+
+
+          });
       });
 
 
@@ -777,15 +916,14 @@ let prevweek = document.getElementById("prevweek");
 let nextweek = document.getElementById("nextweek");
 
 let currentWeekDate = new Date();
-
 prevweek.addEventListener("click", () => {
   currentWeekDate.setDate(currentWeekDate.getDate() - 7);
-  renderWeeklyView(new Date(currentWeekDate));
+  renderWeeklyView(currentWeekDate);
 });
 
 nextweek.addEventListener("click", () => {
   currentWeekDate.setDate(currentWeekDate.getDate() + 7);
-  renderWeeklyView(new Date(currentWeekDate));
+  renderWeeklyView(currentWeekDate);
 });
 
 const taskTitleInput = document.querySelector('.modal-date');
@@ -908,7 +1046,7 @@ const openEditModal = function (
 ) {
   // Store state
   currentEditableBox = editableBox;
-  selectedTaskColor = currentColor || "#000000";
+  selectedTaskColor = currentColor;
   onSaveCallback = callback;
 
   // Prefill modal fields
@@ -937,28 +1075,31 @@ const openEditModal = function (
   modalOverlay.addEventListener("click", handleOverlayClick);
 };
 
+// Replace your entire handleTaskSave function with this version
+
 async function handleTaskSave(box, newText, color, notes, newDate) {
-  // 'box' is the original <li> element of the task.
   if (!box) return;
 
   const taskId = box.dataset.id;
   if (!taskId) return;
 
-  // ✅ FIX: Determine the task's original location and status before sending the request.
-  function getWeekNumber(d) {
+  // --- Get Original Task Details ---
+  const parentDayBox = box.closest('.day-box, .someday-task-container');
+  const oldIsSomeday = !box.closest('.day-box');
+  const oldDate = oldIsSomeday ? null : new Date(box.closest('.day-box').dataset.dateColumn);
+  const getWeekNumber = (d) => { // This can be moved to a higher scope if you prefer
+    if (!d) return null;
     d = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
     d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7));
     const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
     const weekNo = Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
     return `${d.getUTCFullYear()}-W${String(weekNo).padStart(2, '0')}`;
-  }
-
-  const parentDayBox = box.closest('.day-box');
-  const oldIsSomeday = !parentDayBox;
-  const oldWeekId = oldIsSomeday ? null : getWeekNumber(new Date(parentDayBox.dataset.dateColumn));
+  };
+  const oldWeekId = getWeekNumber(oldDate);
   const isCompleted = box.classList.contains('completed');
+  const newIsSomeday = !newDate;
 
-  // 1. UPDATE THE SERVER (This part is correct)
+  // --- 1. Send Update to Server ---
   try {
     const response = await fetch(`http://localhost:5000/api/tasks/${taskId}`, {
       method: "PUT",
@@ -968,47 +1109,49 @@ async function handleTaskSave(box, newText, color, notes, newDate) {
       },
       body: JSON.stringify({
         title: newText,
-        date: newDate ? newDate.toISOString() : null, // Handle moving to someday
+        date: newDate ? newDate.toISOString() : null,
         completed: isCompleted,
-        oldIsSomeday: oldIsSomeday,
-        oldWeekId: oldWeekId
+        color: color
       }),
       credentials: "include"
     });
 
     if (!response.ok) {
-      throw new Error('Server update failed');
+      throw new Error(`Server update failed: ${await response.text()}`);
     }
 
-    // 2. UPDATE THE TASK ELEMENT'S DATA (This part is correct)
+    const updatedTask = await response.json();
+
+    // --- 2. Update the UI intelligently ---
     const textSpan = box.querySelector('.task-text');
     if (textSpan) textSpan.textContent = newText;
     box.dataset.notes = notes;
-    const newDateString = newDate.toISOString().split('T')[0];
-    box.dataset.date = newDateString;
 
-    // 3. MOVE THE ELEMENT TO THE FIRST EMPTY SLOT IN THE NEW COLUMN
-    const newDateColumn = document.querySelector(`[data-date-column="${newDateString}"]`);
+    // Directly compare the year, month, and day to avoid timezone issues.
+    const datesAreTheSame = oldDate && newDate &&
+      (oldDate.getFullYear() === newDate.getFullYear()) &&
+      (oldDate.getMonth() === newDate.getMonth()) &&
+      (oldDate.getDate() === newDate.getDate());
 
-    if (newDateColumn) {
-      const todoList = newDateColumn.querySelector('.todo-list');
-      if (todoList) {
+    if ((oldIsSomeday && newIsSomeday) || datesAreTheSame) {
+      console.log("Task updated in place. No move needed.");
 
-        // Find the first available empty row (an <li> with no text content)
-        const emptySlot = [...todoList.children].find(li => !li.textContent.trim());
-
-        if (emptySlot) {
-          // If an empty slot is found, replace it with your task box.
-          emptySlot.parentNode.replaceChild(box, emptySlot);
-        } else {
-          // If no empty slots are found, add the task to the end as a fallback.
-          todoList.appendChild(box);
-        }
+      // Update dataset + UI directly
+      box.dataset.color = color;
+      const textSpan = box.querySelector(".task-text");
+      if (textSpan) {
+        textSpan.textContent = newText;
+        textSpan.style.backgroundColor = color;
+        textSpan.style.color = "#fff";
       }
-    } else {
-      // If the new date column isn't visible, remove the task.
-      box.remove();
+      return; // ✅ no re-render
     }
+
+
+
+    // Condition 2: The date HAS changed. We need to move the element.
+    console.log("Task date changed. Moving element...");
+    // renderWeeklyView(currentDate); // The easiest way to reflect the move is to re-render the view
 
   } catch (error) {
     console.error("Failed to save task:", error);
@@ -1040,22 +1183,42 @@ function handleOverlayClick(e) {
   }
 }
 
-// --- EVENT LISTENERS ---
+// delte button logic
 if (deleteBtn) {
   deleteBtn.addEventListener('click', async () => {
-    if (currentEditableBox) {
-      const taskId = currentEditableBox.dataset.id;
-      if (taskId) {
-        await fetch(`http://localhost:5000/api/tasks/${taskId}`, {
-          method: "DELETE",
-          headers: {
-            "Authorization": `Bearer ${localStorage.getItem("token")}`,
-            "Content-Type": "application/json"
-          },
-          credentials: "include"
-        });
+    if (!currentEditableBox) {
+      return;
+    }
+    const taskId = currentEditableBox.dataset.id;
+
+    if (!taskId) {
+      console.error("Delete failed: No task ID found on the element.");
+      closeEditModal();
+      return;
+    }
+
+    try {
+      const response = await fetch(`http://localhost:5000/api/tasks/${taskId}`, {
+        method: "DELETE",
+        headers: {
+          "Authorization": `Bearer ${localStorage.getItem("token")}`,
+        },
+        credentials: "include"
+      });
+
+      if (response.ok) {
+        console.log("Task deleted successfully on server.");
         currentEditableBox.remove();
+      } else {
+        const errorData = await response.json();
+        console.error("Failed to delete task:", errorData.error);
+        alert(`Error: ${errorData.error}`);
       }
+
+    } catch (error) {
+      console.error("A network error occurred:", error);
+      alert("Could not connect to the server to delete the task.");
+    } finally {
       closeEditModal();
     }
   });
@@ -1086,6 +1249,199 @@ document.addEventListener('coloris:pick', event => {
       textSpan.style.color = "#fff";
     }
   }
+});
+
+
+// share model
+// --- SHARE MODAL ELEMENTS ---
+const shareModal = document.getElementById('shareModal');
+const shareModalOverlay = document.getElementById('shareModalOverlay');
+const closeShareModalBtn = document.getElementById('closeShareModalBtn');
+const shareEmailInput = document.getElementById('shareEmailInput');
+const shareBtn = document.getElementById('shareBtn');
+const sharedWithList = document.getElementById('sharedWithList');
+const shareTaskBtn = document.querySelector('.Sharetask'); // Your SVG button
+
+// --- FUNCTIONS ---
+async function openShareModal() {
+  // Fetch the list of users already shared with
+  try {
+    const res = await fetch('http://localhost:5000/api/tasks/shared-with', {
+      headers: { 'Authorization': `Bearer ${localStorage.getItem("token")}` },
+      credentials: 'include'
+    });
+    if (!res.ok) throw new Error('Could not fetch shared list');
+
+    const users = await res.json();
+    renderSharedWithList(users);
+
+    // Show the modal
+    shareModal.style.display = 'block';
+    shareModalOverlay.style.display = 'block';
+
+  } catch (error) {
+    console.error(error);
+    alert('Could not open sharing options.');
+  }
+}
+
+function closeShareModal() {
+  shareModal.style.display = 'none';
+  shareModalOverlay.style.display = 'none';
+  shareEmailInput.value = ''; // Clear input
+}
+
+function renderSharedWithList(users) {
+  sharedWithList.innerHTML = ''; // Clear current list
+  if (users.length === 0) {
+    sharedWithList.innerHTML = '<li>You haven\'t shared your tasks with anyone yet.</li>';
+    return;
+  }
+
+  users.forEach(user => {
+    const li = document.createElement('li');
+    li.innerHTML = `
+            <span>${user.email}</span>
+            <button class="unshare-btn" data-email="${user.email}">Unshare</button>
+        `;
+    sharedWithList.appendChild(li);
+  });
+}
+
+// --- EVENT LISTENERS ---
+if (shareTaskBtn) {
+  shareTaskBtn.addEventListener('click', openShareModal);
+}
+
+closeShareModalBtn.addEventListener('click', closeShareModal);
+shareModalOverlay.addEventListener('click', closeShareModal);
+
+// Share button inside modal
+shareBtn.addEventListener('click', async () => {
+  const email = shareEmailInput.value.trim();
+  if (!email) {
+    alert('Please enter an email address.');
+    return;
+  }
+
+  try {
+    const res = await fetch('http://localhost:5000/api/tasks/share', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${localStorage.getItem("token")}`
+      },
+      credentials: 'include',
+      body: JSON.stringify({ shareWithEmail: email })
+    });
+
+    const result = await res.json();
+
+    if (!res.ok) {
+      throw new Error(result.error || 'Failed to share.');
+    }
+
+    alert(result.message);
+    shareEmailInput.value = ''; // Clear input
+    openShareModal(); // Refresh the list
+
+  } catch (error) {
+    console.error(error);
+    alert(`Error: ${error.message}`);
+  }
+});
+
+// Unshare button clicks (using event delegation)
+sharedWithList.addEventListener('click', async (e) => {
+  if (e.target.classList.contains('unshare-btn')) {
+    const email = e.target.dataset.email;
+    if (!confirm(`Are you sure you want to unshare your tasks with ${email}?`)) {
+      return;
+    }
+
+    try {
+      const res = await fetch('http://localhost:5000/api/tasks/unshare', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${localStorage.getItem("token")}`
+        },
+        credentials: 'include',
+        body: JSON.stringify({ unshareWithEmail: email })
+      });
+      const result = await res.json();
+      if (!res.ok) throw new Error(result.error);
+
+      alert(result.message);
+      e.target.parentElement.remove(); // Remove the user from the list UI
+
+    } catch (error) {
+      console.error(error);
+      alert(`Error: ${error.message}`);
+    }
+  }
+});
+
+
+//repeate modal
+document.addEventListener('DOMContentLoaded', () => {
+  // Get all necessary elements from the DOM
+  const openModalBtn = document.getElementById('open-modal-btn');
+  const modalOverlay = document.getElementById('repeat-modal');
+  const closeModalBtn = document.getElementById('close-modal-btn');
+  const modalOptions = modalOverlay.querySelectorAll('li');
+
+  // --- Function to open the modal ---
+  const openModal = () => {
+    modalOverlay.classList.add('active');
+    openModalBtn.classList.add('active'); // Highlight the trigger button
+  };
+
+  // --- Function to close the modal ---
+  const closeModal = () => {
+    modalOverlay.classList.remove('active');
+    openModalBtn.classList.remove('active'); // Un-highlight the trigger button
+  };
+
+  // --- Event Listeners ---
+
+  // 1. Open modal when the button is clicked
+  openModalBtn.addEventListener('click', openModal);
+
+  // 2. Close modal when the 'X' button is clicked
+  closeModalBtn.addEventListener('click', closeModal);
+
+  // 3. Close modal when clicking on the overlay (the dark background)
+  modalOverlay.addEventListener('click', (event) => {
+    // We only close if the click is on the overlay itself, not its children
+    if (event.target === modalOverlay) {
+      closeModal();
+    }
+  });
+
+  // 4. Close modal when the "Escape" key is pressed
+  document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape') {
+      closeModal();
+    }
+  });
+
+  // 5. Handle the selection of a new option
+  modalOptions.forEach(option => {
+    option.addEventListener('click', () => {
+      // Remove 'selected' class from the previous selection
+      modalOverlay.querySelector('.selected')?.classList.remove('selected');
+
+      // Add 'selected' class to the newly clicked option
+      option.classList.add('selected');
+
+      const newSelection = option.dataset.value;
+      console.log('Repeat option selected:', newSelection);
+
+      // Close the modal after making a selection
+      closeModal();
+    });
+  });
 });
 
 function insertAtCursor(textArea, openTag, closeTag = "") {
@@ -1186,35 +1542,222 @@ document.getElementById("link").addEventListener("click", () => {
   taskNotes.focus();
 });
 
-//3dot menu
-// Get the button and the menu elements
-const moreOptionsBtn = document.getElementById('moreOptionsBtn');
-const moreOptionsMenu = document.getElementById('moreOptionsMenu');
+//more option 
+document.addEventListener('DOMContentLoaded', () => {
+  const moreOptionsBtn = document.getElementById('moreOptionsBtn');
+  const modalOverlay = document.getElementById('more-options-modal');
+  const optionsList = modalOverlay.querySelector('.options-list');
+  const taskCard = document.querySelector('#editModal');
 
-// Ensure both elements exist before adding listeners
-if (moreOptionsBtn && moreOptionsMenu) {
+  // This simulates the data of the task you clicked on.
+  const currentTask = {
+    id: taskCard.dataset.taskId,
+    title: taskCard.querySelector('span').textContent
+  };
 
-  // --- Logic to TOGGLE the menu ---
+  // --- Functions ---
+  const openModal = () => modalOverlay.classList.add('active');
+  const closeModal = () => modalOverlay.classList.remove('active');
+
+  // --- Event Listeners ---
   moreOptionsBtn.addEventListener('click', (event) => {
-    // This stops the click from immediately being caught by the 'window' listener
-    event.stopPropagation();
-
-    // Toggle the 'show' class on the menu
-    moreOptionsMenu.classList.toggle('show');
+    event.stopPropagation(); // Prevents the window listener from closing it immediately
+    openModal();
   });
 
-  // --- Logic to CLOSE the menu when clicking outside ---
-  window.addEventListener('click', (event) => {
-    // If the menu is currently shown...
-    if (moreOptionsMenu.classList.contains('show')) {
-      // ...and the click was NOT on the button or inside the menu...
-      if (!moreOptionsBtn.contains(event.target) && !moreOptionsMenu.contains(event.target)) {
-        // ...then hide the menu.
-        moreOptionsMenu.classList.remove('show');
-      }
+  modalOverlay.addEventListener('click', (event) => {
+    // Close if the click is on the overlay itself
+    if (event.target === modalOverlay) {
+      closeModal();
     }
   });
-}
+
+  document.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape') {
+      closeModal();
+    }
+  });
+
+  // --- Main Logic for Handling Actions ---
+  optionsList.addEventListener('click', (event) => {
+    const clickedOption = event.target.closest('li');
+
+    if (!clickedOption || clickedOption.classList.contains('disabled')) {
+      return; // Do nothing if it's not a valid option or is disabled
+    }
+
+    const action = clickedOption.dataset.action;
+
+    // In a real app, you would call your API here.
+    // We will simulate the actions with console logs.
+    console.log(`Action: '${action}' on Task ID: '${currentTask.id}'`);
+
+    switch (action) {
+      case 'tomorrow':
+        const tomorrow = new Date();
+        tomorrow.setDate(tomorrow.getDate() + 1);
+        console.log(`Simulating: Set date to ${tomorrow.toDateString()}`);
+        // Example API call: updateTask(currentTask.id, { date: tomorrow });
+        break;
+
+      case 'next-week':
+        const nextWeek = new Date();
+        nextWeek.setDate(nextWeek.getDate() + 7);
+        console.log(`Simulating: Set date to ${nextWeek.toDateString()}`);
+        // Example API call: updateTask(currentTask.id, { date: nextWeek });
+        break;
+
+      case 'someday':
+        console.log("Simulating: Moving task to 'Someday' list.");
+        // Example API call: updateTask(currentTask.id, { isSomeday: true });
+        break;
+
+      case 'duplicate':
+        console.log(`Simulating: Duplicating task "${currentTask.title}".`);
+        // Example API call: createTask({ title: `${currentTask.title} (Copy)` });
+        break;
+
+      case 'add-file':
+        // This case won't be reached because of the 'disabled' check,
+        // but if it were enabled, it would open a file dialog.
+        console.log("Simulating: Opening file upload dialog.");
+        break;
+    }
+
+    closeModal(); // Close the modal after performing an action
+  });
+});
+
+
+//reminder option
+document.addEventListener('DOMContentLoaded', () => {
+
+  // --- Core Reminder Elements ---
+  const remindBtn = document.getElementById('reminder-btn'); // Your main trigger button
+  const reminderPopover = document.getElementById('reminder-popover'); // The popover for the reminder
+  const setReminderBtn = document.getElementById('set-reminder-btn-popover');
+
+  // Elements inside the popover
+  const dateDisplay = document.getElementById('date-display-popover');
+  const prevDayBtn = document.getElementById('prev-day-btn-popover');
+  const nextDayBtn = document.getElementById('next-day-btn-popover');
+  const hourValue = document.getElementById('hour-value-popover');
+  const minuteValue = document.getElementById('minute-value-popover');
+  const ampmValue = document.getElementById('ampm-value-popover');
+  const timeArrows = reminderPopover.querySelectorAll('.arrow');
+
+  // --- State Variable ---
+  let selectedDate = new Date();
+
+  // --- Helper Functions ---
+  const formatDate = (date) => {
+    return date.toLocaleDateString('en-US', {
+      weekday: 'short', day: 'numeric', month: 'short'
+    });
+  };
+
+  const updateDateDisplay = () => {
+    dateDisplay.textContent = formatDate(selectedDate);
+  };
+
+  const updateTimeDisplay = (hour, minute, ampm) => {
+    hourValue.textContent = String(hour).padStart(2, '0');
+    minuteValue.textContent = String(minute).padStart(2, '0');
+    ampmValue.textContent = ampm;
+  };
+
+  // --- Main Functions to Open/Close Popover ---
+
+  // Positions and shows the popover
+  const openReminderPopover = () => {
+    const btnRect = remindBtn.getBoundingClientRect();
+    reminderPopover.style.left = `300px`;   
+    reminderPopover.style.top = `90px`;
+    reminderPopover.classList.add('active');
+    remindBtn.classList.add('active');
+  };
+
+  // Hides the popover
+  const closeReminderPopover = () => {
+    reminderPopover.classList.remove('active');
+    remindBtn.classList.remove('active');
+  };
+
+  // --- Event Listeners ---
+
+  // 1. Open the popover when the reminder button is clicked
+  remindBtn.addEventListener('click', (event) => {
+    event.stopPropagation(); // Prevent click from bubbling up to the window
+
+    // If it's already open, close it. Otherwise, open it.
+    if (reminderPopover.classList.contains('active')) {
+      closeReminderPopover();
+    } else {
+      // Initialize picker with current date and a sensible time
+      selectedDate = new Date();
+      let h = new Date().getHours();
+      let m = new Date().getMinutes();
+      let ampm = h >= 12 ? 'PM' : 'AM';
+      h = h % 12;
+      h = h ? h : 12; // Hour '0' should be '12'
+      m = Math.round(m / 15) * 15; // Round to nearest 15 mins
+      if (m === 60) { m = 0; h += 1; }
+
+      updateDateDisplay();
+      updateTimeDisplay(h, m, ampm);
+      openReminderPopover();
+    }
+  });
+
+  // 2. Handle date changes
+  prevDayBtn.addEventListener('click', () => {
+    selectedDate.setDate(selectedDate.getDate() - 1);
+    updateDateDisplay();
+  });
+
+  nextDayBtn.addEventListener('click', () => {
+    selectedDate.setDate(selectedDate.getDate() + 1);
+    updateDateDisplay();
+  });
+
+  // 3. Handle time changes using event delegation on arrows
+  timeArrows.forEach(arrow => {
+    arrow.addEventListener('click', () => {
+      let unit = arrow.dataset.unit;
+      let change = parseInt(arrow.dataset.change);
+
+      let h = parseInt(hourValue.textContent);
+      let m = parseInt(minuteValue.textContent);
+      let ampm = ampmValue.textContent;
+
+      if (unit === 'hour') h = (h + change - 1 + 12) % 12 + 1;
+      if (unit === 'minute') m = (m + change + 60) % 60;
+      if (unit === 'ampm') ampm = ampm === 'AM' ? 'PM' : 'AM';
+
+      updateTimeDisplay(h, m, ampm);
+    });
+  });
+
+  // 4. Handle setting the reminder
+  setReminderBtn.addEventListener('click', () => {
+    const finalDate = dateDisplay.textContent;
+    const finalTime = `${hourValue.textContent}:${minuteValue.textContent} ${ampmValue.textContent}`;
+
+    console.log("--- Reminder Set ---");
+    console.log("Reminder Date:", finalDate);
+    console.log("Reminder Time:", finalTime);
+    console.log("This data would now be sent to your server via an API call.");
+
+    closeReminderPopover();
+  });
+
+  // 5. Close the popover if clicking anywhere else on the page
+  window.addEventListener('click', (event) => {
+    if (!reminderPopover.contains(event.target) && !remindBtn.contains(event.target)) {
+      closeReminderPopover();
+    }
+  });
+});
 
 // account login
 document.addEventListener('DOMContentLoaded', () => {

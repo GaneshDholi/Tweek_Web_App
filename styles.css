@@ -705,69 +705,460 @@ body {
   color: #007bff;
 }
 
-/* 3dot modal in edit modal */
-/* Make the button container a positioning reference point */
-.modal-actions {
-  position: relative;
+/* Share Modal Styles */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0, 0, 0, 0.6);
+  z-index: 100;
 }
 
-/* Styles for the dropdown menu container */
-.options-menu {
-  /* Hide by default */
-  display: none; 
-  opacity: 0;
-  visibility: hidden;
-  
-  /* Positioning */
+.share-modal {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: #ffffff;
+  padding: 25px 30px;
+  border-radius: 16px;
+  width: 90%;
+  max-width: 400px;
+  z-index: 100000;
+  box-shadow: 0 5px 20px rgba(0, 0, 0, 0.2);
+}
+
+.share-modal-content h2 {
+  margin-top: 0;
+  font-size: 22px;
+}
+
+.share-modal-content p {
+  color: #666;
+  font-size: 14px;
+  margin-bottom: 20px;
+}
+
+.close-btn {
   position: absolute;
-  top: 110%; /* Place it slightly below the button */
-  right: 0;
-  z-index: 1000;
+  top: 10px;
+  right: 15px;
+  font-size: 28px;
+  color: #aaa;
+  background: none;
+  border: none;
+  cursor: pointer;
+}
 
-  /* Appearance */
-  width: 180px;
-  background-color: #ffffff;
+.share-form {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 25px;
+}
+
+.share-form input {
+  flex-grow: 1;
+  border: 1px solid #ccc;
   border-radius: 8px;
-  padding: 6px;
-  border: 1px solid #eee;
-  box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-  
-  /* Smooth transition */
-  transform: translateY(-10px);
-  transition: opacity 0.2s ease, transform 0.2s ease, visibility 0.2s;
+  padding: 10px;
+  font-size: 14px;
 }
 
-/* This class will be added by JavaScript to show the menu */
-.options-menu.show {
-  display: block;
+.share-form button {
+  background-color: #000;
+  color: #fff;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: bold;
+}
+
+.shared-with-section h3 {
+  font-size: 16px;
+  color: #333;
+  border-bottom: 1px solid #eee;
+  padding-bottom: 8px;
+  margin-bottom: 10px;
+}
+
+.shared-with-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  max-height: 150px;
+  overflow-y: auto;
+}
+
+.shared-with-list li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 0;
+  font-size: 14px;
+}
+
+.shared-with-list button {
+  background: #eee;
+  color: #555;
+  border: none;
+  border-radius: 6px;
+  padding: 4px 10px;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+/* repete modal */
+.open-modal-btn {
+  background-color: #ffffff;
+  border: 1px solid #d1d5db;
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 6px;
+  transition: background-color 0.2s, box-shadow 0.2s;
+}
+
+.open-modal-btn:hover {
+  background-color: #f9fafb;
+}
+
+.open-modal-btn:focus,
+.open-modal-btn.active {
+  outline: 2px solid #4f46e5;
+  box-shadow: 0 0 0 2px #c7d2fe;
+}
+
+/* --- Modal Styles --- */
+
+/* The semi-transparent background overlay */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(17, 24, 39, 0.4);
+  /* Dark with transparency */
+  display: none;
+  /* Hidden by default */
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+/* When active, show the overlay */
+.modal-overlay.active {
+  display: flex;
   opacity: 1;
-  visibility: visible;
-  transform: translateY(0);
 }
 
-/* Clean up the list inside the menu */
-.options-menu ul {
+/* The modal content box */
+.modal-content-2 {
+  background-color: #ffffff;
+  padding: 24px;
+  border-radius: 12px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+  width: 90%;
+  max-width: 360px;
+  transform: scale(0.95);
+  transition: transform 0.3s ease;
+}
+
+.modal-overlay.active .modal-content-2 {
+  transform: scale(1);
+}
+
+/* Modal header with title and close button */
+.modal-header-2 {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  padding-bottom: 12px;
+}
+
+.modal-header-2 h2 {
+  margin: 0;
+  font-size: 18px;
+  color: #111827;
+}
+
+.close-modal-btn {
+  background: none;
+  border: none;
+  font-size: 28px;
+  font-weight: 300;
+  cursor: pointer;
+  color: #6b7280;
+  padding: 0;
+  line-height: 1;
+}
+
+.close-modal-btn:hover {
+  color: #111827;
+}
+
+/* Styling for the list of options */
+.modal-body ul {
   list-style: none;
   margin: 0;
   padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  /* Space between options */
 }
 
-/* Style for each clickable item in the menu */
-.options-menu ul button {
-  width: 100%;
-  background: none;
-  border: none;
-  padding: 10px 12px;
-  text-align: left;
-  font-size: 14px;
+/* Styling for each option (li element) */
+.modal-body li {
+  padding: 12px 16px;
   cursor: pointer;
-  border-radius: 5px;
-  color: #333;
+  border-radius: 8px;
+  font-size: 15px;
+  color: #374151;
+  transition: background-color 0.2s ease-in-out;
+  border: 1px solid #e5e7eb;
 }
 
-/* Hover effect for menu items */
-.options-menu ul button:hover {
-  background-color: #f5f5f5;
+/* Highlight option on hover */
+.modal-body li:hover {
+  background-color: #f9fafb;
+  border-color: #d1d5db;
+}
+
+/* Styling for the currently selected option */
+.modal-body li.selected {
+  background-color: #eef2ff;
+  color: #4338ca;
+  font-weight: 500;
+  border-color: #818cf8;
+}
+
+/* 3dot modal in edit modal */
+.task-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  background-color: white;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  width: 350px;
+}
+
+.task-card span {
+  font-size: 16px;
+  color: #111827;
+}
+
+/* --- The "More" Button --- */
+.more-options-btn {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  padding: 8px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #6b7280;
+  transition: background-color 0.2s;
+}
+
+.more-options-btn:hover {
+  background-color: #f3f4f6;
+}
+
+/* --- Modal Styles --- */
+.modal-overlay-3 {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(17, 24, 39, 0.4);
+  display: none;
+  /* Hidden by default */
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.modal-overlay-3.active {
+  display: flex;
+  opacity: 1;
+}
+
+.modal-content-3 {
+  background-color: #ffffff;
+  border-radius: 10px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
+  width: 220px;
+  transform: scale(0.95);
+  transition: transform 0.3s ease;
+}
+
+.modal-overlay-3.active .modal-content-3 {
+  transform: scale(1);
+}
+
+/* --- Options List Styles --- */
+.options-list {
+  list-style: none;
+  margin: 0;
+  padding: 8px;
+}
+
+.options-list li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 15px;
+  color: #374151;
+  transition: background-color 0.2s;
+}
+
+.options-list li:hover {
+  background-color: #f3f4f6;
+}
+
+.options-list li .text {
+  flex-grow: 1;
+}
+
+.options-list li .icon {
+  color: #9ca3af;
+  width: 20px;
+  height: 20px;
+}
+
+/* --- reminder styling--- */
+.popover-menu {
+    position: absolute; /* Crucial for positioning with JavaScript */
+    display: none;      /* Hidden by default */
+    background: #FFFFFF;
+    border-radius: 10px;
+    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    border: 1px solid #E5E7EB;
+    z-index: 1010; /* Ensures it appears on top of the main modal */
+    overflow: hidden;
+}
+
+/* This class is added by JavaScript to show the popover */
+.popover-menu.active {
+    display: block;
+}
+
+/* --- Reminder Popover Specifics --- */
+#reminder-popover {
+    width: 280px;
+}
+
+.picker-container {
+    padding: 16px;
+}
+
+/* Date Picker */
+.date-picker {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+}
+
+.date-picker button {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: #6B7280;
+    padding: 4px;
+    border-radius: 50%;
+    width: 28px;
+    height: 28px;
+    display: grid;
+    place-items: center;
+    transition: background-color 0.2s;
+}
+
+.date-picker button:hover {
+    background-color: #F3F4F6;
+}
+
+#date-display-popover {
+    font-weight: 500;
+    color: #111827;
+    font-size: 15px;
+}
+
+/* Time Picker */
+.time-picker {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 8px;
+}
+
+.time-segment {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.time-segment .arrow {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: #9CA3AF;
+    padding: 2px;
+}
+
+.time-segment .value {
+    font-size: 32px;
+    font-weight: bold;
+    color: #111827;
+    width: 50px;
+    text-align: center;
+    margin: 4px 0;
+}
+
+/* Popover Footer */
+.popover-footer {
+    padding: 12px 16px;
+    border-top: 1px solid #E5E7EB;
+    background-color: #F9FAFB;
+}
+
+.set-reminder-btn {
+    width: 100%;
+    background-color: #1F2937;
+    color: white;
+    border: none;
+    padding: 10px;
+    border-radius: 6px;
+    font-size: 14px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.set-reminder-btn:hover {
+    background-color: #374151;
+}
+
+/* --- Style for the Main Trigger Button --- */
+/* This makes the bell icon purple when its popover is open */
+#reminder-btn.active {
+    color: #4F46E5;
+    background-color: #EEF2FF;
 }
 
 /* Edit modal */
@@ -819,7 +1210,7 @@ body {
 #editModal .modal-content2 {
   display: flex;
   flex-direction: column;
-  justify-content: flex-start; 
+  justify-content: flex-start;
 }
 
 .modal-header .modal-date {

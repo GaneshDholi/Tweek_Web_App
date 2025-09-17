@@ -19,7 +19,6 @@ router.get("/week/:weekId", async (req, res) => {
         const { weekId } = req.params;
         const currentUserId = new mongoose.Types.ObjectId(req.user.id);
 
-        // 1. Find the current user to get their 'canViewTasksOf' list
         const currentUser = await User.findById(currentUserId)
             .select('canViewTasksOf')
             .lean();
@@ -28,27 +27,28 @@ router.get("/week/:weekId", async (req, res) => {
             return res.status(404).json({ error: "Current user not found." });
         }
 
-        // 2. Create an array of all user IDs to fetch tasks for
         const userIdsToFetch = [
             currentUserId,
             ...(currentUser.canViewTasksOf || [])
         ];
-
-        // 3. Find all task profiles for these users
+        
         const profiles = await UserTasksProfile.find({
             userId: { $in: userIdsToFetch }
         })
-            // Select only the necessary fields for a smaller payload
             .select(`userId userName weeklyTasks.${weekId}`)
-            .lean();
+            .lean(); // Because of .lean(), weeklyTasks is a plain object
 
-        // 4. Format the response to be clean and easy for the frontend to use
         const responseData = profiles.map(profile => {
-            const weekData = profile.weeklyTasks?.[weekId];
+            
+            // ▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼ FIX HERE ▼▼"▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼
+            // Use standard bracket notation for a plain object from .lean()
+            const weekData = profile.weeklyTasks ? profile.weeklyTasks[weekId] : undefined;
+            // ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲ FIX HERE ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲
+
             return {
                 userId: profile.userId,
                 userName: profile.userName,
-                tasks: weekData?.tasks || [] // Return tasks for the week or an empty array
+                tasks: weekData?.tasks || []
             };
         });
 
@@ -75,70 +75,69 @@ router.get("/someday", async (req, res) => {
 
 // --- WRITE OPERATIONS ---
 
-// ADD A TASK (Corrected with Aggregation Pipeline)
 router.post("/", async (req, res) => {
-  try {
-    const { title, date, completed = false, isSomeday = false } = req.body;
-    const userId = req.user.id;
+    try {
+        const { title, date, completed = false, isSomeday = false, color = "#000000", repeat = 'none'  } = req.body;
+        const userId = req.user.id;
 
-    // Find the user to get their name
-    const user = await User.findById(userId).select('firstName lastName').lean();
-    if (!user) {
-      return res.status(404).json({ error: "User not found" });
+        // This part is fine
+        const user = await User.findById(userId).select('firstName lastName').lean();
+        if (!user) {
+            return res.status(404).json({ error: "User not found" });
+        }
+        
+        // Find the user's task profile or prepare to create one
+        let userProfile = await UserTasksProfile.findOne({ userId });
+        if (!userProfile) {
+            // Ensure the default value is an actual Map
+            userProfile = new UserTasksProfile({ userId, somedayTasks: [], weeklyTasks: new Map() });
+        }
+
+        // This part is fine
+        const newTask = {
+            title: title,
+            date: isSomeday ? null : new Date(date),
+            completed: completed,
+            createdAt: new Date(),
+            isSomeday: isSomeday,
+            color: color,
+            repeat: repeat
+        };
+
+        if (isSomeday) {
+            // Pushing to a regular array is correct
+            userProfile.somedayTasks.push(newTask);
+        } else {
+            // Add to weekly tasks
+            if (!date) {
+                return res.status(400).json({ error: "A date is required for weekly tasks." });
+            }
+            const weekId = getWeekNumber(new Date(date));
+            
+            // 1. Correctly get the existing week's data from the Map
+            const weekData = userProfile.weeklyTasks.get(weekId) || { tasks: [] };
+
+            // 2. Push the new task to the local array
+            weekData.tasks.push(newTask);
+
+            // 3. Correctly set the updated data back into the Map
+            userProfile.weeklyTasks.set(weekId, weekData);
+        }
+
+        // Save the changes and respond
+        const savedProfile = await userProfile.save();
+
+        // Retrieve the added task to send back in the response
+        const addedTask = isSomeday
+            ? savedProfile.somedayTasks[savedProfile.somedayTasks.length - 1]
+            : savedProfile.weeklyTasks.get(getWeekNumber(new Date(date))).tasks.slice(-1)[0];
+
+        res.status(201).json(addedTask);
+
+    } catch (err) {
+        console.error("Error in POST /:", err);
+        res.status(500).json({ error: "An unexpected error occurred." });
     }
-    const userName = `${user.firstName} ${user.lastName}`;
-
-    // Find the user's task profile or create a new one
-    let userProfile = await UserTasksProfile.findOne({ userId });
-    if (!userProfile) {
-      userProfile = new UserTasksProfile({ userId, userName, somedayTasks: [], weeklyTasks: {} });
-    }
-
-    // Create the new task object
-    const newTask = {
-      // _id is added by default, no need to create it manually
-      title: title,
-      date: isSomeday ? null : new Date(date),
-      completed: completed,
-      createdAt: new Date(),
-      isSomeday: isSomeday
-    };
-
-    if (isSomeday) {
-      // Add to someday tasks
-      userProfile.somedayTasks.push(newTask);
-    } else {
-      // Add to weekly tasks
-      if (!date) {
-        return res.status(400).json({ error: "A date is required for weekly tasks." });
-      }
-      const weekId = getWeekNumber(new Date(date));
-
-      // Ensure the week and its tasks array exist
-      if (!userProfile.weeklyTasks) {
-        userProfile.weeklyTasks = {};
-      }
-      if (!userProfile.weeklyTasks[weekId]) {
-        userProfile.weeklyTasks[weekId] = { tasks: [] };
-      }
-      userProfile.weeklyTasks[weekId].tasks.push(newTask);
-      
-      // Mongoose needs to be told that a nested object has changed
-      userProfile.markModified('weeklyTasks');
-    }
-
-    // Save the changes and respond with the newly added task from the profile
-    const savedProfile = await userProfile.save();
-    const addedTask = isSomeday
-        ? savedProfile.somedayTasks[savedProfile.somedayTasks.length - 1]
-        : savedProfile.weeklyTasks[getWeekNumber(new Date(date))].tasks[savedProfile.weeklyTasks[getWeekNumber(new Date(date))].tasks.length - 1];
-
-    res.status(201).json(addedTask);
-
-  } catch (err) {
-    console.error("Error in POST /:", err);
-    res.status(500).json({ error: "An unexpected error occurred." });
-  }
 });
 
 
@@ -146,94 +145,70 @@ router.post("/", async (req, res) => {
 router.put("/:id", async (req, res) => {
     try {
         const taskId = req.params.id;
-        const { title, date, completed, oldWeekId, oldIsSomeday } = req.body;
+        const { title, date, completed, color} = req.body;
 
-        const userProfile = await UserTasksProfile.findOne({
-            userId: new mongoose.Types.ObjectId(req.user.id)
-        });
-        if (!userProfile) return res.status(404).json({ error: "Task profile not found." });
+        // 1. Find the user's profile
+        const userProfile = await UserTasksProfile.findOne({ userId: req.user.id });
+        if (!userProfile) {
+            return res.status(404).json({ error: "User profile not found." });
+        }
 
-        // Ensure containers exist
-        userProfile.somedayTasks ||= [];
-        userProfile.weeklyTasks ||= {};
+        let task = null;
+        let originalLocation = { type: null, weekId: null };
 
-        // Helpers to support both Object and Map
-        const isMap = (v) => v instanceof Map;
-        const getWeek = (id) =>
-            isMap(userProfile.weeklyTasks) ? userProfile.weeklyTasks.get(id) : userProfile.weeklyTasks[id];
-        const setWeek = (id, data) => {
-            if (isMap(userProfile.weeklyTasks)) userProfile.weeklyTasks.set(id, data);
-            else userProfile.weeklyTasks[id] = data;
-        };
-        const ensureWeek = (id) => {
-            let w = getWeek(id);
-            if (!w || !Array.isArray(w.tasks)) {
-                w = { tasks: [] };
-                setWeek(id, w);
-            }
-            return w;
-        };
-        const weeksEntries = () =>
-            isMap(userProfile.weeklyTasks)
-                ? Array.from(userProfile.weeklyTasks.entries())
-                : Object.entries(userProfile.weeklyTasks || {});
-
-        // 1) Find & remove from original location
-        let from = null;
-        let idx = -1;
-
-        if (oldIsSomeday === true) {
-            from = { type: "someday" };
-            idx = userProfile.somedayTasks.findIndex(t => String(t._id) === String(taskId));
-        } else if (oldWeekId) {
-            const w = getWeek(oldWeekId);
-            idx = w?.tasks?.findIndex(t => String(t._id) === String(taskId)) ?? -1;
-            if (idx !== -1) from = { type: "week", id: oldWeekId };
+        // 2. Find the task, searching both 'someday' and 'weekly' lists
+        // First, check somedayTasks
+        const somedayIndex = userProfile.somedayTasks.findIndex(t => String(t._id) === taskId);
+        if (somedayIndex > -1) {
+            task = userProfile.somedayTasks[somedayIndex];
+            originalLocation.type = 'someday';
         } else {
-            // Auto-detect: first check someday
-            idx = userProfile.somedayTasks.findIndex(t => String(t._id) === String(taskId));
-            if (idx !== -1) from = { type: "someday" };
-            // then scan weeks
-            if (!from) {
-                for (const [wid, w] of weeksEntries()) {
-                    const i = w?.tasks?.findIndex(t => String(t._id) === String(taskId)) ?? -1;
-                    if (i !== -1) { from = { type: "week", id: wid }; idx = i; break; }
+            // If not in someday, search all weeks
+            for (const [weekId, weekData] of userProfile.weeklyTasks.entries()) {
+                const taskIndex = weekData.tasks.findIndex(t => String(t._id) === taskId);
+                if (taskIndex > -1) {
+                    task = weekData.tasks[taskIndex];
+                    originalLocation = { type: 'week', weekId: weekId };
+                    break;
                 }
             }
         }
 
-        if (!from || idx === -1) {
-            return res.status(404).json({ error: "Task not found in its original location." });
+        // 3. If task is not found anywhere, return an error
+        if (!task) {
+            return res.status(404).json({ error: "Task not found." });
         }
 
-        let task;
-        if (from.type === "someday") {
-            [task] = userProfile.somedayTasks.splice(idx, 1);
-        } else {
-            const w = getWeek(from.id);
-            [task] = w.tasks.splice(idx, 1);
+        // 4. Remove the task from its original location
+        if (originalLocation.type === 'someday') {
+            userProfile.somedayTasks.splice(somedayIndex, 1);
+        } else if (originalLocation.type === 'week') {
+            const week = userProfile.weeklyTasks.get(originalLocation.weekId);
+            week.tasks = week.tasks.filter(t => String(t._id) !== taskId);
         }
 
-        // 2) Update fields
+        // 5. Update the task object with new data if provided
         if (title !== undefined) task.title = title;
         if (completed !== undefined) task.completed = completed;
+        if (date !== undefined) {
+            task.date = date ? new Date(date) : null;
+        }
+        if (color !== undefined) task.color = color; 
 
-        const toSomeday = date === null || date === "" || date === undefined;
-        task.date = toSomeday ? null : new Date(date);
-
-        // 3) Insert into destination
-        if (toSomeday) {
+        // 6. Place the updated task in its new correct location
+        if (task.date === null) {
             userProfile.somedayTasks.push(task);
         } else {
-            const newWeekId = getWeekNumber(new Date(date));
-            const dest = ensureWeek(newWeekId);
-            dest.tasks.push(task);
+            const newWeekId = getWeekNumber(new Date(task.date));
+            const newWeek = userProfile.weeklyTasks.get(newWeekId) || { tasks: [] };
+            newWeek.tasks.push(task);
+            userProfile.weeklyTasks.set(newWeekId, newWeek);
         }
-        
-        userProfile.markModified('weeklyTasks');
 
+        // 7. Save the entire profile and return the updated task
         await userProfile.save();
-        res.json(task);
+        res.status(200).json(task);
+
     } catch (err) {
         console.error("Error in PUT /:id:", err);
         res.status(500).json({ error: "An unexpected error occurred." });
@@ -242,73 +217,71 @@ router.put("/:id", async (req, res) => {
 
 // DELETE A TASK (Simplified and Corrected)
 router.delete("/:id", async (req, res) => {
-  try {
-    const taskId = req.params.id;
-    const userId = req.user.id;
+    try {
+        const taskId = req.params.id;
+        const userId = req.user.id;
 
-    const userProfile = await UserTasksProfile.findOne({ userId });
-    if (!userProfile) {
-      return res.status(404).json({ error: "User profile not found." });
-    }
+        // Log the initial request details
+        console.log(`--- DELETE /api/tasks/${taskId} ---`);
+        console.log(`User ID: ${userId}, Task ID: ${taskId}`);
 
-    // 1. Attempt to find and remove from 'somedayTasks'
-    const somedayTaskCount = userProfile.somedayTasks.length;
-    userProfile.somedayTasks = userProfile.somedayTasks.filter(
-      t => String(t._id) !== String(taskId)
-    );
+        // --- ATTEMPT 1: Atomically pull from 'somedayTasks' ---
+        console.log("  -> Attempt 1: Searching 'somedayTasks' atomically...");
+        const result = await UserTasksProfile.updateOne(
+            { userId: userId },
+            { $pull: { somedayTasks: { _id: taskId } } }
+        );
 
-    if (userProfile.somedayTasks.length < somedayTaskCount) {
-      // A task was removed from somedayTasks
-      await userProfile.save();
-      return res.status(200).json({ message: "Task deleted successfully from someday." });
-    }
+        // Log the result of the database operation
+        console.log("  updateOne result:", result);
 
-    // 2. If not found in someday, search through 'weeklyTasks'
-    console.log("Task not found in someday. Searching weeklyTasks...");
-    console.log("Searching for taskId:", taskId);
-
-    let weekIdToDeleteFrom = null;
-    if (userProfile.weeklyTasks && Object.keys(userProfile.weeklyTasks).length > 0) {
-        console.log("Weekly tasks found. Iterating through weeks...");
-        for (const weekId in userProfile.weeklyTasks) {
-            console.log(`Checking week: ${weekId}`);
-            // Safety check in case a week object has no tasks array
-            if (!userProfile.weeklyTasks[weekId].tasks) continue;
-
-            const taskIndex = userProfile.weeklyTasks[weekId].tasks.findIndex(t => {
-                console.log(`  - Comparing with task._id: ${t._id}`);
-                return String(t._id) === String(taskId);
-            });
-
-            if (taskIndex > -1) {
-                console.log(`SUCCESS: Found task in week ${weekId} at index ${taskIndex}`);
-                // Found the task in a week
-                userProfile.weeklyTasks[weekId].tasks.splice(taskIndex, 1);
-                weekIdToDeleteFrom = weekId;
-                break; // Exit the loop once found
-            }
+        if (result.modifiedCount > 0) {
+            console.log("SUCCESS ✅: Task found and deleted from somedayTasks.");
+            return res.status(200).json({ message: "Task deleted successfully from someday." });
         }
-    } else {
-        console.log("No weekly tasks exist for this user.");
+
+        // --- ATTEMPT 2: If not in someday, handle 'weeklyTasks' ---
+        console.log("  -> Attempt 2: Task not in someday. Searching 'weeklyTasks'...");
+        const userProfile = await UserTasksProfile.findOne({ userId });
+
+        if (!userProfile) {
+            console.log("FAILURE ❌: User profile not found.");
+            return res.status(404).json({ error: "User profile not found." });
+        }
+
+        let taskWasFoundInWeek = false;
+        if (userProfile.weeklyTasks && userProfile.weeklyTasks.size > 0) {
+            console.log("  Iterating through weeklyTasks map...");
+            for (const [weekId, weekData] of userProfile.weeklyTasks.entries()) {
+                console.log(`    - Checking week: ${weekId}`);
+                const initialTaskCount = weekData.tasks.length;
+                weekData.tasks = weekData.tasks.filter(t => String(t._id) !== String(taskId));
+
+                if (weekData.tasks.length < initialTaskCount) {
+                    console.log(`SUCCESS ✅: Found and removed task ${taskId} from week ${weekId}`);
+                    taskWasFoundInWeek = true;
+                    userProfile.weeklyTasks.set(weekId, weekData);
+                    break;
+                }
+            }
+        } else {
+            console.log("  Info: No weekly tasks exist for this user to search.");
+        }
+
+        if (taskWasFoundInWeek) {
+            console.log("  Saving updated user profile...");
+            await userProfile.save();
+            return res.status(200).json({ message: "Task deleted successfully from week." });
+        }
+
+        console.log("FAILURE ❌: Task not found anywhere.");
+        return res.status(404).json({ error: "Task not found." });
+
+    } catch (err) {
+        // This will catch any unexpected errors during the process
+        console.error("CRITICAL ERROR in DELETE /:id:", err);
+        res.status(500).json({ error: "An unexpected error occurred." });
     }
-
-    if (weekIdToDeleteFrom) {
-      // A task was found and removed from weeklyTasks
-      console.log("Task removed. Marking weeklyTasks as modified and saving.");
-      // Explicitly tell Mongoose that the nested weeklyTasks object has changed
-      userProfile.markModified('weeklyTasks');
-      await userProfile.save();
-      return res.status(200).json({ message: "Task deleted successfully from week." });
-    }
-
-    // 3. If we reach here, the task was not found anywhere
-    console.log("FAILURE: Task not found anywhere. Returning 404.");
-    return res.status(404).json({ error: "Task not found." });
-
-  } catch (err) {
-    console.error("Error in DELETE /:id:", err);
-    res.status(500).json({ error: "An unexpected error occurred." });
-  }
 });
 
 
@@ -334,10 +307,14 @@ router.post("/share", async (req, res) => {
         }
 
         // Add the sharer's ID to the other user's 'canViewTasksOf' array
-        // Using $addToSet prevents adding duplicate IDs
         await User.updateOne(
             { _id: userToShareWith._id },
             { $addToSet: { canViewTasksOf: sharerId } }
+        );
+
+        await User.updateOne(
+            { _id: sharerId },
+            { $addToSet: { sharedWith: userToShareWith._id } }
         );
 
         res.status(200).json({ message: `Successfully shared your tasks with ${shareWithEmail}.` });
@@ -348,6 +325,61 @@ router.post("/share", async (req, res) => {
     }
 });
 
+router.post("/unshare", async (req, res) => {
+    try {
+        const sharerId = new mongoose.Types.ObjectId(req.user.id); // the person who originally shared
+        const { unshareWithEmail } = req.body; // email of the user you want to remove
+
+        if (!unshareWithEmail) {
+            return res.status(400).json({ error: "Email to unshare with is required." });
+        }
+
+        // Find the user to unshare with
+        const userToUnshareWith = await User.findOne({ email: unshareWithEmail });
+        if (!userToUnshareWith) {
+            return res.status(404).json({ error: "User to unshare with not found." });
+        }
+
+        // Prevent self-unshare nonsense
+        if (userToUnshareWith._id.equals(sharerId)) {
+            return res.status(400).json({ error: "You cannot unshare with yourself." });
+        }
+
+        // Pull the sharerId from their canViewTasksOf array
+        await User.updateOne(
+            { _id: userToUnshareWith._id },
+            { $pull: { canViewTasksOf: sharerId } }
+        );
+
+        await User.updateOne(
+            { _id: sharerId },
+            { $pull: { sharedWith: userToUnshareWith._id } }
+        );
+
+        res.status(200).json({ message: `Successfully unshared your tasks with ${unshareWithEmail}.` });
+
+    } catch (err) {
+        console.error("Error in POST /unshare:", err);
+        res.status(500).json({ error: "An unexpected error occurred during unsharing." });
+    }
+});
+
+router.get("/shared-with", async (req, res) => {
+    try {
+        const user = await User.findById(req.user.id)
+            .populate('sharedWith', 'email firstName lastName') // Get the full user object (but only select fields)
+            .lean();
+
+        if (!user) {
+            return res.status(404).json({ error: "User not found." });
+        }
+
+        res.json(user.sharedWith || []);
+    } catch (err) {
+        console.error("Error fetching shared-with list:", err);
+        res.status(500).json({ error: "An error occurred." });
+    }
+});
 
 module.exports = router;
 
