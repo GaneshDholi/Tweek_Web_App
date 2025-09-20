@@ -5,7 +5,8 @@ const cookieParser = require('cookie-parser');
 const authMiddleware = require('./middleware/auth');
 const cors = require("cors");
 const connectDB = require('./config/db');
-const Tasks = require("./routes/Tasks")
+const Tasks = require("./routes/Tasks");
+const calendarRoutes = require('./routes/calendar'); 
 const dotenv = require('dotenv');
 dotenv.config();
 const allowedOrigins = [
@@ -49,7 +50,7 @@ app.use('/auth', authRoutes);
 
 // task api
 app.use("/api/tasks", authMiddleware, Tasks);
-
+app.use("/api/calendars", authMiddleware, calendarRoutes);
 // Global error handler
 app.use((err, req, res, next) => {
   console.error(err.stack);

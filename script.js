@@ -1,3 +1,266 @@
+// language chagnes
+const translations = {
+  en: {
+    translation: {
+      // Weekdays (long & short) - 0: Sunday, 1: Monday, etc.
+      "day.0": "Sunday", "day.1": "Monday", "day.2": "Tuesday", "day.3": "Wednesday", "day.4": "Thursday", "day.5": "Friday", "day.6": "Saturday",
+      "dayShort.0": "Sun", "dayShort.1": "Mon", "dayShort.2": "Tue", "dayShort.3": "Wed", "dayShort.4": "Thu", "dayShort.5": "Fri", "dayShort.6": "Sat",
+      // Months (long) - 0: January, 1: February, etc.
+      "month.0": "January", "month.1": "February", "month.2": "March", "month.3": "April", "month.4": "May", "month.5": "June", "month.6": "July", "month.7": "August", "month.8": "September", "month.9": "October", "month.10": "November", "month.11": "December",
+      // Main Menu
+      "menu.language": "Language", "menu.about": "About", "menu.search": "Search", "menu.print": "Print", "menu.share": "Share", "menu.premium": "Go premium", "menu.support": "Support",
+      // Your Modals
+      "repeat.title": "Repeat Task", "repeat.none": "None", "repeat.daily": "Daily", "repeat.weekly": "Weekly", "repeat.monthly": "Monthly", "repeat.annually": "Annually",
+      "more.tomorrow": "Tomorrow", "more.nextWeek": "Next week", "more.someday": "Someday", "more.duplicate": "Duplicate", "more.addFile": "Add file",
+      "modal.taskTitle": "Task title...", "modal.addNotes": "Add some extra notes here...",
+      // Auth Modal
+      "auth.loginTitle": "Login to Your Account", "auth.emailPlaceholder": "Enter your email", "auth.passwordPlaceholder": "Enter your password", "auth.loginButton": "Login", "auth.registerToggle": "Don't have an account? Register",
+      "auth.registerTitle": "Create Your Account", "auth.firstNamePlaceholder": "First Name", "auth.lastNamePlaceholder": "Last Name", "auth.createPasswordPlaceholder": "Create a password", "auth.registerButton": "Register", "auth.loginToggle": "Already have an account? Login",
+      // Share Modal
+      "share.title": "Share Task Access", "share.description": "Add people to allow them to view all your tasks.", "share.emailPlaceholder": "Add people by email", "share.button": "Share", "share.sharedWith": "Shared With",
+      "auth.loginTitle": "Login to Your Account",
+      "auth.registerTitle": "Create an Account",
+      "auth.verifyTitle": "Verify Your Email",
+      "auth.emailPlaceholder": "Enter your email",
+      "auth.passwordPlaceholder": "Enter your password",
+      "auth.loginButton": "Login",
+      "auth.loggingInButton": "Logging In...",
+      "auth.registerToggle": "Don't have an account? Register",
+      "auth.firstNamePlaceholder": "First Name",
+      "auth.lastNamePlaceholder": "Last Name",
+      "auth.createPasswordPlaceholder": "Create a password",
+      "auth.registerButton": "Register",
+      "auth.registeringButton": "Registering...",
+      "auth.loginToggle": "Already have an account? Login",
+      "auth.verifyButton": "Verify Account",
+      "auth.verifyingButton": "Verifying...",
+      "auth.verifySuccess": "Account verified successfully! Please log in."
+    }
+  },
+  es: {
+    translation: {
+      "day.0": "Domingo", "day.1": "Lunes", "day.2": "Martes", "day.3": "Miércoles", "day.4": "Jueves", "day.5": "Viernes", "day.6": "Sábado",
+      "dayShort.0": "Dom", "dayShort.1": "Lun", "dayShort.2": "Mar", "dayShort.3": "Mié", "dayShort.4": "Jue", "dayShort.5": "Vie", "dayShort.6": "Sáb",
+      "month.0": "Enero", "month.1": "Febrero", "month.2": "Marzo", "month.3": "Abril", "month.4": "Mayo", "month.5": "Junio", "month.6": "Julio", "month.7": "Agosto", "month.8": "Septiembre", "month.9": "Octubre", "month.10": "Noviembre", "month.11": "Diciembre",
+      "menu.language": "Idioma", "menu.about": "Acerca de", "menu.search": "Buscar", "menu.print": "Imprimir", "menu.share": "Compartir", "menu.premium": "Hazte premium", "menu.support": "Soporte",
+      "repeat.title": "Repetir Tarea", "repeat.none": "Ninguna", "repeat.daily": "Diariamente", "repeat.weekly": "Semanalmente", "repeat.monthly": "Mensualmente", "repeat.annually": "Anualmente",
+      "more.tomorrow": "Mañana", "more.nextWeek": "La próxima semana", "more.someday": "Algún día", "more.duplicate": "Duplicar", "more.addFile": "Añadir archivo",
+      "modal.taskTitle": "Título de la tarea...", "modal.addNotes": "Añade algunas notas extra aquí...",
+      "auth.loginTitle": "Inicia Sesión en Tu Cuenta", "auth.emailPlaceholder": "Introduce tu correo electrónico", "auth.passwordPlaceholder": "Introduce tu contraseña", "auth.loginButton": "Iniciar Sesión", "auth.registerToggle": "¿No tienes una cuenta? Regístrate",
+      "auth.registerTitle": "Crea Tu Cuenta", "auth.firstNamePlaceholder": "Nombre", "auth.lastNamePlaceholder": "Apellido", "auth.createPasswordPlaceholder": "Crea una contraseña", "auth.registerButton": "Registrarse", "auth.loginToggle": "¿Ya tienes una cuenta? Inicia Sesión",
+      "share.title": "Compartir Acceso a Tareas", "share.description": "Añade personas para permitirles ver todas tus tareas.", "share.emailPlaceholder": "Añadir personas por correo", "share.button": "Compartir", "share.sharedWith": "Compartido Con",
+      "auth.loginTitle": "Inicia Sesión en Tu Cuenta",
+      "auth.registerTitle": "Crea Tu Cuenta",
+      "auth.verifyTitle": "Verifica Tu Correo",
+      "auth.emailPlaceholder": "Introduce tu correo electrónico",
+      "auth.passwordPlaceholder": "Introduce tu contraseña",
+      "auth.loginButton": "Iniciar Sesión",
+      "auth.loggingInButton": "Iniciando Sesión...",
+      "auth.registerToggle": "¿No tienes una cuenta? Regístrate",
+      "auth.firstNamePlaceholder": "Nombre",
+      "auth.lastNamePlaceholder": "Apellido",
+      "auth.createPasswordPlaceholder": "Crea una contraseña",
+      "auth.registerButton": "Registrarse",
+      "auth.registeringButton": "Registrando...",
+      "auth.loginToggle": "¿Ya tienes una cuenta? Inicia Sesión",
+      "auth.verifyButton": "Verificar Cuenta",
+      "auth.verifyingButton": "Verificando...",
+      "auth.verifySuccess": "¡Cuenta verificada con éxito! Por favor, inicia sesión."
+    }
+  },
+  hi: {
+    translation: {
+      "day.0": "रविवार", "day.1": "सोमवार", "day.2": "मंगलवार", "day.3": "बुधवार", "day.4": "गुरुवार", "day.5": "शुक्रवार", "day.6": "शनिवार",
+      "dayShort.0": "रवि", "dayShort.1": "सोम", "dayShort.2": "मंगल", "dayShort.3": "बुध", "dayShort.4": "गुरु", "dayShort.5": "शुक्र", "dayShort.6": "शनि",
+      "month.0": "जनवरी", "month.1": "फ़रवरी", "month.2": "मार्च", "month.3": "अप्रैल", "month.4": "मई", "month.5": "जून", "month.6": "जुलाई", "month.7": "अगस्त", "month.8": "सितंबर", "month.9": "अक्टूबर", "month.10": "नवंबर", "month.11": "दिसंबर",
+      "menu.language": "भाषा", "menu.about": "बारे में", "menu.search": "खोज", "menu.print": "प्रिंट", "menu.share": "शेयर", "menu.premium": "प्रीमियम बनें", "menu.support": "समर्थन",
+      "auth.loginTitle": "अपने खाते में પ્રવેશ करें", "auth.emailPlaceholder": "अपना ईमेल दर्ज करें", "auth.passwordPlaceholder": "अपना पासवर्ड दर्ज करें", "auth.loginButton": "लॉग इन करें", "auth.registerToggle": "खाता नहीं है? रजिस्टर करें",
+      "share.title": "कार्य पहुंच साझा करें", "share.button": "शेयर", "share.sharedWith": "के साथ साझा",
+      "auth.loginTitle": "अपने खाते में પ્રવેશ करें",
+      "auth.registerTitle": "अपना खाता बनाएं",
+      "auth.verifyTitle": "अपना ईमेल सत्यापित करें",
+      "auth.loginButton": "लॉग इन करें",
+      "auth.loggingInButton": "लॉग इन हो रहा है...",
+      "auth.registerButton": "रजिस्टर करें",
+      "auth.registeringButton": "पंजीकरण हो रहा है...",
+      "auth.verifyButton": "खाता सत्यापित करें",
+      "auth.verifyingButton": "सत्यापन हो रहा है...",
+      "auth.verifySuccess": "खाता सफलतापूर्वक सत्यापित हो गया! कृपया लॉग इन करें।"
+    }
+  },
+  de: {
+    translation: {
+      "day.0": "Sonntag", "day.1": "Montag", "day.2": "Dienstag", "day.3": "Mittwoch", "day.4": "Donnerstag", "day.5": "Freitag", "day.6": "Samstag",
+      "dayShort.0": "So", "dayShort.1": "Mo", "dayShort.2": "Di", "dayShort.3": "Mi", "dayShort.4": "Do", "dayShort.5": "Fr", "dayShort.6": "Sa",
+      "month.0": "Januar", "month.1": "Februar", "month.2": "März", "month.3": "April", "month.4": "Mai", "month.5": "Juni", "month.6": "Juli", "month.7": "August", "month.8": "September", "month.9": "Oktober", "month.10": "November", "month.11": "Dezember",
+      "menu.language": "Sprache", "menu.about": "Über", "menu.search": "Suchen", "menu.print": "Drucken", "menu.share": "Teilen", "menu.premium": "Premium werden", "menu.support": "Unterstützung",
+      "auth.loginTitle": "Melden Sie sich bei Ihrem Konto an", "auth.emailPlaceholder": "Geben sie Ihre E-Mail Adresse ein", "auth.passwordPlaceholder": "Geben Sie Ihr Passwort ein", "auth.loginButton": "Anmeldung", "auth.registerToggle": "Sie haben kein Konto? Registrieren",
+      "share.title": "Aufgabenzugriff teilen", "share.button": "Teilen", "share.sharedWith": "Geteilt mit",
+      "auth.loginTitle": "Melden Sie sich bei Ihrem Konto an",
+      "auth.registerTitle": "Erstelle deinen Account",
+      "auth.verifyTitle": "Bestätige deine E-Mail-Adresse",
+      "auth.loginButton": "Anmeldung",
+      "auth.loggingInButton": "Anmelden...",
+      "auth.registerButton": "Registrieren",
+      "auth.registeringButton": "Registrieren...",
+      "auth.verifyButton": "Konto bestätigen",
+      "auth.verifyingButton": "Überprüfen...",
+      "auth.verifySuccess": "Konto erfolgreich bestätigt! Bitte melden Sie sich an."
+    }
+  }
+};
+
+const API_BASE_URL = "http://localhost:5000";
+
+// 2. I18NEXT INITIALIZATION & MAIN LOGIC
+document.addEventListener('DOMContentLoaded', () => {
+  const languageTrigger = document.getElementById('language-menu-trigger');
+  const languageSubmenu = document.querySelector('.language-submenu');
+
+  if (languageTrigger) {
+    languageTrigger.addEventListener('click', (event) => {
+      // Prevent the link from trying to navigate
+      event.preventDefault();
+      // Stop the click from immediately being caught by the 'document' listener below
+      event.stopPropagation();
+      // Toggle the .open class on the submenu to show/hide it
+      languageSubmenu.classList.toggle('open');
+    });
+  }
+
+  // Add a listener to the whole document to close the menu when clicking anywhere else
+  document.addEventListener('click', () => {
+    if (languageSubmenu && languageSubmenu.classList.contains('open')) {
+      languageSubmenu.classList.remove('open');
+    }
+  });
+
+  // Update your existing i18next event listener to also close the menu after selection
+  document.querySelectorAll('.language-submenu a').forEach(link => {
+    link.addEventListener('click', (e) => {
+      e.preventDefault();
+      const lang = e.target.getAttribute('data-lang');
+      i18next.changeLanguage(lang, () => {
+        // ... your existing updateContent() and renderDynamicCalendar() calls ...
+
+        // Add this line to close the menu
+        languageSubmenu.classList.remove('open');
+      });
+    });
+  });
+  i18next.init({
+    lng: 'en', // default language
+    debug: false,
+    resources: translations
+  }).then(() => {
+    // This will translate all static text on page load
+    updateStaticContent();
+    // IMPORTANT: You must now call a function to render your calendar
+    // with the newly loaded language.
+    renderDynamicCalendar();
+
+    initializeAuthSystem();
+  });
+
+  // Function to translate all static text with data-i18n attributes
+  function updateStaticContent() {
+    // Define which keys contain HTML and need special handling.
+    const keysWithHtml = ['auth.registerToggle', 'auth.loginToggle'];
+
+    document.querySelectorAll('[data-i18n]').forEach(element => {
+      const key = element.dataset.i18n;
+
+      if (key.startsWith('[placeholder]')) {
+        element.placeholder = i18next.t(key.substring('[placeholder]'.length));
+      } else if (keysWithHtml.includes(key)) {
+        // If the key is in our special list, use .innerHTML to render the link
+        element.innerHTML = i18next.t(key);
+      } else {
+        // Otherwise, use the safer .textContent for all other text
+        element.textContent = i18next.t(key);
+      }
+    });
+  }
+
+  // Add click listeners to the language links in the new submenu
+  document.querySelectorAll('.language-submenu a').forEach(link => {
+    link.addEventListener('click', (e) => {
+      e.preventDefault();
+      const lang = e.target.getAttribute('data-lang');
+      i18next.changeLanguage(lang, () => {
+        updateStaticContent();
+        // IMPORTANT: Re-render the calendar after language change
+        renderDynamicCalendar();
+      });
+    });
+  });
+});
+
+function renderDynamicCalendar() {
+  const mainTitle = document.getElementById('monthwithyear');
+  if (mainTitle) {
+    const currentDate = new Date();
+
+    const monthIndex = currentDate.getMonth();
+    const year = currentDate.getFullYear();
+
+    // Use i18next.t() to get the translated month name from the translations object
+    const translatedMonth = i18next.t('month.' + monthIndex);
+
+    mainTitle.textContent = `${translatedMonth} ${year}`;
+  }
+
+  // --- Example 2: Re-render the weekly view headers with translated day names ---
+  const weeklyView = document.getElementById('weekly-view');
+  if (weeklyView) {
+    // ===> TODO: Replace this with your function that gets the days of the current week <===
+    const daysInWeek = getDaysOfCurrentWeek();
+
+    // It's often easiest to clear and rebuild the dynamic parts
+    weeklyView.innerHTML = '';
+
+    daysInWeek.forEach(dayDate => {
+      const dayOfWeekIndex = dayDate.getDay(); // 0 for Sunday, 1 for Monday...
+
+      // Get translated short day name
+      const translatedDayShort = i18next.t('dayShort.' + dayOfWeekIndex);
+
+      // ===> TODO: This is an EXAMPLE. Replace it with your actual HTML structure for a day column. <===
+      const dayColumn = document.createElement('div');
+      dayColumn.className = 'day-column-example'; // Use your own classes
+      dayColumn.innerHTML = `
+                <div class="day-header-example">
+                    <span class="day-name">${translatedDayShort}</span>
+                    <span class="day-number">${dayDate.getDate()}</span>
+                </div>
+                <div class="tasks-container">
+                    <!-- Your tasks for this day would be rendered here -->
+                </div>
+            `;
+      weeklyView.appendChild(dayColumn);
+    });
+  }
+
+  console.log("Dynamic content has been re-rendered in:", i18next.language);
+}
+
+function getDaysOfCurrentWeek() {
+  const today = new Date();
+  // Adjust to make Monday the start of the week if needed
+  const firstDayOfWeek = today.getDate() - today.getDay() + (today.getDay() === 0 ? -6 : 1);
+  const startOfWeek = new Date(today.setDate(firstDayOfWeek));
+
+  const week = [];
+  for (let i = 0; i < 7; i++) {
+    const day = new Date(startOfWeek);
+    day.setDate(day.getDate() + i);
+    week.push(day);
+  }
+  return week;
+}
+
+
+// moths calander 
 const months = [
   "January", "February", "March", "April", "May", "June",
   "July", "August", "September", "October", "November", "December"
@@ -14,10 +277,11 @@ function renderYearCalendar(year) {
   calendarContainer.innerHTML = "";
   yearTitle.textContent = year;
 
+
   for (let month = 0; month < 12; month++) {
     const monthDiv = document.createElement("div");
     monthDiv.className = "month";
-
+    
     const startDay = new Date(year, month, 1).getDay();
     const totalDays = new Date(year, month + 1, 0).getDate();
     const prevDays = new Date(year, month, 0).getDate();
@@ -139,12 +403,91 @@ window.onclick = function (event) {
 
 renderYearCalendar(currentYear);
 
+// This variable will hold the date of the currently displayed week.
+let currentViewDate = new Date();
+
+/**
+ * @param {string} taskId - The ID of the task being moved.
+ * @param {string|null} newDate - The ISO date string for the new column, or null.
+ * @param {boolean} isSomeday - True if the task is dropped in the "Someday" section.
+ */
+async function handleTaskDrop(taskId, newDate, isSomeday) {
+  const payload = {};
+
+  if (isSomeday) {
+    payload.isSomeday = true;
+    payload.date = null; // Unset the date when moving a task to Someday
+  } else {
+    payload.isSomeday = false;
+    payload.date = new Date(`${newDate}T12:00:00.000Z`).toISOString();
+  }
+
+  try {
+    const response = await fetch(`http://localhost:5000/api/tasks/${taskId}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${localStorage.getItem("token")}`
+      },
+      credentials: 'include',
+      // Only send the fields that are changing
+      body: JSON.stringify(payload)
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Failed to update task on drop: ${errorText}`);
+    }
+
+    console.log(`Task ${taskId} moved successfully.`);
+    // Re-render the entire view to show the change
+    renderWeeklyView(currentViewDate);
+
+  } catch (error) {
+    console.error('Error handling task drop:', error);
+    alert('Could not move the task. Please try again.');
+  }
+}
+
+/**
+ * Adds the necessary event listeners to an element to make it a valid drop zone.
+ * @param {HTMLElement} element - The HTML element to turn into a drop zone.
+ */
+function addDropZoneListeners(element) {
+  // Fired continuously while a draggable element is over the drop zone
+  element.addEventListener('dragover', (e) => {
+    e.preventDefault(); // This is crucial! It allows the 'drop' event to fire.
+    element.classList.add('drag-over');
+  });
+
+  // Fired when a draggable element leaves the drop zone
+  element.addEventListener('dragleave', () => {
+    element.classList.remove('drag-over');
+  });
+
+  // Fired when a draggable element is dropped on the drop zone
+  element.addEventListener('drop', async (e) => {
+    e.preventDefault();
+    element.classList.remove('drag-over');
+
+    const taskId = e.dataTransfer.getData('text/plain');
+    if (!taskId) return; // Exit if no task ID was transferred
+
+    const newDate = element.dataset.dateColumn;
+    const isSomeday = element.dataset.isSomeday === 'true';
+
+    // Call the function to update the backend and re-render
+    await handleTaskDrop(taskId, newDate, isSomeday);
+  });
+}
+
 //weekdays
 const weekContainer = document.getElementById("weekly-view");
 const rootStyles = getComputedStyle(document.documentElement);
 const primaryFont = rootStyles.getPropertyValue("--primary-font").trim();
 
 function renderWeeklyView(baseDate = new Date(), highlightDate = null) {
+  currentViewDate = baseDate;
   const today = baseDate;
   const weekdays = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
   const currentDate = new Date();
@@ -236,7 +579,6 @@ function renderWeeklyView(baseDate = new Date(), highlightDate = null) {
     span.style.textAlign = "left";
     if (color) {
       span.style.backgroundColor = color;
-      span.style.color = "#fff";
     }
   }
 
@@ -397,7 +739,23 @@ function renderWeeklyView(baseDate = new Date(), highlightDate = null) {
       box.classList.add("completed");
     }
 
-    span.addEventListener("click", (e) => {
+    if (task && task._id) {
+      box.draggable = true;
+
+      box.addEventListener('dragstart', (e) => {
+        // Store the task's ID to identify it on drop
+        e.dataTransfer.setData('text/plain', task._id);
+        // Add a class for visual styling while dragging
+        setTimeout(() => box.classList.add('dragging'), 0);
+      });
+
+      box.addEventListener('dragend', () => {
+        // Clean up the styling after the drag operation ends
+        box.classList.remove('dragging');
+      });
+    }
+
+    box.addEventListener("click", (e) => {
       e.stopPropagation();
       openEditModal(
         task.title,
@@ -526,6 +884,7 @@ function renderWeeklyView(baseDate = new Date(), highlightDate = null) {
         const currentIndex = siblings.indexOf(currentBox);
 
         let nextBox = null;
+        let newRowWasAdded = null;
 
         for (let i = currentIndex + 1; i < siblings.length; i++) {
           if (!siblings[i].textContent.trim() && !siblings[i].querySelector('input')) {
@@ -542,6 +901,9 @@ function renderWeeklyView(baseDate = new Date(), highlightDate = null) {
           }
           container.appendChild(newBox);
           nextBox = newBox;
+
+          newRowWasAdded = true;
+
         }
         if (nextBox) {
           activateInput(nextBox, taskDate);
@@ -591,7 +953,14 @@ function renderWeeklyView(baseDate = new Date(), highlightDate = null) {
     const dayBox = document.createElement("div");
     dayBox.className = "day-box";
 
-    dayBox.dataset.dateColumn = date.toISOString().split('T')[0];
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0'); // Months are 0-indexed
+    const day = String(date.getDate()).padStart(2, '0');
+    const dateStringForColumn = `${year}-${month}-${day}`;
+
+    dayBox.dataset.dateColumn = dateStringForColumn;
+
+    addDropZoneListeners(dayBox);
 
     Object.assign(dayBox.style, {
       padding: "0 10px",
@@ -669,7 +1038,6 @@ function renderWeeklyView(baseDate = new Date(), highlightDate = null) {
     // Decide how many rows to render initially
     const minLimit = offset < 5 ? minWeekdayRows : minWeekendRows;
     const limit = Math.max(minLimit, taskCount);  // ensure at least min
-    console.log({ offset, taskCount, limit });
 
     for (let i = 0; i < limit; i++) {
       const taskBox = document.createElement("li");
@@ -677,6 +1045,16 @@ function renderWeeklyView(baseDate = new Date(), highlightDate = null) {
       todoContainer.appendChild(taskBox);
     }
 
+    // 2. NEW: Get a reference to all the rows you just created
+    const allTaskBoxes = todoContainer.querySelectorAll('li');
+
+    // 3. NEW: Loop through your fetched tasks and render each one into a row
+    tasksForThisDay.forEach((task, index) => {
+      // Make sure there is a box to put the task in
+      if (allTaskBoxes[index]) {
+        renderTaskElement(allTaskBoxes[index], task);
+      }
+    });
 
     // highlight today / selected
     const isToday =
@@ -776,6 +1154,9 @@ function renderWeeklyView(baseDate = new Date(), highlightDate = null) {
   somedayDiv.appendChild(label);
 
   const taskContainer = document.createElement("div");
+  taskContainer.dataset.isSomeday = "true";
+  addDropZoneListeners(taskContainer);
+
   Object.assign(taskContainer.style, {
     display: "flex",
     flexDirection: "column",
@@ -1142,7 +1523,6 @@ async function handleTaskSave(box, newText, color, notes, newDate) {
       if (textSpan) {
         textSpan.textContent = newText;
         textSpan.style.backgroundColor = color;
-        textSpan.style.color = "#fff";
       }
       return; // ✅ no re-render
     }
@@ -1246,7 +1626,6 @@ document.addEventListener('coloris:pick', event => {
     const textSpan = currentEditableBox.querySelector('.task-text');
     if (textSpan) {
       textSpan.style.backgroundColor = selectedTaskColor;
-      textSpan.style.color = "#fff";
     }
   }
 });
@@ -1382,6 +1761,169 @@ sharedWithList.addEventListener('click', async (e) => {
   }
 });
 
+// This script assumes you have a way to get the user's auth token
+// For example, from localStorage after they log in.
+
+// calnder share task
+document.addEventListener('DOMContentLoaded', () => {
+  // --- 1. STATE MANAGEMENT ---
+  // We'll store all data fetched from the server here
+  let allFetchedTasks = [];
+  let allCalendars = [];
+  let selectedCalendarIds = [];
+
+  // --- 2. INITIALIZATION ---
+  // This function runs when the page loads
+  async function initializeApp() {
+    await fetchAndRenderCalendars();
+    // Assuming you have a function to get the current week ID
+    const currentWeekId = getCurrentWeekId();
+    await fetchAndRenderTasks(currentWeekId);
+  }
+
+  // --- 3. FETCHING DATA FROM API ---
+
+  // Fetches the list of calendars (personal + shared)
+  async function fetchAndRenderCalendars() {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/calendars`, {
+        headers: {
+          'Authorization': `Bearer ${getAuthToken()}` // Implement getAuthToken()
+        },
+        credentials: 'include'
+      });
+      if (!response.ok) throw new Error('Failed to fetch calendars');
+
+      allCalendars = await response.json();
+      renderCalendarList();
+
+    } catch (error) {
+      console.error('Error fetching calendars:', error);
+    }
+  }
+
+  // Fetches all tasks for a given week from all accessible calendars
+  async function fetchAndRenderTasks(weekId) {
+    try {
+      const response = await fetch(`${API_BASE_URL}/api/tasks/week/${weekId}`, {
+        headers: {
+          'Authorization': `Bearer ${getAuthToken()}`
+        },
+        credentials: 'include'
+      });
+      if (!response.ok) throw new Error('Failed to fetch tasks');
+
+      allFetchedTasks = await response.json();
+      renderVisibleTasks(); // Render the tasks based on selected calendars
+
+    } catch (error) {
+      console.error(`Error fetching tasks for ${weekId}:`, error);
+    }
+  }
+
+
+  // --- 4. RENDERING LOGIC ---
+
+  // Builds the HTML for the calendar list in the dropdown
+  function renderCalendarList() {
+    const container = document.getElementById('calendar-list-container');
+    if (!container) return;
+
+    container.innerHTML = ''; // Clear previous list
+    selectedCalendarIds = []; // Reset selections
+
+    allCalendars.forEach(calendar => {
+      // This is the unique ID for the calendar's owner, used for filtering.
+      // It's guaranteed to exist for both personal and shared calendars.
+      const calendarOwnerId = calendar.owner._id;
+
+      selectedCalendarIds.push(calendarOwnerId); // Select all by default
+
+      const calendarItem = document.createElement('label');
+      calendarItem.className = 'calendar-item';
+      // The 'for' attribute of a label should match the 'id' of an input
+      calendarItem.setAttribute('for', `cal-checkbox-${calendarOwnerId}`);
+
+      // Add an icon for the user's personal calendar
+      const iconHtml = calendar.isPersonal
+        ? `<svg fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>`
+        : '';
+
+      calendarItem.innerHTML = `
+            <input type="checkbox" id="cal-checkbox-${calendarOwnerId}" value="${calendarOwnerId}" checked>
+            ${iconHtml}
+            <span>${calendar.name}</span>
+        `;
+
+      container.appendChild(calendarItem);
+
+      // Add event listener to the checkbox
+      calendarItem.querySelector('input[type="checkbox"]').addEventListener('change', (event) => {
+        handleCalendarSelection(event.target.value, event.target.checked);
+      });
+    });
+  }
+
+  // Renders only the tasks that belong to the currently selected calendars
+  function renderVisibleTasks() {
+    // Filter the master list of tasks
+    const tasksToDisplay = allFetchedTasks.filter(task =>
+      selectedCalendarIds.includes(task.userId) // The backend uses userId to identify the owner
+    );
+
+    // Now, call your existing function to render tasks on the screen
+    // IMPORTANT: You need to replace 'displayTasksOnGrid' with the name of YOUR function
+    // that actually puts the tasks into the HTML.
+    displayTasksOnGrid(tasksToDisplay);
+  }
+
+  // --- 5. EVENT HANDLERS ---
+
+  // Updates the list of selected calendars and re-renders the tasks
+  function handleCalendarSelection(calendarId, isSelected) {
+    if (isSelected) {
+      if (!selectedCalendarIds.includes(calendarId)) {
+        selectedCalendarIds.push(calendarId);
+      }
+    } else {
+      selectedCalendarIds = selectedCalendarIds.filter(id => id !== calendarId);
+    }
+
+    // Re-render the visible tasks without fetching from the server again
+    renderVisibleTasks();
+  }
+
+
+  // --- 6. HELPER FUNCTIONS (You need to provide these) ---
+
+  function getAuthToken() {
+    // Replace this with your actual logic to get the token
+    return localStorage.getItem('authToken');
+  }
+
+  function getCurrentWeekId() {
+    // Replace this with your existing logic to calculate the current week string (e.g., "2025-W38")
+    // This is just a placeholder example:
+    const d = new Date();
+    d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7));
+    const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+    const weekNo = Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+    return `${d.getUTCFullYear()}-W${String(weekNo).padStart(2, '0')}`;
+  }
+
+  function displayTasksOnGrid(tasks) {
+    // **VERY IMPORTANT**: This is where you put YOUR code that takes an array
+    // of task objects and displays them on your calendar grid.
+    // For example:
+    console.log("Rendering these tasks:", tasks);
+    const taskGrid = document.getElementById('task-grid'); // Or whatever your container is
+    taskGrid.innerHTML = ''; // Clear the grid
+    // ... then loop through 'tasks' and create the HTML for each one.
+  }
+
+  // Start the application
+  initializeApp();
+});
 
 //repeate modal
 document.addEventListener('DOMContentLoaded', () => {
@@ -1671,7 +2213,7 @@ document.addEventListener('DOMContentLoaded', () => {
   // Positions and shows the popover
   const openReminderPopover = () => {
     const btnRect = remindBtn.getBoundingClientRect();
-    reminderPopover.style.left = `300px`;   
+    reminderPopover.style.left = `300px`;
     reminderPopover.style.top = `90px`;
     reminderPopover.classList.add('active');
     remindBtn.classList.add('active');
@@ -1760,7 +2302,7 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // account login
-document.addEventListener('DOMContentLoaded', () => {
+function initializeAuthSystem() {
   const API_BASE_URL = "http://localhost:5000";
 
   // --- DOM ELEMENTS ---
@@ -1867,8 +2409,22 @@ document.addEventListener('DOMContentLoaded', () => {
   authModalBackdrop.addEventListener('click', (e) => { if (e.target === authModalBackdrop) authModalBackdrop.classList.add('hidden'); });
 
   // Form switching links
-  showRegisterLink.addEventListener('click', (e) => { e.preventDefault(); showView(registerForm); });
-  showLoginLinkFromRegister.addEventListener('click', (e) => { e.preventDefault(); showView(loginForm); });
+  // ADD THIS BLOCK instead. It listens on the parent element.
+  const authFlow = document.getElementById('authFlow');
+  if (authFlow) {
+    authFlow.addEventListener('click', (e) => {
+      // Check if the clicked element has the ID 'showRegisterLink'
+      if (e.target.id === 'showRegisterLink') {
+        e.preventDefault();
+        showView(registerForm);
+      }
+      // Check if the clicked element has the ID 'showLoginLinkFromRegister'
+      if (e.target.id === 'showLoginLinkFromRegister') {
+        e.preventDefault();
+        showView(loginForm);
+      }
+    });
+  }
 
   // --- FORM SUBMISSIONS ---
 
@@ -2003,7 +2559,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // --- INITIALIZATION ---
   checkLoginStatus();
-});
+};
 
 
 

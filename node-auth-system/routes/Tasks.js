@@ -285,37 +285,51 @@ router.delete("/:id", async (req, res) => {
 });
 
 
+
 // --- SHARE FUNCTIONALITY ---
+const Calendar = require('../models/Calendar');
+
 router.post("/share", async (req, res) => {
     try {
-        const sharerId = new mongoose.Types.ObjectId(req.user.id); // The person sharing (you)
-        const { shareWithEmail } = req.body; // The email of the person you want to share with
+        const sharerId = new mongoose.Types.ObjectId(req.user.id);
+        const { shareWithEmail } = req.body;
 
         if (!shareWithEmail) {
             return res.status(400).json({ error: "Email to share with is required." });
         }
 
-        // Find the user to share with
-        const userToShareWith = await User.findOne({ email: shareWithEmail });
-        console.log(userToShareWith);
+        const [sharer, userToShareWith] = await Promise.all([
+            User.findById(sharerId),
+            User.findOne({ email: shareWithEmail })
+        ]);
+
         if (!userToShareWith) {
             return res.status(404).json({ error: "User to share with not found." });
         }
 
         if (userToShareWith._id.equals(sharerId)) {
-            return res.status(400).json({ error: "You cannot share your calendar with yourself." });
+            return res.status(400).json({ error: "You cannot share your tasks with yourself." });
         }
 
-        // Add the sharer's ID to the other user's 'canViewTasksOf' array
-        await User.updateOne(
-            { _id: userToShareWith._id },
-            { $addToSet: { canViewTasksOf: sharerId } }
+        // 1. Grant view access (your existing logic)
+        userToShareWith.canViewTasksOf.addToSet(sharerId);
+        sharer.sharedWith.addToSet(userToShareWith._id);
+
+        // 2. Create the Calendar document to represent this share
+        const calendarName = `${sharer.firstName}'s Tasks`;
+        await Calendar.findOneAndUpdate(
+            { owner: sharerId, isVirtual: true }, // Find an existing virtual calendar for this owner
+            {
+                name: calendarName,
+                owner: sharerId,
+                $addToSet: { sharedWith: userToShareWith._id }, // Add the new user
+                isVirtual: true
+            },
+            { upsert: true, new: true } // Create it if it doesn't exist
         );
 
-        await User.updateOne(
-            { _id: sharerId },
-            { $addToSet: { sharedWith: userToShareWith._id } }
-        );
+        await sharer.save();
+        await userToShareWith.save();
 
         res.status(200).json({ message: `Successfully shared your tasks with ${shareWithEmail}.` });
 
@@ -327,32 +341,21 @@ router.post("/share", async (req, res) => {
 
 router.post("/unshare", async (req, res) => {
     try {
-        const sharerId = new mongoose.Types.ObjectId(req.user.id); // the person who originally shared
-        const { unshareWithEmail } = req.body; // email of the user you want to remove
+        const sharerId = new mongoose.Types.ObjectId(req.user.id);
+        const { unshareWithEmail } = req.body;
 
-        if (!unshareWithEmail) {
-            return res.status(400).json({ error: "Email to unshare with is required." });
-        }
-
-        // Find the user to unshare with
         const userToUnshareWith = await User.findOne({ email: unshareWithEmail });
         if (!userToUnshareWith) {
             return res.status(404).json({ error: "User to unshare with not found." });
         }
 
-        // Prevent self-unshare nonsense
-        if (userToUnshareWith._id.equals(sharerId)) {
-            return res.status(400).json({ error: "You cannot unshare with yourself." });
-        }
+        // 1. Revoke view access (your existing logic)
+        await User.updateOne({ _id: userToUnshareWith._id }, { $pull: { canViewTasksOf: sharerId } });
+        await User.updateOne({ _id: sharerId }, { $pull: { sharedWith: userToUnshareWith._id } });
 
-        // Pull the sharerId from their canViewTasksOf array
-        await User.updateOne(
-            { _id: userToUnshareWith._id },
-            { $pull: { canViewTasksOf: sharerId } }
-        );
-
-        await User.updateOne(
-            { _id: sharerId },
+        // 2. Remove the user from the virtual Calendar's sharedWith list
+        await Calendar.updateOne(
+            { owner: sharerId, isVirtual: true },
             { $pull: { sharedWith: userToUnshareWith._id } }
         );
 

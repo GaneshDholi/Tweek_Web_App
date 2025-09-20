@@ -10,7 +10,8 @@ const SubTaskSchema = new mongoose.Schema({
     isSomeday: { type: Boolean, default: false },
     notes: { type: String, default: "" },
     color: { type: String, default: "#000000" },
-    repeat: { type: String, enum: ['none', 'daily', 'weekly', 'monthly', 'annually'], default: 'none'}
+    repeat: { type: String, enum: ['none', 'daily', 'weekly', 'monthly', 'annually'], default: 'none'},
+    calendar: { type: mongoose.Schema.Types.ObjectId, ref: 'Calendar' }
 });
 
 const UserTasksSchema = new mongoose.Schema({
