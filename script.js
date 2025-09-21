@@ -2,109 +2,153 @@
 const translations = {
   en: {
     translation: {
-      // Weekdays (long & short) - 0: Sunday, 1: Monday, etc.
+      // --- Weekdays & Months ---
       "day.0": "Sunday", "day.1": "Monday", "day.2": "Tuesday", "day.3": "Wednesday", "day.4": "Thursday", "day.5": "Friday", "day.6": "Saturday",
       "dayShort.0": "Sun", "dayShort.1": "Mon", "dayShort.2": "Tue", "dayShort.3": "Wed", "dayShort.4": "Thu", "dayShort.5": "Fri", "dayShort.6": "Sat",
-      // Months (long) - 0: January, 1: February, etc.
       "month.0": "January", "month.1": "February", "month.2": "March", "month.3": "April", "month.4": "May", "month.5": "June", "month.6": "July", "month.7": "August", "month.8": "September", "month.9": "October", "month.10": "November", "month.11": "December",
-      // Main Menu
+      
+      // --- Main Menu ---
       "menu.language": "Language", "menu.about": "About", "menu.search": "Search", "menu.print": "Print", "menu.share": "Share", "menu.premium": "Go premium", "menu.support": "Support",
-      // Your Modals
+      
+      // --- Task Modals ---
       "repeat.title": "Repeat Task", "repeat.none": "None", "repeat.daily": "Daily", "repeat.weekly": "Weekly", "repeat.monthly": "Monthly", "repeat.annually": "Annually",
       "more.tomorrow": "Tomorrow", "more.nextWeek": "Next week", "more.someday": "Someday", "more.duplicate": "Duplicate", "more.addFile": "Add file",
       "modal.taskTitle": "Task title...", "modal.addNotes": "Add some extra notes here...",
-      // Auth Modal
-      "auth.loginTitle": "Login to Your Account", "auth.emailPlaceholder": "Enter your email", "auth.passwordPlaceholder": "Enter your password", "auth.loginButton": "Login", "auth.registerToggle": "Don't have an account? Register",
-      "auth.registerTitle": "Create Your Account", "auth.firstNamePlaceholder": "First Name", "auth.lastNamePlaceholder": "Last Name", "auth.createPasswordPlaceholder": "Create a password", "auth.registerButton": "Register", "auth.loginToggle": "Already have an account? Login",
-      // Share Modal
+      
+      // --- Share Modal ---
       "share.title": "Share Task Access", "share.description": "Add people to allow them to view all your tasks.", "share.emailPlaceholder": "Add people by email", "share.button": "Share", "share.sharedWith": "Shared With",
+      
+      // --- Auth Modal ---
       "auth.loginTitle": "Login to Your Account",
       "auth.registerTitle": "Create an Account",
       "auth.verifyTitle": "Verify Your Email",
       "auth.emailPlaceholder": "Enter your email",
       "auth.passwordPlaceholder": "Enter your password",
-      "auth.loginButton": "Login",
-      "auth.loggingInButton": "Logging In...",
-      "auth.registerToggle": "Don't have an account? Register",
       "auth.firstNamePlaceholder": "First Name",
       "auth.lastNamePlaceholder": "Last Name",
       "auth.createPasswordPlaceholder": "Create a password",
+      "auth.loginButton": "Login",
+      "auth.loggingInButton": "Logging In...",
       "auth.registerButton": "Register",
       "auth.registeringButton": "Registering...",
-      "auth.loginToggle": "Already have an account? Login",
       "auth.verifyButton": "Verify Account",
       "auth.verifyingButton": "Verifying...",
+      "auth.registerToggle": "Don't have an account? Register",
+      "auth.loginToggle": "Already have an account? Login",
       "auth.verifySuccess": "Account verified successfully! Please log in."
     }
   },
   es: {
     translation: {
+      // --- Weekdays & Months ---
       "day.0": "Domingo", "day.1": "Lunes", "day.2": "Martes", "day.3": "Miércoles", "day.4": "Jueves", "day.5": "Viernes", "day.6": "Sábado",
       "dayShort.0": "Dom", "dayShort.1": "Lun", "dayShort.2": "Mar", "dayShort.3": "Mié", "dayShort.4": "Jue", "dayShort.5": "Vie", "dayShort.6": "Sáb",
       "month.0": "Enero", "month.1": "Febrero", "month.2": "Marzo", "month.3": "Abril", "month.4": "Mayo", "month.5": "Junio", "month.6": "Julio", "month.7": "Agosto", "month.8": "Septiembre", "month.9": "Octubre", "month.10": "Noviembre", "month.11": "Diciembre",
+      
+      // --- Main Menu ---
       "menu.language": "Idioma", "menu.about": "Acerca de", "menu.search": "Buscar", "menu.print": "Imprimir", "menu.share": "Compartir", "menu.premium": "Hazte premium", "menu.support": "Soporte",
+      
+      // --- Task Modals ---
       "repeat.title": "Repetir Tarea", "repeat.none": "Ninguna", "repeat.daily": "Diariamente", "repeat.weekly": "Semanalmente", "repeat.monthly": "Mensualmente", "repeat.annually": "Anualmente",
       "more.tomorrow": "Mañana", "more.nextWeek": "La próxima semana", "more.someday": "Algún día", "more.duplicate": "Duplicar", "more.addFile": "Añadir archivo",
       "modal.taskTitle": "Título de la tarea...", "modal.addNotes": "Añade algunas notas extra aquí...",
-      "auth.loginTitle": "Inicia Sesión en Tu Cuenta", "auth.emailPlaceholder": "Introduce tu correo electrónico", "auth.passwordPlaceholder": "Introduce tu contraseña", "auth.loginButton": "Iniciar Sesión", "auth.registerToggle": "¿No tienes una cuenta? Regístrate",
-      "auth.registerTitle": "Crea Tu Cuenta", "auth.firstNamePlaceholder": "Nombre", "auth.lastNamePlaceholder": "Apellido", "auth.createPasswordPlaceholder": "Crea una contraseña", "auth.registerButton": "Registrarse", "auth.loginToggle": "¿Ya tienes una cuenta? Inicia Sesión",
+      
+      // --- Share Modal ---
       "share.title": "Compartir Acceso a Tareas", "share.description": "Añade personas para permitirles ver todas tus tareas.", "share.emailPlaceholder": "Añadir personas por correo", "share.button": "Compartir", "share.sharedWith": "Compartido Con",
+      
+      // --- Auth Modal ---
       "auth.loginTitle": "Inicia Sesión en Tu Cuenta",
       "auth.registerTitle": "Crea Tu Cuenta",
       "auth.verifyTitle": "Verifica Tu Correo",
       "auth.emailPlaceholder": "Introduce tu correo electrónico",
       "auth.passwordPlaceholder": "Introduce tu contraseña",
-      "auth.loginButton": "Iniciar Sesión",
-      "auth.loggingInButton": "Iniciando Sesión...",
-      "auth.registerToggle": "¿No tienes una cuenta? Regístrate",
       "auth.firstNamePlaceholder": "Nombre",
       "auth.lastNamePlaceholder": "Apellido",
       "auth.createPasswordPlaceholder": "Crea una contraseña",
+      "auth.loginButton": "Iniciar Sesión",
+      "auth.loggingInButton": "Iniciando Sesión...",
       "auth.registerButton": "Registrarse",
       "auth.registeringButton": "Registrando...",
-      "auth.loginToggle": "¿Ya tienes una cuenta? Inicia Sesión",
       "auth.verifyButton": "Verificar Cuenta",
       "auth.verifyingButton": "Verificando...",
+      "auth.registerToggle": "¿No tienes una cuenta? Regístrate",
+      "auth.loginToggle": "¿Ya tienes una cuenta? Inicia Sesión",
       "auth.verifySuccess": "¡Cuenta verificada con éxito! Por favor, inicia sesión."
     }
   },
   hi: {
     translation: {
+      // --- Weekdays & Months ---
       "day.0": "रविवार", "day.1": "सोमवार", "day.2": "मंगलवार", "day.3": "बुधवार", "day.4": "गुरुवार", "day.5": "शुक्रवार", "day.6": "शनिवार",
       "dayShort.0": "रवि", "dayShort.1": "सोम", "dayShort.2": "मंगल", "dayShort.3": "बुध", "dayShort.4": "गुरु", "dayShort.5": "शुक्र", "dayShort.6": "शनि",
       "month.0": "जनवरी", "month.1": "फ़रवरी", "month.2": "मार्च", "month.3": "अप्रैल", "month.4": "मई", "month.5": "जून", "month.6": "जुलाई", "month.7": "अगस्त", "month.8": "सितंबर", "month.9": "अक्टूबर", "month.10": "नवंबर", "month.11": "दिसंबर",
+      
+      // --- Main Menu ---
       "menu.language": "भाषा", "menu.about": "बारे में", "menu.search": "खोज", "menu.print": "प्रिंट", "menu.share": "शेयर", "menu.premium": "प्रीमियम बनें", "menu.support": "समर्थन",
-      "auth.loginTitle": "अपने खाते में પ્રવેશ करें", "auth.emailPlaceholder": "अपना ईमेल दर्ज करें", "auth.passwordPlaceholder": "अपना पासवर्ड दर्ज करें", "auth.loginButton": "लॉग इन करें", "auth.registerToggle": "खाता नहीं है? रजिस्टर करें",
-      "share.title": "कार्य पहुंच साझा करें", "share.button": "शेयर", "share.sharedWith": "के साथ साझा",
-      "auth.loginTitle": "अपने खाते में પ્રવેશ करें",
+      
+      // --- Task Modals ---
+      "repeat.title": "कार्य दोहराएं", "repeat.none": "कोई नहीं", "repeat.daily": "रोज़", "repeat.weekly": "साप्ताहिक", "repeat.monthly": "मासिक", "repeat.annually": "वार्षिक",
+      "more.tomorrow": "कल", "more.nextWeek": "अगले सप्ताह", "more.someday": "किसी दिन", "more.duplicate": "डुप्लिकेट", "more.addFile": "फ़ाइल जोड़ें",
+      "modal.taskTitle": "कार्य का शीर्षक...", "modal.addNotes": "यहाँ कुछ अतिरिक्त नोट्स जोड़ें...",
+      
+      // --- Share Modal ---
+      "share.title": "कार्य पहुंच साझा करें", "share.description": "लोगों को आपके सभी कार्य देखने की अनुमति देने के लिए जोड़ें।", "share.emailPlaceholder": "ईमेल द्वारा लोगों को जोड़ें", "share.button": "शेयर", "share.sharedWith": "के साथ साझा",
+      
+      // --- Auth Modal ---
+      "auth.loginTitle": "अपने खाते में प्रवेश करें",
       "auth.registerTitle": "अपना खाता बनाएं",
       "auth.verifyTitle": "अपना ईमेल सत्यापित करें",
+      "auth.emailPlaceholder": "अपना ईमेल दर्ज करें",
+      "auth.passwordPlaceholder": "अपना पासवर्ड दर्ज करें",
+      "auth.firstNamePlaceholder": "पहला नाम",
+      "auth.lastNamePlaceholder": "अंतिम नाम",
+      "auth.createPasswordPlaceholder": "एक पासवर्ड बनाएं",
       "auth.loginButton": "लॉग इन करें",
       "auth.loggingInButton": "लॉग इन हो रहा है...",
       "auth.registerButton": "रजिस्टर करें",
       "auth.registeringButton": "पंजीकरण हो रहा है...",
       "auth.verifyButton": "खाता सत्यापित करें",
       "auth.verifyingButton": "सत्यापन हो रहा है...",
+      "auth.registerToggle": "खाता नहीं है? रजिस्टर करें",
+      "auth.loginToggle": "पहले से ही एक खाता है? लॉग इन करें",
       "auth.verifySuccess": "खाता सफलतापूर्वक सत्यापित हो गया! कृपया लॉग इन करें।"
     }
   },
   de: {
     translation: {
+      // --- Weekdays & Months ---
       "day.0": "Sonntag", "day.1": "Montag", "day.2": "Dienstag", "day.3": "Mittwoch", "day.4": "Donnerstag", "day.5": "Freitag", "day.6": "Samstag",
       "dayShort.0": "So", "dayShort.1": "Mo", "dayShort.2": "Di", "dayShort.3": "Mi", "dayShort.4": "Do", "dayShort.5": "Fr", "dayShort.6": "Sa",
       "month.0": "Januar", "month.1": "Februar", "month.2": "März", "month.3": "April", "month.4": "Mai", "month.5": "Juni", "month.6": "Juli", "month.7": "August", "month.8": "September", "month.9": "Oktober", "month.10": "November", "month.11": "Dezember",
+      
+      // --- Main Menu ---
       "menu.language": "Sprache", "menu.about": "Über", "menu.search": "Suchen", "menu.print": "Drucken", "menu.share": "Teilen", "menu.premium": "Premium werden", "menu.support": "Unterstützung",
-      "auth.loginTitle": "Melden Sie sich bei Ihrem Konto an", "auth.emailPlaceholder": "Geben sie Ihre E-Mail Adresse ein", "auth.passwordPlaceholder": "Geben Sie Ihr Passwort ein", "auth.loginButton": "Anmeldung", "auth.registerToggle": "Sie haben kein Konto? Registrieren",
-      "share.title": "Aufgabenzugriff teilen", "share.button": "Teilen", "share.sharedWith": "Geteilt mit",
+      
+      // --- Task Modals ---
+      "repeat.title": "Aufgabe wiederholen", "repeat.none": "Keine", "repeat.daily": "Täglich", "repeat.weekly": "Wöchentlich", "repeat.monthly": "Monatlich", "repeat.annually": "Jährlich",
+      "more.tomorrow": "Morgen", "more.nextWeek": "Nächste Woche", "more.someday": "Eines Tages", "more.duplicate": "Duplizieren", "more.addFile": "Datei hinzufügen",
+      "modal.taskTitle": "Aufgabentitel...", "modal.addNotes": "Hier einige zusätzliche Notizen hinzufügen...",
+      
+      // --- Share Modal ---
+      "share.title": "Aufgabenzugriff teilen", "share.description": "Fügen Sie Personen hinzu, damit diese alle Ihre Aufgaben einsehen können.", "share.emailPlaceholder": "Personen per E-Mail hinzufügen", "share.button": "Teilen", "share.sharedWith": "Geteilt mit",
+
+      // --- Auth Modal ---
       "auth.loginTitle": "Melden Sie sich bei Ihrem Konto an",
       "auth.registerTitle": "Erstelle deinen Account",
       "auth.verifyTitle": "Bestätige deine E-Mail-Adresse",
+      "auth.emailPlaceholder": "Geben sie Ihre E-Mail Adresse ein",
+      "auth.passwordPlaceholder": "Geben Sie Ihr Passwort ein",
+      "auth.firstNamePlaceholder": "Vorname",
+      "auth.lastNamePlaceholder": "Nachname",
+      "auth.createPasswordPlaceholder": "Erstellen Sie ein Passwort",
       "auth.loginButton": "Anmeldung",
       "auth.loggingInButton": "Anmelden...",
       "auth.registerButton": "Registrieren",
       "auth.registeringButton": "Registrieren...",
       "auth.verifyButton": "Konto bestätigen",
       "auth.verifyingButton": "Überprüfen...",
+      "auth.registerToggle": "Sie haben kein Konto? Registrieren",
+      "auth.loginToggle": "Haben Sie bereits ein Konto? Anmelden",
       "auth.verifySuccess": "Konto erfolgreich bestätigt! Bitte melden Sie sich an."
     }
   }
@@ -160,6 +204,8 @@ document.addEventListener('DOMContentLoaded', () => {
     renderDynamicCalendar();
 
     initializeAuthSystem();
+
+    initializeApp();
   });
 
   // Function to translate all static text with data-i18n attributes
@@ -181,6 +227,8 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     });
   }
+
+  
 
   // Add click listeners to the language links in the new submenu
   document.querySelectorAll('.language-submenu a').forEach(link => {
@@ -257,6 +305,18 @@ function getDaysOfCurrentWeek() {
     week.push(day);
   }
   return week;
+}
+
+// You need to re-add the initializeApp function we created before
+async function initializeApp() {
+    if (isLoggedIn) {
+        console.log("User is logged in. Fetching data...");
+        renderWeeklyView(); // Or your main data-fetching function
+        // fetchAndRenderCalendars(); // etc.
+    } else {
+        console.log("User is a guest. Rendering guest view.");
+        renderWeeklyView(); // This will use guest tasks from localStorage
+    }
 }
 
 
