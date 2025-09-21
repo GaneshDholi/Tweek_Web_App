@@ -2301,9 +2301,10 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 });
 
+
 // account login
-document.addEventListener('DOMContentLoaded', () => {
-  // initializeAuthSystem() {
+let isLoggedIn = false; 
+function initializeAuthSystem() {
     const API_BASE_URL = "https://tweek-web-app-2.onrender.com";
 
     // --- DOM ELEMENTS ---
@@ -2561,7 +2562,111 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- INITIALIZATION ---
     checkLoginStatus();
 
-})
+};
+
+function getGuestTasks() {
+  return JSON.parse(localStorage.getItem("guestTasks")) || [];
+}
+
+function saveGuestTasks(tasks) {
+  localStorage.setItem("guestTasks", JSON.stringify(tasks));
+}
+
+// -----------------------------
+// Task Functions
+// -----------------------------
+async function addTask(task) {
+  if (isLoggedIn) {
+    await fetch(`${API_BASE_URL}/api/tasks`, {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(task),
+    });
+  } else {
+    let guestTasks = getGuestTasks();
+    guestTasks.push(task);
+    saveGuestTasks(guestTasks);
+  }
+}
+
+async function loadTasks(weekId) {
+  if (isLoggedIn) {
+    const res = await fetch(`${API_BASE_URL}/api/tasks/week/${weekId}`, {
+      credentials: "include",
+    });
+    if (!res.ok) throw new Error("Failed to fetch tasks");
+    return await res.json();
+  } else {
+    return getGuestTasks();
+  }
+}
+
+async function deleteTask(taskId) {
+  if (isLoggedIn) {
+    await fetch(`${API_BASE_URL}/api/tasks/${taskId}`, {
+      method: "DELETE",
+      credentials: "include",
+    });
+  } else {
+    let guestTasks = getGuestTasks();
+    guestTasks = guestTasks.filter((t) => t.id !== taskId);
+    saveGuestTasks(guestTasks);
+  }
+}
+// -----------------------------
+// Guest Task Helpers
+// -----------------------------
+function getGuestTasks() {
+  return JSON.parse(localStorage.getItem("guestTasks")) || [];
+}
+
+function saveGuestTasks(tasks) {
+  localStorage.setItem("guestTasks", JSON.stringify(tasks));
+}
+
+// -----------------------------
+// Task Functions
+// -----------------------------
+async function addTask(task) {
+  if (isLoggedIn) {
+    await fetch(`${API_BASE_URL}/api/tasks`, {
+      method: "POST",
+      credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(task),
+    });
+  } else {
+    let guestTasks = getGuestTasks();
+    guestTasks.push(task);
+    saveGuestTasks(guestTasks);
+  }
+}
+
+async function loadTasks(weekId) {
+  if (isLoggedIn) {
+    const res = await fetch(`${API_BASE_URL}/api/tasks/week/${weekId}`, {
+      credentials: "include",
+    });
+    if (!res.ok) throw new Error("Failed to fetch tasks");
+    return await res.json();
+  } else {
+    return getGuestTasks();
+  }
+}
+
+async function deleteTask(taskId) {
+  if (isLoggedIn) {
+    await fetch(`${API_BASE_URL}/api/tasks/${taskId}`, {
+      method: "DELETE",
+      credentials: "include",
+    });
+  } else {
+    let guestTasks = getGuestTasks();
+    guestTasks = guestTasks.filter((t) => t.id !== taskId);
+    saveGuestTasks(guestTasks);
+  }
+}
 
 
 

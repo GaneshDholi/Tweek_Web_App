@@ -14,6 +14,14 @@ function getWeekNumber(d) {
 }
 
 // --- READ OPERATIONS ---
+router.get("/profile", async (req, res) => {
+  if (!req.user) {
+    return res.status(401).json({ error: "Not logged in" });
+  }
+  res.json({ id: req.user.id, email: req.user.email });
+});
+
+
 router.get("/week/:weekId", async (req, res) => {
     try {
         const { weekId } = req.params;
