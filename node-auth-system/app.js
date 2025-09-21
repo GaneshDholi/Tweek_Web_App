@@ -16,6 +16,7 @@ dotenv.config();
 // Add all URLs that your frontend will run on.
 const allowedOrigins = [
   "https://tweek-web-app-two.vercel.app", // Your deployed Vercel URL
+  "https://tweek-web-dx0efts3e-ganesh-dholis-projects.vercel.app",
   "http://127.0.0.1:5501",               // Your local development URL
   "http://localhost:5501"                // Another common local URL
 ];
