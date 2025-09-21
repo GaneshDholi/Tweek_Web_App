@@ -157,6 +157,19 @@ router.post('/login', authLimiter, loginValidationRules, async (req, res) => {
     }
 });
 
+router.get('/profile', authMiddleware, (req, res) => {
+    // If the code reaches this point, the authMiddleware has successfully
+    // verified the user. We just need to send the user data back
+    // in the format the frontend expects.
+    res.json({
+        user: {
+            id: req.user.id,
+            email: req.user.email,
+            firstName: req.user.firstName,
+            lastName: req.user.lastName,
+        },
+    });
+});
 
 // --- Logout and Refresh Token (No changes needed) ---
 router.post('/logout', (req, res) => {

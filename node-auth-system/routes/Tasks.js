@@ -14,14 +14,6 @@ function getWeekNumber(d) {
 }
 
 // --- READ OPERATIONS ---
-router.get("/profile", async (req, res) => {
-  if (!req.user) {
-    return res.status(401).json({ error: "Not logged in" });
-  }
-  res.json({ id: req.user.id, email: req.user.email });
-});
-
-
 router.get("/week/:weekId", async (req, res) => {
     try {
         const { weekId } = req.params;
@@ -39,7 +31,7 @@ router.get("/week/:weekId", async (req, res) => {
             currentUserId,
             ...(currentUser.canViewTasksOf || [])
         ];
-        
+
         const profiles = await UserTasksProfile.find({
             userId: { $in: userIdsToFetch }
         })
@@ -47,7 +39,7 @@ router.get("/week/:weekId", async (req, res) => {
             .lean(); // Because of .lean(), weeklyTasks is a plain object
 
         const responseData = profiles.map(profile => {
-            
+
             // ▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼ FIX HERE ▼▼"▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼
             // Use standard bracket notation for a plain object from .lean()
             const weekData = profile.weeklyTasks ? profile.weeklyTasks[weekId] : undefined;
@@ -85,7 +77,7 @@ router.get("/someday", async (req, res) => {
 
 router.post("/", async (req, res) => {
     try {
-        const { title, date, completed = false, isSomeday = false, color = "#000000", repeat = 'none'  } = req.body;
+        const { title, date, completed = false, isSomeday = false, color = "#000000", repeat = 'none' } = req.body;
         const userId = req.user.id;
 
         // This part is fine
@@ -93,7 +85,7 @@ router.post("/", async (req, res) => {
         if (!user) {
             return res.status(404).json({ error: "User not found" });
         }
-        
+
         // Find the user's task profile or prepare to create one
         let userProfile = await UserTasksProfile.findOne({ userId });
         if (!userProfile) {
@@ -121,7 +113,7 @@ router.post("/", async (req, res) => {
                 return res.status(400).json({ error: "A date is required for weekly tasks." });
             }
             const weekId = getWeekNumber(new Date(date));
-            
+
             // 1. Correctly get the existing week's data from the Map
             const weekData = userProfile.weeklyTasks.get(weekId) || { tasks: [] };
 
@@ -153,7 +145,7 @@ router.post("/", async (req, res) => {
 router.put("/:id", async (req, res) => {
     try {
         const taskId = req.params.id;
-        const { title, date, completed, color} = req.body;
+        const { title, date, completed, color } = req.body;
 
         // 1. Find the user's profile
         const userProfile = await UserTasksProfile.findOne({ userId: req.user.id });
@@ -201,7 +193,7 @@ router.put("/:id", async (req, res) => {
         if (date !== undefined) {
             task.date = date ? new Date(date) : null;
         }
-        if (color !== undefined) task.color = color; 
+        if (color !== undefined) task.color = color;
 
         // 6. Place the updated task in its new correct location
         if (task.date === null) {
