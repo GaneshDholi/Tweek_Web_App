@@ -159,7 +159,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // with the newly loaded language.
     renderDynamicCalendar();
 
-    initializeAuthSystem();
+    // initializeAuthSystem();
   });
 
   // Function to translate all static text with data-i18n attributes
@@ -281,7 +281,7 @@ function renderYearCalendar(year) {
   for (let month = 0; month < 12; month++) {
     const monthDiv = document.createElement("div");
     monthDiv.className = "month";
-    
+
     const startDay = new Date(year, month, 1).getDay();
     const totalDays = new Date(year, month + 1, 0).getDate();
     const prevDays = new Date(year, month, 0).getDate();
@@ -2302,285 +2302,287 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // account login
-function initializeAuthSystem() {
-  const API_BASE_URL = "https://tweek-web-app-2.onrender.com";
+document.addEventListener('DOMContentLoaded', () => {
+  // initializeAuthSystem() {
+    const API_BASE_URL = "https://tweek-web-app-2.onrender.com";
 
-  // --- DOM ELEMENTS ---
-  const authTrigger = document.getElementById('auth-trigger');
-  const authModalBackdrop = document.getElementById('auth-modal-backdrop');
-  const closeModalBtn = document.getElementById('close-modal-btn');
-  const modalTitle = document.getElementById('modal-title');
-  const messageArea = document.getElementById('messageArea');
+    // --- DOM ELEMENTS ---
+    const authTrigger = document.getElementById('auth-trigger');
+    const authModalBackdrop = document.getElementById('auth-modal-backdrop');
+    const closeModalBtn = document.getElementById('close-modal-btn');
+    const modalTitle = document.getElementById('modal-title');
+    const messageArea = document.getElementById('messageArea');
 
-  // Forms
-  const loginForm = document.getElementById('loginForm');
-  const registerForm = document.getElementById('registerForm');
-  const verifyForm = document.getElementById('verifyForm');
+    // Forms
+    const loginForm = document.getElementById('loginForm');
+    const registerForm = document.getElementById('registerForm');
+    const verifyForm = document.getElementById('verifyForm');
 
-  // Links to switch forms
-  const showRegisterLink = document.getElementById('showRegisterLink');
-  const showLoginLinkFromRegister = document.getElementById('showLoginLinkFromRegister');
+    // Links to switch forms
+    const showRegisterLink = document.getElementById('showRegisterLink');
+    const showLoginLinkFromRegister = document.getElementById('showLoginLinkFromRegister');
 
-  // Profile Display
-  const profileDropdown = document.getElementById('profile-dropdown');
-  const dropdownInitials = document.getElementById('dropdown-initials');
-  const dropdownFullname = document.getElementById('dropdown-fullname');
-  const logoutButton = document.getElementById('logout-button');
+    // Profile Display
+    const profileDropdown = document.getElementById('profile-dropdown');
+    const dropdownInitials = document.getElementById('dropdown-initials');
+    const dropdownFullname = document.getElementById('dropdown-fullname');
+    const logoutButton = document.getElementById('logout-button');
 
-  // --- STATE ---
-  let isLoggedIn = false;
-  let currentEmailForVerification = ''; // To store email between register and verify steps
-  let sessionRefreshInterval = null;
-  const loginIconSVG = `<svg xmlns="http://www.w.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>`;
+    // --- STATE ---
+    let isLoggedIn = false;
+    let currentEmailForVerification = ''; // To store email between register and verify steps
+    let sessionRefreshInterval = null;
+    const loginIconSVG = `<svg xmlns="http://www.w.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>`;
 
-  // --- HELPER FUNCTIONS ---
-  function showMessage(message, isError = false) {
-    messageArea.textContent = message;
-    messageArea.className = isError ? 'message-error' : 'message-success';
-    messageArea.style.display = message ? 'block' : 'none';
-  }
-
-  function showView(viewToShow) {
-    // Hide all forms first
-    loginForm.classList.add('hidden');
-    registerForm.classList.add('hidden');
-    verifyForm.classList.add('hidden');
-    // Show the requested form
-    viewToShow.classList.remove('hidden');
-    // Update modal title
-    if (viewToShow === loginForm) modalTitle.textContent = 'Login to Your Account';
-    if (viewToShow === registerForm) modalTitle.textContent = 'Create an Account';
-    if (viewToShow === verifyForm) modalTitle.textContent = 'Verify Your Email';
-    showMessage(''); // Clear any previous messages
-  }
-
-  // --- MAIN AUTH LOGIC ---
-  function updateAuthState(loggedIn, user = null) {
-    isLoggedIn = loggedIn;
-    if (sessionRefreshInterval) clearInterval(sessionRefreshInterval);
-
-    if (isLoggedIn && user) {
-      const firstName = user.firstName || 'User';
-      const lastName = user.lastName || '';
-      const initials = (firstName[0] + (lastName[0] || '')).toUpperCase();
-      authTrigger.innerHTML = initials;
-      authTrigger.classList.add('text');
-      dropdownInitials.textContent = initials;
-      dropdownFullname.textContent = `${firstName} ${lastName}`.trim();
-      authModalBackdrop.classList.add('hidden');
-      // Set up token refresh
-      sessionRefreshInterval = setInterval(() => fetch(`${API_BASE_URL}/auth/refresh-token`, { method: 'POST', credentials: 'include' }), 6 * 24 * 60 * 60 * 1000);
-    } else {
-      authTrigger.innerHTML = loginIconSVG;
-      authTrigger.classList.remove('text');
-      profileDropdown.classList.add('hidden');
+    // --- HELPER FUNCTIONS ---
+    function showMessage(message, isError = false) {
+      messageArea.textContent = message;
+      messageArea.className = isError ? 'message-error' : 'message-success';
+      messageArea.style.display = message ? 'block' : 'none';
     }
-  }
 
-  async function checkLoginStatus() {
-    try {
-      const response = await fetch(`${API_BASE_URL}/profile`, { method: 'GET', credentials: 'include' });
-      if (!response.ok) throw new Error('Not authenticated');
-      const data = await response.json();
-      updateAuthState(true, data.user);
-    } catch (error) {
-      updateAuthState(false);
+    function showView(viewToShow) {
+      // Hide all forms first
+      loginForm.classList.add('hidden');
+      registerForm.classList.add('hidden');
+      verifyForm.classList.add('hidden');
+      // Show the requested form
+      viewToShow.classList.remove('hidden');
+      // Update modal title
+      if (viewToShow === loginForm) modalTitle.textContent = 'Login to Your Account';
+      if (viewToShow === registerForm) modalTitle.textContent = 'Create an Account';
+      if (viewToShow === verifyForm) modalTitle.textContent = 'Verify Your Email';
+      showMessage(''); // Clear any previous messages
     }
-  }
 
-  // --- AUTH TRIGGER ---
-  authTrigger.addEventListener('click', (e) => {
-    e.stopPropagation();
+    // --- MAIN AUTH LOGIC ---
+    function updateAuthState(loggedIn, user = null) {
+      isLoggedIn = loggedIn;
+      if (sessionRefreshInterval) clearInterval(sessionRefreshInterval);
 
-    dropdown.classList.remove('show');
-
-    if (isLoggedIn) {
-      profileDropdown.classList.toggle('hidden');
-    } else {
-      authModalBackdrop.classList.remove('hidden');
-      showView(loginForm); // Default to login view
-      loginForm.reset();
-      registerForm.reset();
-      verifyForm.reset();
-    }
-  });
-
-  closeModalBtn.addEventListener('click', () => authModalBackdrop.classList.add('hidden'));
-  authModalBackdrop.addEventListener('click', (e) => { if (e.target === authModalBackdrop) authModalBackdrop.classList.add('hidden'); });
-
-  // Form switching links
-  // ADD THIS BLOCK instead. It listens on the parent element.
-  const authFlow = document.getElementById('authFlow');
-  if (authFlow) {
-    authFlow.addEventListener('click', (e) => {
-      // Check if the clicked element has the ID 'showRegisterLink'
-      if (e.target.id === 'showRegisterLink') {
-        e.preventDefault();
-        showView(registerForm);
+      if (isLoggedIn && user) {
+        const firstName = user.firstName || 'User';
+        const lastName = user.lastName || '';
+        const initials = (firstName[0] + (lastName[0] || '')).toUpperCase();
+        authTrigger.innerHTML = initials;
+        authTrigger.classList.add('text');
+        dropdownInitials.textContent = initials;
+        dropdownFullname.textContent = `${firstName} ${lastName}`.trim();
+        authModalBackdrop.classList.add('hidden');
+        // Set up token refresh
+        sessionRefreshInterval = setInterval(() => fetch(`${API_BASE_URL}/auth/refresh-token`, { method: 'POST', credentials: 'include' }), 6 * 24 * 60 * 60 * 1000);
+      } else {
+        authTrigger.innerHTML = loginIconSVG;
+        authTrigger.classList.remove('text');
+        profileDropdown.classList.add('hidden');
       }
-      // Check if the clicked element has the ID 'showLoginLinkFromRegister'
-      if (e.target.id === 'showLoginLinkFromRegister') {
-        e.preventDefault();
-        showView(loginForm);
+    }
+
+    async function checkLoginStatus() {
+      try {
+        const response = await fetch(`${API_BASE_URL}/profile`, { method: 'GET', credentials: 'include' });
+        if (!response.ok) throw new Error('Not authenticated');
+        const data = await response.json();
+        updateAuthState(true, data.user);
+      } catch (error) {
+        updateAuthState(false);
+      }
+    }
+
+    // --- AUTH TRIGGER ---
+    authTrigger.addEventListener('click', (e) => {
+      e.stopPropagation();
+
+      dropdown.classList.remove('show');
+
+      if (isLoggedIn) {
+        profileDropdown.classList.toggle('hidden');
+      } else {
+        authModalBackdrop.classList.remove('hidden');
+        showView(loginForm); // Default to login view
+        loginForm.reset();
+        registerForm.reset();
+        verifyForm.reset();
       }
     });
-  }
 
-  // --- FORM SUBMISSIONS ---
+    closeModalBtn.addEventListener('click', () => authModalBackdrop.classList.add('hidden'));
+    authModalBackdrop.addEventListener('click', (e) => { if (e.target === authModalBackdrop) authModalBackdrop.classList.add('hidden'); });
 
-  // Step 1: Register
-  registerForm.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    showMessage('');
-    const registerBtn = registerForm.querySelector('button');
-    registerBtn.disabled = true;
-    registerBtn.textContent = 'Registering...';
-
-    currentEmailForVerification = document.getElementById('registerEmail').value;
-    const payload = {
-      firstName: document.getElementById('firstNameInput').value,
-      lastName: document.getElementById('lastNameInput').value,
-      email: currentEmailForVerification,
-      password: document.getElementById('registerPassword').value
-    };
-
-    try {
-      const response = await fetch(`${API_BASE_URL}/auth/register`, {
-        method: 'POST',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
+    // Form switching links
+    // ADD THIS BLOCK instead. It listens on the parent element.
+    const authFlow = document.getElementById('authFlow');
+    if (authFlow) {
+      authFlow.addEventListener('click', (e) => {
+        // Check if the clicked element has the ID 'showRegisterLink'
+        if (e.target.id === 'showRegisterLink') {
+          e.preventDefault();
+          showView(registerForm);
+        }
+        // Check if the clicked element has the ID 'showLoginLinkFromRegister'
+        if (e.target.id === 'showLoginLinkFromRegister') {
+          e.preventDefault();
+          showView(loginForm);
+        }
       });
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.message);
-
-      // On success, move to the OTP verification step
-      document.getElementById('otpEmailDisplay').textContent = currentEmailForVerification;
-      showView(verifyForm);
-
-    } catch (err) {
-      showMessage(err.message, true);
-    } finally {
-      registerBtn.disabled = false;
-      registerBtn.textContent = 'Register';
     }
-  });
 
-  // Step 2: Verify OTP
-  verifyForm.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    showMessage('');
-    const verifyBtn = verifyForm.querySelector('button');
-    verifyBtn.disabled = true;
-    verifyBtn.textContent = 'Verifying...';
+    // --- FORM SUBMISSIONS ---
 
-    const payload = {
-      email: currentEmailForVerification,
-      otp: document.getElementById('otpInput').value
-    };
+    // Step 1: Register
+    registerForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      showMessage('');
+      const registerBtn = registerForm.querySelector('button');
+      registerBtn.disabled = true;
+      registerBtn.textContent = 'Registering...';
 
-    try {
-      const response = await fetch(`${API_BASE_URL}/auth/verify-account`, {
-        method: 'POST',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.message);
+      currentEmailForVerification = document.getElementById('registerEmail').value;
+      const payload = {
+        firstName: document.getElementById('firstNameInput').value,
+        lastName: document.getElementById('lastNameInput').value,
+        email: currentEmailForVerification,
+        password: document.getElementById('registerPassword').value
+      };
 
-      // On success, inform the user and switch to the login form
-      showMessage('Account verified successfully! Please log in.', false);
-      showView(loginForm);
+      try {
+        const response = await fetch(`${API_BASE_URL}/auth/register`, {
+          method: 'POST',
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.message);
 
-    } catch (err) {
-      showMessage(err.message, true);
-    } finally {
-      verifyBtn.disabled = false;
-      verifyBtn.textContent = 'Verify Account';
-    }
-  });
+        // On success, move to the OTP verification step
+        document.getElementById('otpEmailDisplay').textContent = currentEmailForVerification;
+        showView(verifyForm);
 
-  // Step 3: Login
-  loginForm.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    showMessage('');
-    const loginBtn = loginForm.querySelector('button');
-    loginBtn.disabled = true;
-    loginBtn.textContent = 'Logging In...';
-
-    const payload = {
-      email: document.getElementById('loginEmail').value,
-      password: document.getElementById('loginPassword').value
-    };
-
-    try {
-      const response = await fetch(`${API_BASE_URL}/auth/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        credentials: 'include',
-        body: JSON.stringify(payload)
-      });
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.message);
-
-      updateAuthState(true, data.user); // Login successful
-      if (typeof renderWeeklyView === 'function') {
-        renderWeeklyView();
+      } catch (err) {
+        showMessage(err.message, true);
+      } finally {
+        registerBtn.disabled = false;
+        registerBtn.textContent = 'Register';
       }
-    } catch (err) {
-      showMessage(err.message, true);
-    } finally {
-      loginBtn.disabled = false;
-      loginBtn.textContent = 'Login';
-    }
-  });
+    });
 
-  // --- Other Listeners (Logout, Password Toggle, etc.) ---
-  logoutButton.addEventListener('click', async () => {
-    try {
-      await fetch(`${API_BASE_URL}/auth/logout`, { method: 'POST', credentials: 'include' });
-    } finally {
-      updateAuthState(false);
-      if (typeof renderWeeklyView === 'function') {
-        renderWeeklyView();
+    // Step 2: Verify OTP
+    verifyForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      showMessage('');
+      const verifyBtn = verifyForm.querySelector('button');
+      verifyBtn.disabled = true;
+      verifyBtn.textContent = 'Verifying...';
+
+      const payload = {
+        email: currentEmailForVerification,
+        otp: document.getElementById('otpInput').value
+      };
+
+      try {
+        const response = await fetch(`${API_BASE_URL}/auth/verify-account`, {
+          method: 'POST',
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.message);
+
+        // On success, inform the user and switch to the login form
+        showMessage('Account verified successfully! Please log in.', false);
+        showView(loginForm);
+
+      } catch (err) {
+        showMessage(err.message, true);
+      } finally {
+        verifyBtn.disabled = false;
+        verifyBtn.textContent = 'Verify Account';
       }
+    });
+
+    // Step 3: Login
+    loginForm.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      showMessage('');
+      const loginBtn = loginForm.querySelector('button');
+      loginBtn.disabled = true;
+      loginBtn.textContent = 'Logging In...';
+
+      const payload = {
+        email: document.getElementById('loginEmail').value,
+        password: document.getElementById('loginPassword').value
+      };
+
+      try {
+        const response = await fetch(`${API_BASE_URL}/auth/login`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          credentials: 'include',
+          body: JSON.stringify(payload)
+        });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.message);
+
+        updateAuthState(true, data.user); // Login successful
+        if (typeof renderWeeklyView === 'function') {
+          renderWeeklyView();
+        }
+      } catch (err) {
+        showMessage(err.message, true);
+      } finally {
+        loginBtn.disabled = false;
+        loginBtn.textContent = 'Login';
+      }
+    });
+
+    // --- Other Listeners (Logout, Password Toggle, etc.) ---
+    logoutButton.addEventListener('click', async () => {
+      try {
+        await fetch(`${API_BASE_URL}/auth/logout`, { method: 'POST', credentials: 'include' });
+      } finally {
+        updateAuthState(false);
+        if (typeof renderWeeklyView === 'function') {
+          renderWeeklyView();
+        }
+      }
+    });
+
+    const toggleRegisterPassword = document.getElementById('toggleRegisterPassword');
+    toggleRegisterPassword.addEventListener('click', function () {
+      const registerPasswordInput = document.getElementById('registerPassword');
+      const type = registerPasswordInput.getAttribute('type') === 'password' ? 'text' : 'password';
+      registerPasswordInput.setAttribute('type', type);
+      document.getElementById('register-eye-open-svg').style.display = (type === 'password') ? 'block' : 'none';
+      document.getElementById('register-eye-closed-svg').style.display = (type === 'password') ? 'none' : 'block';
+    });
+
+    // --- INITIALIZATION ---
+    checkLoginStatus();
+
+})
+
+
+
+  // : button dropdown
+  const menuBtn = document.querySelector(".circle-menu");
+  const dropdown = document.querySelector(".dropdown-content");
+  const authTrigger = document.getElementById('auth-trigger');
+  const profileDropdown = document.getElementById('profile-dropdown');
+  // --- CIRCLE MENU ---
+  menuBtn.addEventListener("click", (e) => {
+    e.stopPropagation();
+    profileDropdown.classList.add('hidden');
+    dropdown.classList.toggle("show");
+  });
+
+  document.addEventListener("click", (e) => {
+    if (!authTrigger.contains(e.target) && !profileDropdown.contains(e.target)) {
+      profileDropdown.classList.add("hidden");
+    }
+    if (!menuBtn.contains(e.target) && !dropdown.contains(e.target)) {
+      dropdown.classList.remove("show");
     }
   });
-
-  const toggleRegisterPassword = document.getElementById('toggleRegisterPassword');
-  toggleRegisterPassword.addEventListener('click', function () {
-    const registerPasswordInput = document.getElementById('registerPassword');
-    const type = registerPasswordInput.getAttribute('type') === 'password' ? 'text' : 'password';
-    registerPasswordInput.setAttribute('type', type);
-    document.getElementById('register-eye-open-svg').style.display = (type === 'password') ? 'block' : 'none';
-    document.getElementById('register-eye-closed-svg').style.display = (type === 'password') ? 'none' : 'block';
-  });
-
-  // --- INITIALIZATION ---
-  checkLoginStatus();
-};
-
-
-
-// : button dropdown
-const menuBtn = document.querySelector(".circle-menu");
-const dropdown = document.querySelector(".dropdown-content");
-const authTrigger = document.getElementById('auth-trigger');
-const profileDropdown = document.getElementById('profile-dropdown');
-// --- CIRCLE MENU ---
-menuBtn.addEventListener("click", (e) => {
-  e.stopPropagation();
-  profileDropdown.classList.add('hidden');
-  dropdown.classList.toggle("show");
-});
-
-document.addEventListener("click", (e) => {
-  if (!authTrigger.contains(e.target) && !profileDropdown.contains(e.target)) {
-    profileDropdown.classList.add("hidden");
-  }
-  if (!menuBtn.contains(e.target) && !dropdown.contains(e.target)) {
-    dropdown.classList.remove("show");
-  }
-});
 
