@@ -2539,7 +2539,7 @@ function initializeAuthSystem() {
     showMessage('');
     const registerBtn = registerForm.querySelector('button');
     registerBtn.disabled = true;
-    registerBtn.textContent = 'Registering...';
+    registerBtn.textContent = i18next.t('auth.registeringButton');
 
     currentEmailForVerification = document.getElementById('registerEmail').value;
     const payload = {
@@ -2567,7 +2567,7 @@ function initializeAuthSystem() {
       showMessage(err.message, true);
     } finally {
       registerBtn.disabled = false;
-      registerBtn.textContent = 'Register';
+      registerBtn.textContent = i18next.t('auth.registerButton');
     }
   });
 
@@ -2577,7 +2577,7 @@ function initializeAuthSystem() {
     showMessage('');
     const verifyBtn = verifyForm.querySelector('button');
     verifyBtn.disabled = true;
-    verifyBtn.textContent = 'Verifying...';
+    verifyBtn.textContent = i18next.t('auth.verifyingButton');
 
     const payload = {
       email: currentEmailForVerification,
@@ -2595,14 +2595,14 @@ function initializeAuthSystem() {
       if (!response.ok) throw new Error(data.message);
 
       // On success, inform the user and switch to the login form
-      showMessage('Account verified successfully! Please log in.', false);
+      showMessage(i18next.t('auth.verifySuccess'), false);
       showView(loginForm);
 
     } catch (err) {
       showMessage(err.message, true);
     } finally {
       verifyBtn.disabled = false;
-      verifyBtn.textContent = 'Verify Account';
+      verifyBtn.textContent = i18next.t('auth.verifyButton');
     }
   });
 
@@ -2612,7 +2612,7 @@ function initializeAuthSystem() {
     showMessage('');
     const loginBtn = loginForm.querySelector('button');
     loginBtn.disabled = true;
-    loginBtn.textContent = 'Logging In...';
+    loginBtn.textContent = i18next.t('auth.loggingInButton');
 
     const payload = {
       email: document.getElementById('loginEmail').value,
@@ -2637,8 +2637,7 @@ function initializeAuthSystem() {
       showMessage(err.message, true);
     } finally {
       loginBtn.disabled = false;
-      loginBtn.textContent = 'Login';
-    }
+      loginBtn.textContent = i18next.t('auth.loginButton');
   });
 
   // --- Other Listeners (Logout, Password Toggle, etc.) ---
