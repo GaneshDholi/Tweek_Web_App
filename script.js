@@ -6,18 +6,18 @@ const translations = {
       "day.0": "Sunday", "day.1": "Monday", "day.2": "Tuesday", "day.3": "Wednesday", "day.4": "Thursday", "day.5": "Friday", "day.6": "Saturday",
       "dayShort.0": "Sun", "dayShort.1": "Mon", "dayShort.2": "Tue", "dayShort.3": "Wed", "dayShort.4": "Thu", "dayShort.5": "Fri", "dayShort.6": "Sat",
       "month.0": "January", "month.1": "February", "month.2": "March", "month.3": "April", "month.4": "May", "month.5": "June", "month.6": "July", "month.7": "August", "month.8": "September", "month.9": "October", "month.10": "November", "month.11": "December",
-      
+
       // --- Main Menu ---
       "menu.language": "Language", "menu.about": "About", "menu.search": "Search", "menu.print": "Print", "menu.share": "Share", "menu.premium": "Go premium", "menu.support": "Support",
-      
+
       // --- Task Modals ---
       "repeat.title": "Repeat Task", "repeat.none": "None", "repeat.daily": "Daily", "repeat.weekly": "Weekly", "repeat.monthly": "Monthly", "repeat.annually": "Annually",
       "more.tomorrow": "Tomorrow", "more.nextWeek": "Next week", "more.someday": "Someday", "more.duplicate": "Duplicate", "more.addFile": "Add file",
       "modal.taskTitle": "Task title...", "modal.addNotes": "Add some extra notes here...",
-      
+
       // --- Share Modal ---
       "share.title": "Share Task Access", "share.description": "Add people to allow them to view all your tasks.", "share.emailPlaceholder": "Add people by email", "share.button": "Share", "share.sharedWith": "Shared With",
-      
+
       // --- Auth Modal ---
       "auth.loginTitle": "Login to Your Account",
       "auth.registerTitle": "Create an Account",
@@ -44,18 +44,18 @@ const translations = {
       "day.0": "Domingo", "day.1": "Lunes", "day.2": "Martes", "day.3": "Miércoles", "day.4": "Jueves", "day.5": "Viernes", "day.6": "Sábado",
       "dayShort.0": "Dom", "dayShort.1": "Lun", "dayShort.2": "Mar", "dayShort.3": "Mié", "dayShort.4": "Jue", "dayShort.5": "Vie", "dayShort.6": "Sáb",
       "month.0": "Enero", "month.1": "Febrero", "month.2": "Marzo", "month.3": "Abril", "month.4": "Mayo", "month.5": "Junio", "month.6": "Julio", "month.7": "Agosto", "month.8": "Septiembre", "month.9": "Octubre", "month.10": "Noviembre", "month.11": "Diciembre",
-      
+
       // --- Main Menu ---
       "menu.language": "Idioma", "menu.about": "Acerca de", "menu.search": "Buscar", "menu.print": "Imprimir", "menu.share": "Compartir", "menu.premium": "Hazte premium", "menu.support": "Soporte",
-      
+
       // --- Task Modals ---
       "repeat.title": "Repetir Tarea", "repeat.none": "Ninguna", "repeat.daily": "Diariamente", "repeat.weekly": "Semanalmente", "repeat.monthly": "Mensualmente", "repeat.annually": "Anualmente",
       "more.tomorrow": "Mañana", "more.nextWeek": "La próxima semana", "more.someday": "Algún día", "more.duplicate": "Duplicar", "more.addFile": "Añadir archivo",
       "modal.taskTitle": "Título de la tarea...", "modal.addNotes": "Añade algunas notas extra aquí...",
-      
+
       // --- Share Modal ---
       "share.title": "Compartir Acceso a Tareas", "share.description": "Añade personas para permitirles ver todas tus tareas.", "share.emailPlaceholder": "Añadir personas por correo", "share.button": "Compartir", "share.sharedWith": "Compartido Con",
-      
+
       // --- Auth Modal ---
       "auth.loginTitle": "Inicia Sesión en Tu Cuenta",
       "auth.registerTitle": "Crea Tu Cuenta",
@@ -82,18 +82,18 @@ const translations = {
       "day.0": "रविवार", "day.1": "सोमवार", "day.2": "मंगलवार", "day.3": "बुधवार", "day.4": "गुरुवार", "day.5": "शुक्रवार", "day.6": "शनिवार",
       "dayShort.0": "रवि", "dayShort.1": "सोम", "dayShort.2": "मंगल", "dayShort.3": "बुध", "dayShort.4": "गुरु", "dayShort.5": "शुक्र", "dayShort.6": "शनि",
       "month.0": "जनवरी", "month.1": "फ़रवरी", "month.2": "मार्च", "month.3": "अप्रैल", "month.4": "मई", "month.5": "जून", "month.6": "जुलाई", "month.7": "अगस्त", "month.8": "सितंबर", "month.9": "अक्टूबर", "month.10": "नवंबर", "month.11": "दिसंबर",
-      
+
       // --- Main Menu ---
       "menu.language": "भाषा", "menu.about": "बारे में", "menu.search": "खोज", "menu.print": "प्रिंट", "menu.share": "शेयर", "menu.premium": "प्रीमियम बनें", "menu.support": "समर्थन",
-      
+
       // --- Task Modals ---
       "repeat.title": "कार्य दोहराएं", "repeat.none": "कोई नहीं", "repeat.daily": "रोज़", "repeat.weekly": "साप्ताहिक", "repeat.monthly": "मासिक", "repeat.annually": "वार्षिक",
       "more.tomorrow": "कल", "more.nextWeek": "अगले सप्ताह", "more.someday": "किसी दिन", "more.duplicate": "डुप्लिकेट", "more.addFile": "फ़ाइल जोड़ें",
       "modal.taskTitle": "कार्य का शीर्षक...", "modal.addNotes": "यहाँ कुछ अतिरिक्त नोट्स जोड़ें...",
-      
+
       // --- Share Modal ---
       "share.title": "कार्य पहुंच साझा करें", "share.description": "लोगों को आपके सभी कार्य देखने की अनुमति देने के लिए जोड़ें।", "share.emailPlaceholder": "ईमेल द्वारा लोगों को जोड़ें", "share.button": "शेयर", "share.sharedWith": "के साथ साझा",
-      
+
       // --- Auth Modal ---
       "auth.loginTitle": "अपने खाते में प्रवेश करें",
       "auth.registerTitle": "अपना खाता बनाएं",
@@ -120,15 +120,15 @@ const translations = {
       "day.0": "Sonntag", "day.1": "Montag", "day.2": "Dienstag", "day.3": "Mittwoch", "day.4": "Donnerstag", "day.5": "Freitag", "day.6": "Samstag",
       "dayShort.0": "So", "dayShort.1": "Mo", "dayShort.2": "Di", "dayShort.3": "Mi", "dayShort.4": "Do", "dayShort.5": "Fr", "dayShort.6": "Sa",
       "month.0": "Januar", "month.1": "Februar", "month.2": "März", "month.3": "April", "month.4": "Mai", "month.5": "Juni", "month.6": "Juli", "month.7": "August", "month.8": "September", "month.9": "Oktober", "month.10": "November", "month.11": "Dezember",
-      
+
       // --- Main Menu ---
       "menu.language": "Sprache", "menu.about": "Über", "menu.search": "Suchen", "menu.print": "Drucken", "menu.share": "Teilen", "menu.premium": "Premium werden", "menu.support": "Unterstützung",
-      
+
       // --- Task Modals ---
       "repeat.title": "Aufgabe wiederholen", "repeat.none": "Keine", "repeat.daily": "Täglich", "repeat.weekly": "Wöchentlich", "repeat.monthly": "Monatlich", "repeat.annually": "Jährlich",
       "more.tomorrow": "Morgen", "more.nextWeek": "Nächste Woche", "more.someday": "Eines Tages", "more.duplicate": "Duplizieren", "more.addFile": "Datei hinzufügen",
       "modal.taskTitle": "Aufgabentitel...", "modal.addNotes": "Hier einige zusätzliche Notizen hinzufügen...",
-      
+
       // --- Share Modal ---
       "share.title": "Aufgabenzugriff teilen", "share.description": "Fügen Sie Personen hinzu, damit diese alle Ihre Aufgaben einsehen können.", "share.emailPlaceholder": "Personen per E-Mail hinzufügen", "share.button": "Teilen", "share.sharedWith": "Geteilt mit",
 
@@ -228,7 +228,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  
+
 
   // Add click listeners to the language links in the new submenu
   document.querySelectorAll('.language-submenu a').forEach(link => {
@@ -309,14 +309,14 @@ function getDaysOfCurrentWeek() {
 
 // You need to re-add the initializeApp function we created before
 async function initializeApp() {
-    if (isLoggedIn) {
-        console.log("User is logged in. Fetching data...");
-        renderWeeklyView(); // Or your main data-fetching function
-        // fetchAndRenderCalendars(); // etc.
-    } else {
-        console.log("User is a guest. Rendering guest view.");
-        renderWeeklyView(); // This will use guest tasks from localStorage
-    }
+  if (isLoggedIn) {
+    console.log("User is logged in. Fetching data...");
+    renderWeeklyView(); // Or your main data-fetching function
+    // fetchAndRenderCalendars(); // etc.
+  } else {
+    console.log("User is a guest. Rendering guest view.");
+    renderWeeklyView(); // This will use guest tasks from localStorage
+  }
 }
 
 
@@ -2638,6 +2638,7 @@ function initializeAuthSystem() {
     } finally {
       loginBtn.disabled = false;
       loginBtn.textContent = i18next.t('auth.loginButton');
+    }
   });
 
   // --- Other Listeners (Logout, Password Toggle, etc.) ---
