@@ -2315,6 +2315,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // account login
 let isLoggedIn = false;
+async function checkLoginStatus() {
+  try {
+    const response = await fetch(`${API_BASE_URL}/profile`, { method: 'GET', credentials: 'include' });
+    if (!response.ok) throw new Error('Not authenticated');
+    const data = await response.json();
+    updateAuthState(true, data.user);
+  } catch (error) {
+    updateAuthState(false);
+  }
+}
+
 function initializeAuthSystem() {
   const API_BASE_URL = "https://tweek-web-app-2.onrender.com";
 
@@ -2389,16 +2400,16 @@ function initializeAuthSystem() {
     }
   }
 
-  async function checkLoginStatus() {
-    try {
-      const response = await fetch(`${API_BASE_URL}/profile`, { method: 'GET', credentials: 'include' });
-      if (!response.ok) throw new Error('Not authenticated');
-      const data = await response.json();
-      updateAuthState(true, data.user);
-    } catch (error) {
-      updateAuthState(false);
-    }
-  }
+  // async function checkLoginStatus() {
+  //   try {
+  //     const response = await fetch(`${API_BASE_URL}/profile`, { method: 'GET', credentials: 'include' });
+  //     if (!response.ok) throw new Error('Not authenticated');
+  //     const data = await response.json();
+  //     updateAuthState(true, data.user);
+  //   } catch (error) {
+  //     updateAuthState(false);
+  //   }
+  // }
 
   // --- AUTH TRIGGER ---
   authTrigger.addEventListener('click', (e) => {
