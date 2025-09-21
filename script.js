@@ -1775,11 +1775,11 @@ document.addEventListener('DOMContentLoaded', () => {
   // --- 2. INITIALIZATION ---
   // This function runs when the page loads
   async function initializeApp() {
-    await checkLoginStatus();
+    // await checkLoginStatus();
     if (isLoggedIn) {
       console.log("User is logged in. Fetching data...");
       // Now it's safe to call these functions
-      await fetchAndRenderTasks();
+      await fetchAndRenderCalendars();
       const currentWeekId = getCurrentWeekId();
       await fetchAndRenderTasks(currentWeekId);
     } else {
@@ -2315,38 +2315,38 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // account login
 let isLoggedIn = false;
-async function checkLoginStatus() {
-  try {
-    const response = await fetch(`${API_BASE_URL}/profile`, { method: 'GET', credentials: 'include' });
-    if (!response.ok) throw new Error('Not authenticated');
-    const data = await response.json();
-    updateAuthState(true, data.user);
-  } catch (error) {
-    updateAuthState(false);
-  }
-}
+// async function checkLoginStatus() {
+//   try {
+//     const response = await fetch(`${API_BASE_URL}/profile`, { method: 'GET', credentials: 'include' });
+//     if (!response.ok) throw new Error('Not authenticated');
+//     const data = await response.json();
+//     updateAuthState(true, data.user);
+//   } catch (error) {
+//     updateAuthState(false);
+//   }
+// }
 
-function updateAuthState(loggedIn, user = null) {
-    isLoggedIn = loggedIn;
-    if (sessionRefreshInterval) clearInterval(sessionRefreshInterval);
+// function updateAuthState(loggedIn, user = null) {
+//   isLoggedIn = loggedIn;
+//   if (sessionRefreshInterval) clearInterval(sessionRefreshInterval);
 
-    if (isLoggedIn && user) {
-      const firstName = user.firstName || 'User';
-      const lastName = user.lastName || '';
-      const initials = (firstName[0] + (lastName[0] || '')).toUpperCase();
-      authTrigger.innerHTML = initials;
-      authTrigger.classList.add('text');
-      dropdownInitials.textContent = initials;
-      dropdownFullname.textContent = `${firstName} ${lastName}`.trim();
-      authModalBackdrop.classList.add('hidden');
-      // Set up token refresh
-      sessionRefreshInterval = setInterval(() => fetch(`${API_BASE_URL}/auth/refresh-token`, { method: 'POST', credentials: 'include' }), 6 * 24 * 60 * 60 * 1000);
-    } else {
-      authTrigger.innerHTML = loginIconSVG;
-      authTrigger.classList.remove('text');
-      profileDropdown.classList.add('hidden');
-    }
-  }
+//   if (isLoggedIn && user) {
+//     const firstName = user.firstName || 'User';
+//     const lastName = user.lastName || '';
+//     const initials = (firstName[0] + (lastName[0] || '')).toUpperCase();
+//     authTrigger.innerHTML = initials;
+//     authTrigger.classList.add('text');
+//     dropdownInitials.textContent = initials;
+//     dropdownFullname.textContent = `${firstName} ${lastName}`.trim();
+//     authModalBackdrop.classList.add('hidden');
+//     // Set up token refresh
+//     sessionRefreshInterval = setInterval(() => fetch(`${API_BASE_URL}/auth/refresh-token`, { method: 'POST', credentials: 'include' }), 6 * 24 * 60 * 60 * 1000);
+//   } else {
+//     authTrigger.innerHTML = loginIconSVG;
+//     authTrigger.classList.remove('text');
+//     profileDropdown.classList.add('hidden');
+//   }
+// }
 
 function initializeAuthSystem() {
   const API_BASE_URL = "https://tweek-web-app-2.onrender.com";
@@ -2400,38 +2400,38 @@ function initializeAuthSystem() {
   }
 
   // --- MAIN AUTH LOGIC ---
-  // function updateAuthState(loggedIn, user = null) {
-  //   isLoggedIn = loggedIn;
-  //   if (sessionRefreshInterval) clearInterval(sessionRefreshInterval);
+  function updateAuthState(loggedIn, user = null) {
+    isLoggedIn = loggedIn;
+    if (sessionRefreshInterval) clearInterval(sessionRefreshInterval);
 
-  //   if (isLoggedIn && user) {
-  //     const firstName = user.firstName || 'User';
-  //     const lastName = user.lastName || '';
-  //     const initials = (firstName[0] + (lastName[0] || '')).toUpperCase();
-  //     authTrigger.innerHTML = initials;
-  //     authTrigger.classList.add('text');
-  //     dropdownInitials.textContent = initials;
-  //     dropdownFullname.textContent = `${firstName} ${lastName}`.trim();
-  //     authModalBackdrop.classList.add('hidden');
-  //     // Set up token refresh
-  //     sessionRefreshInterval = setInterval(() => fetch(`${API_BASE_URL}/auth/refresh-token`, { method: 'POST', credentials: 'include' }), 6 * 24 * 60 * 60 * 1000);
-  //   } else {
-  //     authTrigger.innerHTML = loginIconSVG;
-  //     authTrigger.classList.remove('text');
-  //     profileDropdown.classList.add('hidden');
-  //   }
-  // }
+    if (isLoggedIn && user) {
+      const firstName = user.firstName || 'User';
+      const lastName = user.lastName || '';
+      const initials = (firstName[0] + (lastName[0] || '')).toUpperCase();
+      authTrigger.innerHTML = initials;
+      authTrigger.classList.add('text');
+      dropdownInitials.textContent = initials;
+      dropdownFullname.textContent = `${firstName} ${lastName}`.trim();
+      authModalBackdrop.classList.add('hidden');
+      // Set up token refresh
+      sessionRefreshInterval = setInterval(() => fetch(`${API_BASE_URL}/auth/refresh-token`, { method: 'POST', credentials: 'include' }), 6 * 24 * 60 * 60 * 1000);
+    } else {
+      authTrigger.innerHTML = loginIconSVG;
+      authTrigger.classList.remove('text');
+      profileDropdown.classList.add('hidden');
+    }
+  }
 
-  // async function checkLoginStatus() {
-  //   try {
-  //     const response = await fetch(`${API_BASE_URL}/profile`, { method: 'GET', credentials: 'include' });
-  //     if (!response.ok) throw new Error('Not authenticated');
-  //     const data = await response.json();
-  //     updateAuthState(true, data.user);
-  //   } catch (error) {
-  //     updateAuthState(false);
-  //   }
-  // }
+  async function checkLoginStatus() {
+    try {
+      const response = await fetch(`${API_BASE_URL}/profile`, { method: 'GET', credentials: 'include' });
+      if (!response.ok) throw new Error('Not authenticated');
+      const data = await response.json();
+      updateAuthState(true, data.user);
+    } catch (error) {
+      updateAuthState(false);
+    }
+  }
 
   // --- AUTH TRIGGER ---
   authTrigger.addEventListener('click', (e) => {
