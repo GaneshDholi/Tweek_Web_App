@@ -10,14 +10,18 @@ const calendarRoutes = require('./routes/calendar');
 const dotenv = require('dotenv');
 dotenv.config();
 const allowedOrigins = [
-  "http://127.0.0.1:5501",
-  "http://localhost:5501",
-  "http://127.0.0.1:3000"
+  "https://tweek-web-app-two.vercel.app"
 ];
+
+const corsOptions = {
+  origin: process.env.CLIENT_URL, // Your Vercel URL from environment variables
+  credentials: true,
+};
 
 const app = express();
 
 // Middleware
+app.use(cors(corsOptions));
 app.use(express.json());
 app.use(cookieParser());
 app.use(express.static('public'));
