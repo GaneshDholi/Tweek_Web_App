@@ -2326,6 +2326,28 @@ async function checkLoginStatus() {
   }
 }
 
+function updateAuthState(loggedIn, user = null) {
+    isLoggedIn = loggedIn;
+    if (sessionRefreshInterval) clearInterval(sessionRefreshInterval);
+
+    if (isLoggedIn && user) {
+      const firstName = user.firstName || 'User';
+      const lastName = user.lastName || '';
+      const initials = (firstName[0] + (lastName[0] || '')).toUpperCase();
+      authTrigger.innerHTML = initials;
+      authTrigger.classList.add('text');
+      dropdownInitials.textContent = initials;
+      dropdownFullname.textContent = `${firstName} ${lastName}`.trim();
+      authModalBackdrop.classList.add('hidden');
+      // Set up token refresh
+      sessionRefreshInterval = setInterval(() => fetch(`${API_BASE_URL}/auth/refresh-token`, { method: 'POST', credentials: 'include' }), 6 * 24 * 60 * 60 * 1000);
+    } else {
+      authTrigger.innerHTML = loginIconSVG;
+      authTrigger.classList.remove('text');
+      profileDropdown.classList.add('hidden');
+    }
+  }
+
 function initializeAuthSystem() {
   const API_BASE_URL = "https://tweek-web-app-2.onrender.com";
 
@@ -2378,27 +2400,27 @@ function initializeAuthSystem() {
   }
 
   // --- MAIN AUTH LOGIC ---
-  function updateAuthState(loggedIn, user = null) {
-    isLoggedIn = loggedIn;
-    if (sessionRefreshInterval) clearInterval(sessionRefreshInterval);
+  // function updateAuthState(loggedIn, user = null) {
+  //   isLoggedIn = loggedIn;
+  //   if (sessionRefreshInterval) clearInterval(sessionRefreshInterval);
 
-    if (isLoggedIn && user) {
-      const firstName = user.firstName || 'User';
-      const lastName = user.lastName || '';
-      const initials = (firstName[0] + (lastName[0] || '')).toUpperCase();
-      authTrigger.innerHTML = initials;
-      authTrigger.classList.add('text');
-      dropdownInitials.textContent = initials;
-      dropdownFullname.textContent = `${firstName} ${lastName}`.trim();
-      authModalBackdrop.classList.add('hidden');
-      // Set up token refresh
-      sessionRefreshInterval = setInterval(() => fetch(`${API_BASE_URL}/auth/refresh-token`, { method: 'POST', credentials: 'include' }), 6 * 24 * 60 * 60 * 1000);
-    } else {
-      authTrigger.innerHTML = loginIconSVG;
-      authTrigger.classList.remove('text');
-      profileDropdown.classList.add('hidden');
-    }
-  }
+  //   if (isLoggedIn && user) {
+  //     const firstName = user.firstName || 'User';
+  //     const lastName = user.lastName || '';
+  //     const initials = (firstName[0] + (lastName[0] || '')).toUpperCase();
+  //     authTrigger.innerHTML = initials;
+  //     authTrigger.classList.add('text');
+  //     dropdownInitials.textContent = initials;
+  //     dropdownFullname.textContent = `${firstName} ${lastName}`.trim();
+  //     authModalBackdrop.classList.add('hidden');
+  //     // Set up token refresh
+  //     sessionRefreshInterval = setInterval(() => fetch(`${API_BASE_URL}/auth/refresh-token`, { method: 'POST', credentials: 'include' }), 6 * 24 * 60 * 60 * 1000);
+  //   } else {
+  //     authTrigger.innerHTML = loginIconSVG;
+  //     authTrigger.classList.remove('text');
+  //     profileDropdown.classList.add('hidden');
+  //   }
+  // }
 
   // async function checkLoginStatus() {
   //   try {
