@@ -33,60 +33,32 @@ const loginValidationRules = [
 
 router.post('/', authMiddleware, async (req, res) => {
     try {
-        // Destructure ALL relevant fields from the request body
         const { title, date, isSomeday, notes, color, repeat, calendar } = req.body;
-
-        // Create a new task instance with the data
         const task = new Task({
-            user: req.user.id, // User ID comes from the auth token, not the body
-            title,
-            date,
-            isSomeday,
-            notes,
-            color,
-            repeat,
-            calendar // This can be null if not provided
+            user: req.user.id,
+            title, date, isSomeday, notes, color, repeat, calendar
         });
-
         await task.save();
         res.status(201).json(task);
     } catch (error) {
-        console.error(error);
         res.status(500).json({ message: 'Server error while creating task.' });
     }
 });
 
-// Create multiple tasks at once (for syncing guest data)
 router.post('/batch-create', authMiddleware, async (req, res) => {
     try {
-        const { tasks } = req.body; // Expects an array of task objects
+        const { tasks } = req.body;
         if (!tasks || !Array.isArray(tasks)) {
             return res.status(400).json({ message: 'Request body must contain a "tasks" array.' });
         }
-        
-        const userId = req.user.id;
-
-        // Sanitize the input to ensure only schema fields are used for each task
-        const tasksToInsert = tasks.map(task => ({
-            user: userId,
-            title: task.title,
-            date: task.date,
-            isSomeday: task.isSomeday,
-            notes: task.notes,
-            color: task.color,
-            repeat: task.repeat,
-            calendar: task.calendar,
-            completed: task.completed || false // Ensure a default value
-        }));
-
-        // Insert all the sanitized tasks into the database
+        const tasksToInsert = tasks.map(task => ({ ...task, user: req.user.id }));
         await Task.insertMany(tasksToInsert);
         res.status(201).json({ message: 'Tasks synced successfully.' });
     } catch (error) {
-        console.error(error);
         res.status(500).json({ message: 'Server error while syncing tasks.' });
     }
 });
+
 // --- FLOW STEP 1: Register with Password & Send OTP ---
 router.post('/register', authLimiter, registerValidationRules, async (req, res) => {
     const errors = validationResult(req);
@@ -212,18 +184,23 @@ router.post('/login', authLimiter, loginValidationRules, async (req, res) => {
     }
 });
 
-router.get('/profile', authMiddleware, (req, res) => {
-    // If the code reaches this point, the authMiddleware has successfully
-    // verified the user. We just need to send the user data back
-    // in the format the frontend expects.
-    res.json({
-        user: {
-            id: req.user.id,
-            email: req.user.email,
-            firstName: req.user.firstName,
-            lastName: req.user.lastName,
-        },
-    });
+router.get('/profile', authMiddleware, async (req, res) => {
+    try {
+        const user = await User.findById(req.user.sub).select('-password');
+        if (!user) {
+            return res.status(404).json({ message: 'User not found' });
+        }
+        res.json({
+            user: {
+                id: user._id,
+                email: user.email,
+                firstName: user.firstName,
+                lastName: user.lastName,
+            },
+        });
+    } catch (error) {
+        res.status(500).json({ message: 'Server error' });
+    }
 });
 
 // --- Logout and Refresh Token (No changes needed) ---
