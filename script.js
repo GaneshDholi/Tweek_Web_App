@@ -200,8 +200,6 @@ document.addEventListener('DOMContentLoaded', () => {
   }).then( async () => {
     // This will translate all static text on page load
     updateStaticContent();
-    // IMPORTANT: You must now call a function to render your calendar
-    // with the newly loaded language.
     renderDynamicCalendar();
 
     const authSystem = initializeAuthSystem();
@@ -2670,14 +2668,29 @@ function initializeAuthSystem() {
   return { checkLoginStatus };
 };
 
+// This is your corrected data-loading function
 async function loadTasks(weekId) {
+  // FIRST: Check if the user is logged in.
   if (isLoggedIn) {
-    const res = await fetch(`${API_BASE_URL}/api/tasks/week/${weekId}`, {
-      credentials: "include",
-    });
-    if (!res.ok) throw new Error("Failed to fetch tasks");
-    return await res.json();
+    // ONLY if logged in, make the API call to the backend.
+    try {
+      // Note: The URL should match your backend GET route.
+      // Let's make it more generic to fetch by week or someday.
+      const response = await fetch(`${API_BASE_URL}/api/tasks?weekStart=...&weekEnd=...`, {
+         credentials: "include",
+      });
+      if (!response.ok) {
+        // This will catch the 401 and other errors gracefully.
+        throw new Error("Failed to fetch tasks from server.");
+      }
+      return await response.json();
+    } catch (error) {
+      console.error(error.message);
+      return []; // Return an empty array on failure
+    }
   } else {
+    // If the user is a GUEST, get tasks from localStorage and DO NOT make an API call.
+    console.log("Guest mode: Loading tasks from localStorage.");
     return getGuestTasks();
   }
 }
