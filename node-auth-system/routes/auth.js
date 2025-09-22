@@ -8,7 +8,7 @@ const otpGenerator = require('otp-generator');
 const User = require('../models/User');
 const { sendEmail } = require('../utils/emailProvider');
 const authMiddleware = require('../middleware/auth');
-
+const Task = require('../models/userTasksProfile');
 
 // --- Security & Validation (No changes needed) ---
 const authLimiter = rateLimit({
@@ -31,7 +31,62 @@ const loginValidationRules = [
     body('password').not().isEmpty().withMessage('Password cannot be empty.'),
 ];
 
+router.post('/', authMiddleware, async (req, res) => {
+    try {
+        // Destructure ALL relevant fields from the request body
+        const { title, date, isSomeday, notes, color, repeat, calendar } = req.body;
 
+        // Create a new task instance with the data
+        const task = new Task({
+            user: req.user.id, // User ID comes from the auth token, not the body
+            title,
+            date,
+            isSomeday,
+            notes,
+            color,
+            repeat,
+            calendar // This can be null if not provided
+        });
+
+        await task.save();
+        res.status(201).json(task);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Server error while creating task.' });
+    }
+});
+
+// Create multiple tasks at once (for syncing guest data)
+router.post('/batch-create', authMiddleware, async (req, res) => {
+    try {
+        const { tasks } = req.body; // Expects an array of task objects
+        if (!tasks || !Array.isArray(tasks)) {
+            return res.status(400).json({ message: 'Request body must contain a "tasks" array.' });
+        }
+        
+        const userId = req.user.id;
+
+        // Sanitize the input to ensure only schema fields are used for each task
+        const tasksToInsert = tasks.map(task => ({
+            user: userId,
+            title: task.title,
+            date: task.date,
+            isSomeday: task.isSomeday,
+            notes: task.notes,
+            color: task.color,
+            repeat: task.repeat,
+            calendar: task.calendar,
+            completed: task.completed || false // Ensure a default value
+        }));
+
+        // Insert all the sanitized tasks into the database
+        await Task.insertMany(tasksToInsert);
+        res.status(201).json({ message: 'Tasks synced successfully.' });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Server error while syncing tasks.' });
+    }
+});
 // --- FLOW STEP 1: Register with Password & Send OTP ---
 router.post('/register', authLimiter, registerValidationRules, async (req, res) => {
     const errors = validationResult(req);
@@ -141,9 +196,9 @@ router.post('/login', authLimiter, loginValidationRules, async (req, res) => {
 
         res.cookie("token", token, {
             httpOnly: true,
-            secure: true, 
-            sameSite: "none", 
-            maxAge: 7 * 24 * 60 * 60 * 1000 
+            secure: true,
+            sameSite: "none",
+            maxAge: 7 * 24 * 60 * 60 * 1000
         });
 
         res.json({
