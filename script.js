@@ -155,6 +155,7 @@ const translations = {
 };
 
 const API_BASE_URL = "https://tweek-web-app-2.onrender.com";
+let isLoggedIn = false;
 
 // 2. I18NEXT INITIALIZATION & MAIN LOGIC
 document.addEventListener('DOMContentLoaded', () => {
@@ -196,14 +197,16 @@ document.addEventListener('DOMContentLoaded', () => {
     lng: 'en', // default language
     debug: false,
     resources: translations
-  }).then(() => {
+  }).then( async () => {
     // This will translate all static text on page load
     updateStaticContent();
     // IMPORTANT: You must now call a function to render your calendar
     // with the newly loaded language.
     renderDynamicCalendar();
 
-    initializeAuthSystem();
+    const authSystem = initializeAuthSystem();
+    
+    await authSystem.checkLoginStatus();
 
     initializeApp();
   });
@@ -2372,9 +2375,6 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 });
 
-
-// account login
-let isLoggedIn = false;
 // async function checkLoginStatus() {
 //   try {
 //     const response = await fetch(`${API_BASE_URL}/profile`, { method: 'GET', credentials: 'include' });
@@ -2630,6 +2630,8 @@ function initializeAuthSystem() {
       if (!response.ok) throw new Error(data.message);
 
       updateAuthState(true, data.user); // Login successful
+      await syncGuestTasksToServer();
+
       if (typeof renderWeeklyView === 'function') {
         renderWeeklyView();
       }
@@ -2663,35 +2665,10 @@ function initializeAuthSystem() {
   });
 
   // --- INITIALIZATION ---
-  checkLoginStatus();
+  // checkLoginStatus();
 
+  return { checkLoginStatus };
 };
-
-function getGuestTasks() {
-  return JSON.parse(localStorage.getItem("guestTasks")) || [];
-}
-
-function saveGuestTasks(tasks) {
-  localStorage.setItem("guestTasks", JSON.stringify(tasks));
-}
-
-// -----------------------------
-// Task Functions
-// -----------------------------
-async function addTask(task) {
-  if (isLoggedIn) {
-    await fetch(`${API_BASE_URL}/api/tasks`, {
-      method: "POST",
-      credentials: "include",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(task),
-    });
-  } else {
-    let guestTasks = getGuestTasks();
-    guestTasks.push(task);
-    saveGuestTasks(guestTasks);
-  }
-}
 
 async function loadTasks(weekId) {
   if (isLoggedIn) {
@@ -2705,19 +2682,6 @@ async function loadTasks(weekId) {
   }
 }
 
-async function deleteTask(taskId) {
-  if (isLoggedIn) {
-    await fetch(`${API_BASE_URL}/api/tasks/${taskId}`, {
-      method: "DELETE",
-      credentials: "include",
-    });
-  } else {
-    let guestTasks = getGuestTasks();
-    guestTasks = guestTasks.filter((t) => t.id !== taskId);
-    saveGuestTasks(guestTasks);
-  }
-}
-// -----------------------------
 // Guest Task Helpers
 // -----------------------------
 function getGuestTasks() {
@@ -2728,6 +2692,44 @@ function saveGuestTasks(tasks) {
   localStorage.setItem("guestTasks", JSON.stringify(tasks));
 }
 
+// Add this new function alongside your other task functions
+async function syncGuestTasksToServer() {
+  const guestTasks = getGuestTasks();
+
+  // If there are no tasks to sync, do nothing
+  if (!guestTasks || guestTasks.length === 0) {
+    console.log("No guest tasks to sync.");
+    return;
+  }
+
+  console.log(`Syncing ${guestTasks.length} guest tasks to the server...`);
+
+  try {
+    // We assume your backend has a route like '/api/tasks/batch-create'
+    // that can accept an array of tasks.
+    const response = await fetch(`${API_BASE_URL}/api/tasks/batch-create`, {
+      method: "POST",
+      credentials: "include", // Important for sending the auth cookie
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ tasks: guestTasks }),
+    });
+
+    if (!response.ok) {
+      throw new Error("Failed to sync guest tasks.");
+    }
+
+    // If the sync was successful, clear the guest tasks from local storage
+    localStorage.removeItem("guestTasks");
+    console.log("Guest tasks synced and cleared from localStorage.");
+
+  } catch (error) {
+    console.error("Error syncing guest tasks:", error);
+    // We don't clear localStorage here so the user doesn't lose their data
+    // You could show a message asking them to try again later.
+    showMessage("Could not save your guest tasks. Please contact support.", true);
+  }
+}
+
 // -----------------------------
 // Task Functions
 // -----------------------------
@@ -2743,18 +2745,6 @@ async function addTask(task) {
     let guestTasks = getGuestTasks();
     guestTasks.push(task);
     saveGuestTasks(guestTasks);
-  }
-}
-
-async function loadTasks(weekId) {
-  if (isLoggedIn) {
-    const res = await fetch(`${API_BASE_URL}/api/tasks/week/${weekId}`, {
-      credentials: "include",
-    });
-    if (!res.ok) throw new Error("Failed to fetch tasks");
-    return await res.json();
-  } else {
-    return getGuestTasks();
   }
 }
 
