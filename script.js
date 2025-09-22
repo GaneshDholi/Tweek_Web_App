@@ -2494,9 +2494,6 @@ function initializeAuthSystem() {
   // --- AUTH TRIGGER ---
   authTrigger.addEventListener('click', (e) => {
     e.stopPropagation();
-
-    // dropdown.classList.remove('show');
-
     if (isLoggedIn) {
       profileDropdown.classList.toggle('hidden');
     } else {
@@ -2512,16 +2509,21 @@ function initializeAuthSystem() {
   authModalBackdrop.addEventListener('click', (e) => { if (e.target === authModalBackdrop) authModalBackdrop.classList.add('hidden'); });
 
   // Form switching links
-  // Listen for clicks on the toggle links inside the forms
-  document.getElementById('showRegisterLink')?.addEventListener('click', (e) => {
-    e.preventDefault();
-    showView(registerForm);
-  });
-
-  document.getElementById('showLoginLinkFromRegister')?.addEventListener('click', (e) => {
-    e.preventDefault();
-    showView(loginForm);
-  });
+  const authFlow = document.getElementById('authFlow');
+  if (authFlow) {
+    authFlow.addEventListener('click', (e) => {
+      // Check if the clicked element has the ID 'showRegisterLink'
+      if (e.target.id === 'showRegisterLink') {
+        e.preventDefault();
+        showView(registerForm);
+      }
+      // Check if the clicked element has the ID 'showLoginLinkFromRegister'
+      if (e.target.id === 'showLoginLinkFromRegister') {
+        e.preventDefault();
+        showView(loginForm);
+      }
+    });
+  }
 
   // --- FORM SUBMISSIONS ---
 
