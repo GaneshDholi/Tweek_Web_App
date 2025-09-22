@@ -205,7 +205,13 @@ router.get('/profile', authMiddleware, async (req, res) => {
 
 // --- Logout and Refresh Token (No changes needed) ---
 router.post('/logout', (req, res) => {
-    res.clearCookie("token");
+    // Add the same options object you used during login
+    res.clearCookie("token", {
+        httpOnly: true,
+        secure: true,
+        sameSite: "none",
+        path: '/' // Good practice to specify the path
+    });
     res.json({ message: "Logged out successfully." });
 });
 
