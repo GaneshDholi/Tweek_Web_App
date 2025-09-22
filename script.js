@@ -2495,7 +2495,7 @@ function initializeAuthSystem() {
   authTrigger.addEventListener('click', (e) => {
     e.stopPropagation();
 
-    dropdown.classList.remove('show');
+    // dropdown.classList.remove('show');
 
     if (isLoggedIn) {
       profileDropdown.classList.toggle('hidden');
@@ -2670,12 +2670,9 @@ function initializeAuthSystem() {
 
 // This is your corrected data-loading function
 async function loadTasks(weekId) {
-  // FIRST: Check if the user is logged in.
   if (isLoggedIn) {
     // ONLY if logged in, make the API call to the backend.
     try {
-      // Note: The URL should match your backend GET route.
-      // Let's make it more generic to fetch by week or someday.
       const response = await fetch(`${API_BASE_URL}/api/tasks?weekStart=...&weekEnd=...`, {
          credentials: "include",
       });
