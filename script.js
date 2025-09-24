@@ -189,7 +189,7 @@ document.addEventListener('DOMContentLoaded', () => {
       i18next.changeLanguage(lang, () => {
         // ... your existing updateContent() and renderDynamicCalendar() calls ...
         updateStaticContent();
-        // renderWeeklyView();
+        renderWeeklyView();
         // Add this line to close the menu
         if (languageSubmenu) {
           languageSubmenu.classList.remove('open');
@@ -599,7 +599,6 @@ async function renderWeeklyView(baseDate = new Date(), highlightDate = null) {
 
     const monday = new Date(today);
     const dayOfWeek = monday.getDay(); // Sunday = 0, Monday = 1, ..., Saturday = 6
-    let tasksByDate = new Map();
 
     // Calculate the difference to get to the previous Monday
     const diff = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
@@ -608,8 +607,8 @@ async function renderWeeklyView(baseDate = new Date(), highlightDate = null) {
     // Set time to the beginning of the day to avoid timezone issues
     monday.setHours(0, 0, 0, 0);
 
+    let tasksByDate = new Map();
     // Add this new helper function inside your renderWeeklyView function
-
     function balanceRows() {
       const weekdayColumns = Array.from(document.querySelectorAll(".day-box")).slice(0, 5);
       const todoLists = weekdayColumns.map(col => col.querySelector('.todo-list'));
@@ -1284,84 +1283,95 @@ async function renderWeeklyView(baseDate = new Date(), highlightDate = null) {
       }
 
       try {
-        const currentWeekId = getWeekNumber(monday); // Assuming 'monday' is available in this scope
+        let weeklyData = [];
+        let somedayData = [];
 
-        const weeklyTasksUrl = `https://tweek-web-app-2.onrender.com/api/tasks/week/${currentWeekId}`;
-        const somedayTasksUrl = `https://tweek-web-app-2.onrender.com/api/tasks/someday`;
+        if (isLoggedIn) {
+          const currentWeekId = getWeekNumber(monday); // Assuming 'monday' is available in this scope
 
-        const [weeklyRes, somedayRes] = await Promise.all([
-          fetch(weeklyTasksUrl, {
-            credentials: 'include',
-            headers: { "Authorization": `Bearer ${localStorage.getItem("token")}` }
-          }),
-          fetch(somedayTasksUrl, {
-            credentials: 'include',
-            headers: { "Authorization": `Bearer ${localStorage.getItem("token")}` }
-          })
-        ]);
+          const weeklyTasksUrl = `https://tweek-web-app-2.onrender.com/api/tasks/week/${currentWeekId}`;
+          const somedayTasksUrl = `https://tweek-web-app-2.onrender.com/api/tasks/someday`;
 
-        if (!weeklyRes.ok || !somedayRes.ok) {
-          console.error("Failed to fetch tasks");
-          return;
-        }
+          const [weeklyRes, somedayRes] = await Promise.all([
+            fetch(weeklyTasksUrl, {
+              credentials: 'include',
+              headers: { "Authorization": `Bearer ${localStorage.getItem("token")}` }
+            }),
+            fetch(somedayTasksUrl, {
+              credentials: 'include',
+              headers: { "Authorization": `Bearer ${localStorage.getItem("token")}` }
+            })
+          ]);
 
-        // The response is now an array of user profiles
-        const weeklyDataByUser = await weeklyRes.json();
-        const somedayTasks = await somedayRes.json();
-
-        // --- Render Weekly Tasks (UPDATED LOGIC) ---
-        const allDayBoxes = [...weekContainer.querySelectorAll(".day-box")];
-
-        // 1. Loop through each user profile from the API response
-        weeklyDataByUser.forEach(userProfile => {
-          // 2. Then, loop through the tasks for that specific user
-          userProfile.tasks
-            .sort((a, b) => new Date(a.date) - new Date(b.date))
-            .forEach(task => {
-              const taskDate = new Date(task.date);
-              let jsDay = taskDate.getDay();
-              let idx = (jsDay === 0) ? 6 : jsDay - 1; // Monday = 0, ..., Sunday = 6
-              const todoList = allDayBoxes[idx].querySelector(".todo-list");
-
-              const dateString = new Date(task.date).toISOString().split('T')[0];
-              if (!tasksByDate.has(dateString)) {
-                tasksByDate.set(dateString, []);
-              }
-              tasksByDate.get(dateString).push(task);
-
-              // Find the next available empty list item to render the task in
-              let box = [...todoList.children].find(
-                li => !li.textContent.trim() && !li.querySelector("input")
-              );
-              if (box) {
-                // Pass the userName to the render function to optionally display it
-                renderTaskElement(box, task, userProfile.userName);
-              }
-
-
-            });
-        });
-
-
-        // --- Render Someday Tasks (NO CHANGES NEEDED) ---
-        somedayTasks.forEach(task => {
-          let box = [...taskContainer.children].find(
-            div => !div.textContent.trim() && !div.querySelector("input")
-          );
-          if (box) {
-            renderTaskElement(box, task); // Someday tasks don't have a separate owner to display
+          if (!weeklyRes.ok || !somedayRes.ok) {
+            throw new Error("Failed to fetch tasks");
+            weeklyData = await weeklyRes.json();
+            somedayData = await somedayRes.json();
+          } else {
+            weeklyData = getGuestTasks(); // Assuming guest tasks are 'weekly'
           }
-        });
 
-        balanceColumnHeights();
+          // The response is now an array of user profiles
+          const weeklyDataByUser = await weeklyRes.json();
+          const somedayTasks = await somedayRes.json();
 
+          // --- Render Weekly Tasks (UPDATED LOGIC) ---
+          const allDayBoxes = [...weekContainer.querySelectorAll(".day-box")];
+
+          // 1. Loop through each user profile from the API response
+          weeklyDataByUser.forEach(userProfile => {
+            // 2. Then, loop through the tasks for that specific user
+            userProfile.tasks
+              .sort((a, b) => new Date(a.date) - new Date(b.date))
+              .forEach(task => {
+                const taskDate = new Date(task.date);
+                let jsDay = taskDate.getDay();
+                let idx = (jsDay === 0) ? 6 : jsDay - 1; // Monday = 0, ..., Sunday = 6
+                const todoList = allDayBoxes[idx].querySelector(".todo-list");
+
+                const dateString = new Date(task.date).toISOString().split('T')[0];
+                if (!tasksByDate.has(dateString)) {
+                  tasksByDate.set(dateString, []);
+                }
+                tasksByDate.get(dateString).push(task);
+
+                // Find the next available empty list item to render the task in
+                let box = [...todoList.children].find(
+                  li => !li.textContent.trim() && !li.querySelector("input")
+                );
+                if (box) {
+                  // Pass the userName to the render function to optionally display it
+                  renderTaskElement(box, task, userProfile.userName);
+                }
+
+
+              });
+          });
+
+
+          // --- Render Someday Tasks (NO CHANGES NEEDED) ---
+          somedayTasks.forEach(task => {
+            let box = [...taskContainer.children].find(
+              div => !div.textContent.trim() && !div.querySelector("input")
+            );
+            if (box) {
+              renderTaskElement(box, task); // Someday tasks don't have a separate owner to display
+            }
+          });
+
+          balanceColumnHeights();
+
+        } catch (err) {
+          console.error("Error loading tasks from DB:", err);
+        }
       } catch (err) {
-        console.error("Error loading tasks from DB:", err);
+        console.error("Error loading tasks:", err)
       }
     }
 
+    await loadTasksFromDB();
 
-    loadTasksFromDB();
+    balanceColumnHeights();
   } finally {
     isRendering = false;
   }
