@@ -157,6 +157,7 @@ const translations = {
 const API_BASE_URL = "https://tweek-web-app-2.onrender.com";
 let isLoggedIn = false;
 
+let authSystem;
 // 2. I18NEXT INITIALIZATION & MAIN LOGIC
 document.addEventListener('DOMContentLoaded', () => {
   const languageTrigger = document.getElementById('language-menu-trigger');
@@ -187,9 +188,12 @@ document.addEventListener('DOMContentLoaded', () => {
       const lang = e.target.getAttribute('data-lang');
       i18next.changeLanguage(lang, () => {
         // ... your existing updateContent() and renderDynamicCalendar() calls ...
-
+        updateStaticContent();
+        renderWeeklyView();
         // Add this line to close the menu
-        languageSubmenu.classList.remove('open');
+        if (languageSubmenu) {
+          languageSubmenu.classList.remove('open');
+        }
       });
     });
   });
@@ -197,19 +201,26 @@ document.addEventListener('DOMContentLoaded', () => {
     lng: 'en', // default language
     debug: false,
     resources: translations
-  }).then( async () => {
+  }).then(async () => {
     // This will translate all static text on page load
     updateStaticContent();
-    renderDynamicCalendar();
+    // renderDynamicCalendar();
 
-    const authSystem = initializeAuthSystem();
-    
+    authSystem = initializeAuthSystem();
+
+    // await authSystem.checkLoginStatus();
+    loadInitialView()
+    // initializeApp();
+  });
+
+  async function loadInitialView() {
+    // Wait to determine if the user is logged in or a guest
     await authSystem.checkLoginStatus();
 
-    initializeApp();
-
+    // Now that we know the login state, render the main view a single time.
+    // This will fetch either guest tasks or user tasks correctly.
     renderWeeklyView();
-  });
+  }
 
   // Function to translate all static text with data-i18n attributes
   function updateStaticContent() {
@@ -321,7 +332,6 @@ async function initializeApp() {
     renderWeeklyView(); // This will use guest tasks from localStorage
   }
 }
-
 
 // moths calander 
 const months = [
@@ -548,7 +558,6 @@ function addDropZoneListeners(element) {
 const weekContainer = document.getElementById("weekly-view");
 const rootStyles = getComputedStyle(document.documentElement);
 const primaryFont = rootStyles.getPropertyValue("--primary-font").trim();
-
 
 function renderWeeklyView(baseDate = new Date(), highlightDate = null) {
   currentViewDate = baseDate;
@@ -2673,7 +2682,7 @@ async function loadTasks(weekId) {
     // ONLY if logged in, make the API call to the backend.
     try {
       const response = await fetch(`${API_BASE_URL}/api/tasks?weekStart=...&weekEnd=...`, {
-         credentials: "include",
+        credentials: "include",
       });
       if (!response.ok) {
         // This will catch the 401 and other errors gracefully.
