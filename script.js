@@ -1361,8 +1361,6 @@ async function renderWeeklyView(baseDate = new Date(), highlightDate = null) {
 
           balanceColumnHeights();
 
-        } catch (err) {
-          console.error("Error loading tasks from DB:", err);
         }
       } catch (err) {
         console.error("Error loading tasks:", err)
