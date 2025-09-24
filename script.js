@@ -1917,7 +1917,15 @@ document.addEventListener('DOMContentLoaded', () => {
       });
       if (!response.ok) throw new Error('Failed to fetch tasks');
 
-      allFetchedTasks = await response.json();
+      allFetchedTasks = profilesWithTasks.flatMap(profile => {
+        // For each profile, take its 'tasks' array...
+        return profile.tasks.map(task => ({
+          ...task, // Keep all original task properties (title, date, etc.)
+          userId: profile.userId // And add the owner's userId to it
+        }));
+      });
+
+      console.log("Processed flat task list:", allFetchedTasks);
       renderVisibleTasks(); // Render the tasks based on selected calendars
 
     } catch (error) {
@@ -1940,13 +1948,13 @@ document.addEventListener('DOMContentLoaded', () => {
       // This is the unique ID for the calendar's owner, used for filtering.
       // It's guaranteed to exist for both personal and shared calendars.
       const calendarOwnerId = calendar.owner._id;
-
+      const calendarUniqueId = calendar._id;
       selectedCalendarIds.push(calendarOwnerId); // Select all by default
 
       const calendarItem = document.createElement('label');
       calendarItem.className = 'calendar-item';
       // The 'for' attribute of a label should match the 'id' of an input
-      calendarItem.setAttribute('for', `cal-checkbox-${calendarOwnerId}`);
+      calendarItem.setAttribute('for', `cal-checkbox-${calendarUniqueId}`);
 
       // Add an icon for the user's personal calendar
       const iconHtml = calendar.isPersonal
@@ -1954,7 +1962,7 @@ document.addEventListener('DOMContentLoaded', () => {
         : '';
 
       calendarItem.innerHTML = `
-            <input type="checkbox" id="cal-checkbox-${calendarOwnerId}" value="${calendarOwnerId}" checked>
+            <input type="checkbox" id="cal-checkbox-${calendarUniqueId}" value="${calendarOwnerId}" checked>
             ${iconHtml}
             <span>${calendar.name}</span>
         `;

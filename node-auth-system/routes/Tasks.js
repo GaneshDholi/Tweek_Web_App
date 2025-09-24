@@ -48,29 +48,47 @@ function getWeekNumber(d) {
 // --- READ OPERATIONS ---
 router.get("/week/:weekId", async (req, res) => {
     try {
-        const userId = new mongoose.Types.ObjectId(req.user.id);
-        const { weekId } = req.params; // e.g., "2025-W39"
+        const { weekId } = req.params;
+        const currentUserId = new mongoose.Types.ObjectId(req.user.id);
 
-        // 1. Find IDs of users whose tasks we need to fetch
-        const ownersToFetch = [userId]; // Start with our own tasks
+        const currentUser = await User.findById(currentUserId)
+            .select('canViewTasksOf')
+            .lean();
 
-        // Find all virtual calendars shared WITH me to get their owner IDs
-        const sharedCalendars = await Calendar.find({ sharedWith: userId, isVirtual: true }).select('owner');
-        sharedCalendars.forEach(cal => {
-            ownersToFetch.push(cal.owner);
+        if (!currentUser) {
+            return res.status(404).json({ error: "Current user not found." });
+        }
+
+        const userIdsToFetch = [
+            currentUserId,
+            ...(currentUser.canViewTasksOf || [])
+        ];
+
+        const profiles = await UserTasksProfile.find({
+            userId: { $in: userIdsToFetch }
+        })
+            .select(`userId userName weeklyTasks.${weekId}`)
+            .lean(); // Because of .lean(), weeklyTasks is a plain object
+
+        const responseData = profiles.map(profile => {
+
+            // ▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼ FIX HERE ▼▼"▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼▼
+            // Use standard bracket notation for a plain object from .lean()
+            const weekData = profile.weeklyTasks ? profile.weeklyTasks[weekId] : undefined;
+            // ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲ FIX HERE ▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲▲
+
+            return {
+                userId: profile.userId,
+                userName: profile.userName,
+                tasks: weekData?.tasks || []
+            };
         });
 
-        // 2. Fetch all tasks for the given week from that list of owners
-        const tasks = await Task.find({
-            userId: { $in: ownersToFetch }, // 'userId' on your Task model should be the owner
-            week: weekId
-        });
-
-        res.json(tasks);
+        res.json(responseData);
 
     } catch (err) {
-        console.error("Error fetching tasks for week:", err);
-        res.status(500).json({ error: "Failed to fetch tasks." });
+        console.error("Error in GET /week/:weekId:", err);
+        res.status(500).json({ error: "An unexpected error occurred." });
     }
 });
 
@@ -308,35 +326,50 @@ router.post("/share", async (req, res) => {
         const sharerId = new mongoose.Types.ObjectId(req.user.id);
         const { shareWithEmail } = req.body;
 
+        if (!shareWithEmail) {
+            return res.status(400).json({ error: "Email to share with is required." });
+        }
+
         const [sharer, userToShareWith] = await Promise.all([
             User.findById(sharerId),
             User.findOne({ email: shareWithEmail })
         ]);
 
-        if (!userToShareWith) return res.status(404).json({ error: "User not found." });
-        if (userToShareWith._id.equals(sharerId)) return res.status(400).json({ error: "You cannot share with yourself." });
-        
-        // --- SIMPLIFIED LOGIC ---
-        // The ONLY thing we need to do is update the virtual calendar.
+        if (!userToShareWith) {
+            return res.status(404).json({ error: "User to share with not found." });
+        }
+
+        if (userToShareWith._id.equals(sharerId)) {
+            return res.status(400).json({ error: "You cannot share your tasks with yourself." });
+        }
+
+        // 1. Grant view access (your existing logic)
+        userToShareWith.canViewTasksOf.addToSet(sharerId);
+        sharer.sharedWith.addToSet(userToShareWith._id);
+
+        // 2. Create the Calendar document to represent this share
         const calendarName = `${sharer.firstName}'s Tasks`;
         await Calendar.findOneAndUpdate(
-            { owner: sharerId, isVirtual: true },
+            { owner: sharerId, isVirtual: true }, // Find an existing virtual calendar for this owner
             {
                 name: calendarName,
                 owner: sharerId,
-                $addToSet: { sharedWith: userToShareWith._id },
+                $addToSet: { sharedWith: userToShareWith._id }, // Add the new user
                 isVirtual: true
             },
-            { upsert: true, new: true }
+            { upsert: true, new: true } // Create it if it doesn't exist
         );
 
-        res.status(200).json({ message: `Successfully shared tasks with ${shareWithEmail}.` });
+        await sharer.save();
+        await userToShareWith.save();
+
+        res.status(200).json({ message: `Successfully shared your tasks with ${shareWithEmail}.` });
 
     } catch (err) {
         console.error("Error in POST /share:", err);
-        res.status(500).json({ error: "An unexpected error occurred." });
+        res.status(500).json({ error: "An unexpected error occurred during sharing." });
     }
-}); 
+});
 
 router.post("/unshare", async (req, res) => {
     try {
