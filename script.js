@@ -559,428 +559,628 @@ const weekContainer = document.getElementById("weekly-view");
 const rootStyles = getComputedStyle(document.documentElement);
 const primaryFont = rootStyles.getPropertyValue("--primary-font").trim();
 
-function renderWeeklyView(baseDate = new Date(), highlightDate = null) {
-  currentViewDate = baseDate;
-  const today = baseDate;
-  const weekdays = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
-  const currentDate = new Date();
-
-  // --- Month & Year Header ---
-  const monthWithYear = document.getElementById("openCalendarBtn");
-  const monthName = months[today.getMonth()];
-  const year = today.getFullYear();
-  monthWithYear.textContent = `${monthName} ${year}`;
-  monthWithYear.style.color =
-    currentDate.getMonth() !== today.getMonth() ||
-      currentDate.getFullYear() !== today.getFullYear()
-      ? "#5167f4"
-      : "";
-  monthWithYear.style.cursor = "pointer";
-
-  // Reset container
-  weekContainer.innerHTML = "";
-
-  const firstRow = document.createElement("div");
-  firstRow.className = "week-grid-row";
-
-  const satSunColumn = document.createElement("div");
-  satSunColumn.style.display = "flex";
-  satSunColumn.style.flexDirection = "column";
-  satSunColumn.style.gap = "40px";
-
-  const monday = new Date(today);
-  const dayOfWeek = monday.getDay(); // Sunday = 0, Monday = 1, ..., Saturday = 6
-  let tasksByDate = new Map();
-
-  // Calculate the difference to get to the previous Monday
-  const diff = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
-  monday.setDate(today.getDate() + diff);
-
-  // Set time to the beginning of the day to avoid timezone issues
-  monday.setHours(0, 0, 0, 0);
-
-  // Add this new helper function inside your renderWeeklyView function
-
-  function balanceRows() {
-    const weekdayColumns = Array.from(document.querySelectorAll(".day-box")).slice(0, 5);
-    const todoLists = weekdayColumns.map(col => col.querySelector('.todo-list'));
-
-    // 1. Find the maximum number of rows in any weekday column
-    let maxRows = 0;
-    todoLists.forEach(list => {
-      if (list.children.length > maxRows) {
-        maxRows = list.children.length;
-      }
-    });
-
-    // 2. Ensure all weekday columns have the same number of rows
-    todoLists.forEach(list => {
-      while (list.children.length < maxRows) {
-        const newBox = document.createElement("li");
-        newBox.style.height = "40px";
-        newBox.style.borderBottom = "1px solid #e0e0e0";
-        list.appendChild(newBox);
-      }
-    });
+let isRendering = false
+async function renderWeeklyView(baseDate = new Date(), highlightDate = null) {
+  if (isRendering) {
+    console.warn("Blocking a duplicate render call.");
+    return;
   }
+  // FIX: Set the flag to true to block other calls.
+  isRendering = true;
 
-  // --- Helpers ---
-  function createInput(styles = {}) {
-    const input = document.createElement("input");
-    input.type = "text";
-    Object.assign(input.style, {
-      border: "rgba(255,255,255,0.95)",
-      fontSize: "14px",
-      borderRadius: "6px",
-      backgroundColor: "white",
-      boxShadow: "0 4px 8px rgba(0,0,0,0.1)",
-      outline: "none",
-      height: "100%",
-      marginTop: "0",
-      boxSizing: "border-box",
-      width: "100%",
-      ...styles,
-    });
-    return input;
-  }
+  try {
+    currentViewDate = baseDate;
+    const today = baseDate;
+    const weekdays = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
+    const currentDate = new Date();
 
-  function styleTaskSpan(span, color) {
-    span.style.whiteSpace = "nowrap";
-    span.style.overflow = "hidden";
-    span.style.textOverflow = "ellipsis";
-    span.style.height = "18px";
-    span.style.textAlign = "left";
-    if (color) {
-      span.style.backgroundColor = color;
-    }
-  }
+    // --- Month & Year Header ---
+    const monthWithYear = document.getElementById("openCalendarBtn");
+    const monthName = months[today.getMonth()];
+    const year = today.getFullYear();
+    monthWithYear.textContent = `${monthName} ${year}`;
+    monthWithYear.style.color =
+      currentDate.getMonth() !== today.getMonth() ||
+        currentDate.getFullYear() !== today.getFullYear()
+        ? "#5167f4"
+        : "";
+    monthWithYear.style.cursor = "pointer";
 
-  function createCheckBtn(span, task) {
-    const btn = document.createElement("img");
-    btn.src = "./assets/icons/check-button.png";
-    btn.className = "check-btn";
-    btn.title = "Mark as done / undone";
-    Object.assign(btn.style, {
-      width: "18px",
-      height: "18px",
-      marginLeft: "8px",
-      cursor: "pointer",
-      verticalAlign: "middle",
-    });
+    // Reset container
+    weekContainer.innerHTML = "";
 
-    btn.addEventListener("click", async (e) => {
-      e.stopPropagation();
+    const firstRow = document.createElement("div");
+    firstRow.className = "week-grid-row";
 
-      // This is safe because when you CLICK, the parent will always exist
-      const parentTaskBox = span.parentElement;
-      if (parentTaskBox) {
-        parentTaskBox.classList.toggle("completed");
-        const isCompleted = parentTaskBox.classList.contains("completed");
+    const satSunColumn = document.createElement("div");
+    satSunColumn.style.display = "flex";
+    satSunColumn.style.flexDirection = "column";
+    satSunColumn.style.gap = "40px";
 
-        // Save the updated status to the database
-        const taskDate = new Date(task.date);
-        const taskText = span.textContent.trim();
-        const taskId = task._id;
+    const monday = new Date(today);
+    const dayOfWeek = monday.getDay(); // Sunday = 0, Monday = 1, ..., Saturday = 6
+    let tasksByDate = new Map();
 
-        const success = await updateTaskStatus(taskId, isCompleted);
-        if (!success) {
-          alert("Failed to update task. Please try again.");
-          // Toggle the class back to its original state
-          parentTaskBox.classList.toggle("completed");
+    // Calculate the difference to get to the previous Monday
+    const diff = dayOfWeek === 0 ? -6 : 1 - dayOfWeek;
+    monday.setDate(today.getDate() + diff);
+
+    // Set time to the beginning of the day to avoid timezone issues
+    monday.setHours(0, 0, 0, 0);
+
+    // Add this new helper function inside your renderWeeklyView function
+
+    function balanceRows() {
+      const weekdayColumns = Array.from(document.querySelectorAll(".day-box")).slice(0, 5);
+      const todoLists = weekdayColumns.map(col => col.querySelector('.todo-list'));
+
+      // 1. Find the maximum number of rows in any weekday column
+      let maxRows = 0;
+      todoLists.forEach(list => {
+        if (list.children.length > maxRows) {
+          maxRows = list.children.length;
         }
+      });
 
-        // await saveTask(parentTaskBox, taskText, task.color, taskDate, taskId, success ? isCompleted : !isCompleted);
-      }
-    });
-    return btn;
-  }
-
-
-  function balanceColumnHeights() {
-    const allDayBoxes = [...document.querySelectorAll(".day-box")];
-    const mainBoxes = allDayBoxes.slice(0, 5); // Mon-Fri
-    const saturdayBox = allDayBoxes[5];
-    const sundayBox = allDayBoxes[6];
-
-    // Safety check to ensure all elements are found
-    if (mainBoxes.length < 5 || !saturdayBox || !sundayBox) {
-      console.error("Aborting balance: Not all day boxes were found on the page.");
-      return;
+      // 2. Ensure all weekday columns have the same number of rows
+      todoLists.forEach(list => {
+        while (list.children.length < maxRows) {
+          const newBox = document.createElement("li");
+          newBox.style.height = "40px";
+          newBox.style.borderBottom = "1px solid #e0e0e0";
+          list.appendChild(newBox);
+        }
+      });
     }
 
-    let maxRows = 0;
+    // --- Helpers ---
+    function createInput(styles = {}) {
+      const input = document.createElement("input");
+      input.type = "text";
+      Object.assign(input.style, {
+        border: "rgba(255,255,255,0.95)",
+        fontSize: "14px",
+        borderRadius: "6px",
+        backgroundColor: "white",
+        boxShadow: "0 4px 8px rgba(0,0,0,0.1)",
+        outline: "none",
+        height: "100%",
+        marginTop: "0",
+        boxSizing: "border-box",
+        width: "100%",
+        ...styles,
+      });
+      return input;
+    }
 
-    // 1. Find the tallest column among Mon-Fri
-    mainBoxes.forEach(box => {
-      const taskCount = box.querySelector('.todo-list').children.length;
-      if (taskCount > maxRows) maxRows = taskCount;
-    });
+    function styleTaskSpan(span, color) {
+      span.style.whiteSpace = "nowrap";
+      span.style.overflow = "hidden";
+      span.style.textOverflow = "ellipsis";
+      span.style.height = "18px";
+      span.style.textAlign = "left";
+      if (color) {
+        span.style.backgroundColor = color;
+      }
+    }
 
-    // 2. Equalize Mon-Fri heights by adding empty rows
-    mainBoxes.forEach(box => {
-      const todoList = box.querySelector('.todo-list');
-      while (todoList.children.length < maxRows) {
+    function createCheckBtn(span, task) {
+      const btn = document.createElement("img");
+      btn.src = "./assets/icons/check-button.png";
+      btn.className = "check-btn";
+      btn.title = "Mark as done / undone";
+      Object.assign(btn.style, {
+        width: "18px",
+        height: "18px",
+        marginLeft: "8px",
+        cursor: "pointer",
+        verticalAlign: "middle",
+      });
+
+      btn.addEventListener("click", async (e) => {
+        e.stopPropagation();
+
+        // This is safe because when you CLICK, the parent will always exist
+        const parentTaskBox = span.parentElement;
+        if (parentTaskBox) {
+          parentTaskBox.classList.toggle("completed");
+          const isCompleted = parentTaskBox.classList.contains("completed");
+
+          // Save the updated status to the database
+          const taskDate = new Date(task.date);
+          const taskText = span.textContent.trim();
+          const taskId = task._id;
+
+          const success = await updateTaskStatus(taskId, isCompleted);
+          if (!success) {
+            alert("Failed to update task. Please try again.");
+            // Toggle the class back to its original state
+            parentTaskBox.classList.toggle("completed");
+          }
+
+          // await saveTask(parentTaskBox, taskText, task.color, taskDate, taskId, success ? isCompleted : !isCompleted);
+        }
+      });
+      return btn;
+    }
+
+
+    function balanceColumnHeights() {
+      const allDayBoxes = [...document.querySelectorAll(".day-box")];
+      const mainBoxes = allDayBoxes.slice(0, 5); // Mon-Fri
+      const saturdayBox = allDayBoxes[5];
+      const sundayBox = allDayBoxes[6];
+
+      // Safety check to ensure all elements are found
+      if (mainBoxes.length < 5 || !saturdayBox || !sundayBox) {
+        console.error("Aborting balance: Not all day boxes were found on the page.");
+        return;
+      }
+
+      let maxRows = 0;
+
+      // 1. Find the tallest column among Mon-Fri
+      mainBoxes.forEach(box => {
+        const taskCount = box.querySelector('.todo-list').children.length;
+        if (taskCount > maxRows) maxRows = taskCount;
+      });
+
+      // 2. Equalize Mon-Fri heights by adding empty rows
+      mainBoxes.forEach(box => {
+        const todoList = box.querySelector('.todo-list');
+        while (todoList.children.length < maxRows) {
+          const emptyTaskBox = document.createElement("li");
+          emptyTaskBox.style.height = "40px";
+          emptyTaskBox.style.borderBottom = "1px solid #e0e0e0";
+          todoList.appendChild(emptyTaskBox);
+        }
+      });
+
+      // --- REVISED LOGIC FOR WEEKEND ---
+
+      // 3. Measure the final, actual height of a now-balanced weekday column
+      const targetHeight = mainBoxes[0].offsetHeight;
+
+      // 4. Calculate the total height available for the Sunday box
+      const gapBetweenWeekend = 40; // This MUST match the 'gap' style on your satSunColumn
+      const availableHeightForSunday = targetHeight - saturdayBox.offsetHeight - gapBetweenWeekend;
+
+      // 5. Calculate the space available for just the task list (<ul>) inside the Sunday box
+      const sundayHeader = sundayBox.querySelector('div:first-child');
+      if (!sundayHeader) return; // Safety check
+
+      const availableHeightForSundayRows = availableHeightForSunday - sundayHeader.offsetHeight;
+
+      // 6. Calculate how many 40px rows can fit in that available space
+      const rowHeight = 40;
+      // Use Math.max(0, ...) to ensure we don't get a negative number if space is tight
+      const numRowsForSunday = Math.max(0, Math.floor(availableHeightForSundayRows / rowHeight));
+
+      // 7. Add the required number of rows to Sunday's list to fill the space
+      const sundayTodoList = sundayBox.querySelector('.todo-list');
+      // First, remove any extra empty rows that might exist from a previous render
+      while (sundayTodoList.children.length > numRowsForSunday) {
+        if (!sundayTodoList.lastChild.textContent.trim()) { // Only remove empty rows
+          sundayTodoList.removeChild(sundayTodoList.lastChild);
+        } else {
+          break; // Stop if we hit a row with a task
+        }
+      }
+      // Then, add rows until the count is correct
+      while (sundayTodoList.children.length < numRowsForSunday) {
         const emptyTaskBox = document.createElement("li");
         emptyTaskBox.style.height = "40px";
         emptyTaskBox.style.borderBottom = "1px solid #e0e0e0";
-        todoList.appendChild(emptyTaskBox);
-      }
-    });
-
-    // --- REVISED LOGIC FOR WEEKEND ---
-
-    // 3. Measure the final, actual height of a now-balanced weekday column
-    const targetHeight = mainBoxes[0].offsetHeight;
-
-    // 4. Calculate the total height available for the Sunday box
-    const gapBetweenWeekend = 40; // This MUST match the 'gap' style on your satSunColumn
-    const availableHeightForSunday = targetHeight - saturdayBox.offsetHeight - gapBetweenWeekend;
-
-    // 5. Calculate the space available for just the task list (<ul>) inside the Sunday box
-    const sundayHeader = sundayBox.querySelector('div:first-child');
-    if (!sundayHeader) return; // Safety check
-
-    const availableHeightForSundayRows = availableHeightForSunday - sundayHeader.offsetHeight;
-
-    // 6. Calculate how many 40px rows can fit in that available space
-    const rowHeight = 40;
-    // Use Math.max(0, ...) to ensure we don't get a negative number if space is tight
-    const numRowsForSunday = Math.max(0, Math.floor(availableHeightForSundayRows / rowHeight));
-
-    // 7. Add the required number of rows to Sunday's list to fill the space
-    const sundayTodoList = sundayBox.querySelector('.todo-list');
-    // First, remove any extra empty rows that might exist from a previous render
-    while (sundayTodoList.children.length > numRowsForSunday) {
-      if (!sundayTodoList.lastChild.textContent.trim()) { // Only remove empty rows
-        sundayTodoList.removeChild(sundayTodoList.lastChild);
-      } else {
-        break; // Stop if we hit a row with a task
+        sundayTodoList.appendChild(emptyTaskBox);
       }
     }
-    // Then, add rows until the count is correct
-    while (sundayTodoList.children.length < numRowsForSunday) {
-      const emptyTaskBox = document.createElement("li");
-      emptyTaskBox.style.height = "40px";
-      emptyTaskBox.style.borderBottom = "1px solid #e0e0e0";
-      sundayTodoList.appendChild(emptyTaskBox);
-    }
-  }
 
-  // Add this new function to your script.js
-  async function updateTaskStatus(taskId, isCompleted) {
-    try {
-      const response = await fetch(`https://tweek-web-app-2.onrender.com/api/tasks/${taskId}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem("token")}`
-        },
-        credentials: 'include',
-        // Only send the field that is changing
-        body: JSON.stringify({ completed: isCompleted })
+    // Add this new function to your script.js
+    async function updateTaskStatus(taskId, isCompleted) {
+      try {
+        const response = await fetch(`https://tweek-web-app-2.onrender.com/api/tasks/${taskId}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem("token")}`
+          },
+          credentials: 'include',
+          // Only send the field that is changing
+          body: JSON.stringify({ completed: isCompleted })
+        });
+
+        if (!response.ok) {
+          // If the server fails, log the error and return false
+          console.error('Failed to update task status on the server.');
+          return false;
+        }
+
+        console.log(`Task ${taskId} status updated to: ${isCompleted}`);
+        return true; // Return true on success
+
+      } catch (error) {
+        console.error('Network error while updating task status:', error);
+        return false; // Return false on network failure
+      }
+    }
+
+    // use this for loadTasksFromDB
+    function renderTaskElement(box, task) {
+      box.innerHTML = "";
+      box.dataset.id = task._id || "";
+
+      const span = document.createElement("span");
+      span.className = "task-text";
+      span.textContent = task.title || task.text || ""; // FIX ✅
+      styleTaskSpan(span, task.color || null);
+
+      const checkBtn = createCheckBtn(span, task);
+
+      box.append(span, checkBtn);
+      if (task.completed) {
+        box.classList.add("completed");
+      }
+
+      if (task && task._id) {
+        box.draggable = true;
+
+        box.addEventListener('dragstart', (e) => {
+          // Store the task's ID to identify it on drop
+          e.dataTransfer.setData('text/plain', task._id);
+          // Add a class for visual styling while dragging
+          setTimeout(() => box.classList.add('dragging'), 0);
+        });
+
+        box.addEventListener('dragend', () => {
+          // Clean up the styling after the drag operation ends
+          box.classList.remove('dragging');
+        });
+      }
+
+      box.addEventListener("click", (e) => {
+        e.stopPropagation();
+        openEditModal(
+          task.title,
+          (newText, newColor, newNotes, newDate) => {
+            handleTaskSave(box, newText, newColor, newNotes, newDate);
+          },
+          box,
+          task.color,
+          new Date(task.date)
+        );
       });
 
-      if (!response.ok) {
-        // If the server fails, log the error and return false
-        console.error('Failed to update task status on the server.');
-        return false;
-      }
-
-      console.log(`Task ${taskId} status updated to: ${isCompleted}`);
-      return true; // Return true on success
-
-    } catch (error) {
-      console.error('Network error while updating task status:', error);
-      return false; // Return false on network failure
-    }
-  }
-
-  // use this for loadTasksFromDB
-  function renderTaskElement(box, task) {
-    box.innerHTML = "";
-    box.dataset.id = task._id || "";
-
-    const span = document.createElement("span");
-    span.className = "task-text";
-    span.textContent = task.title || task.text || ""; // FIX ✅
-    styleTaskSpan(span, task.color || null);
-
-    const checkBtn = createCheckBtn(span, task);
-
-    box.append(span, checkBtn);
-    if (task.completed) {
-      box.classList.add("completed");
-    }
-
-    if (task && task._id) {
-      box.draggable = true;
-
-      box.addEventListener('dragstart', (e) => {
-        // Store the task's ID to identify it on drop
-        e.dataTransfer.setData('text/plain', task._id);
-        // Add a class for visual styling while dragging
-        setTimeout(() => box.classList.add('dragging'), 0);
+      Object.assign(box.style, {
+        height: "40px",
+        display: "flex",
+        borderBottom: "1px solid #e0e0e0",
+        justifyContent: "space-between",
+        alignItems: "center",
+        fontWeight: "400"
       });
 
-      box.addEventListener('dragend', () => {
-        // Clean up the styling after the drag operation ends
-        box.classList.remove('dragging');
-      });
+      box.title = task.title || task.text || ""; // FIX ✅
     }
 
-    box.addEventListener("click", (e) => {
-      e.stopPropagation();
-      openEditModal(
-        task.title,
-        (newText, newColor, newNotes, newDate) => {
-          handleTaskSave(box, newText, newColor, newNotes, newDate);
-        },
-        box,
-        task.color,
-        new Date(task.date)
-      );
-    });
+    async function saveTask(box, text, color = null, taskDate, taskId = null, isCompleted = false, isSomeday = false) {
 
-    Object.assign(box.style, {
-      height: "40px",
-      display: "flex",
-      borderBottom: "1px solid #e0e0e0",
-      justifyContent: "space-between",
-      alignItems: "center",
-      fontWeight: "400"
-    });
-
-    box.title = task.title || task.text || ""; // FIX ✅
-  }
-
-  async function saveTask(box, text, color = null, taskDate, taskId = null, isCompleted = false, isSomeday = false) {
-
-    if (!isSomeday) {
-      const jsDate = taskDate instanceof Date ? taskDate : new Date(taskDate);
-      if (Number.isNaN(jsDate.getTime())) {
-        console.warn("saveTask called without valid date", { text, taskId, taskDate });
-        return;
+      if (!isSomeday) {
+        const jsDate = taskDate instanceof Date ? taskDate : new Date(taskDate);
+        if (Number.isNaN(jsDate.getTime())) {
+          console.warn("saveTask called without valid date", { text, taskId, taskDate });
+          return;
+        }
       }
-    }
 
-    // Prepare payload
-    const payload = {
-      title: text,
-      description: "",
-      color,
-      completed: isCompleted,
-      isSomeday
-    };
+      // Prepare payload
+      const payload = {
+        title: text,
+        description: "",
+        color,
+        completed: isCompleted,
+        isSomeday
+      };
 
-    if (!isSomeday) {
-      const jsDate = taskDate instanceof Date ? taskDate : new Date(taskDate);
-      payload.date = jsDate.toISOString();  // only attach date for normal tasks
-    }
+      if (!isSomeday) {
+        const jsDate = taskDate instanceof Date ? taskDate : new Date(taskDate);
+        payload.date = jsDate.toISOString();  // only attach date for normal tasks
+      }
 
-    // New task
-    if (!taskId) {
-      const res = await fetch("https://tweek-web-app-2.onrender.com/api/tasks", {
-        method: "POST",
+      // New task
+      if (!taskId) {
+        const res = await fetch("https://tweek-web-app-2.onrender.com/api/tasks", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify(payload)
+        });
+
+        if (!res.ok) {
+          console.error("Failed to save task", await res.text());
+          return;
+        }
+
+        const newTask = await res.json();
+        box.dataset.id = newTask._id;
+        // render the new task in DOM (call render helper for consistent UI)
+        if (!newTask.isSomeday) {
+          newTask.date = payload.date;
+        }
+        renderTaskElement(box, newTask);
+        return newTask;
+      }
+
+      // Update existing task
+      const res = await fetch(`https://tweek-web-app-2.onrender.com/api/tasks/${taskId}`, {
+        method: "PUT",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
         body: JSON.stringify(payload)
       });
 
+
       if (!res.ok) {
-        console.error("Failed to save task", await res.text());
+        console.error("Failed to update task", await res.text());
         return;
       }
 
-      const newTask = await res.json();
-      box.dataset.id = newTask._id;
-      // render the new task in DOM (call render helper for consistent UI)
-      if (!newTask.isSomeday) {
-        newTask.date = payload.date;
+      const updated = await res.json();
+      box.dataset.id = updated._id;
+      if (!updated.isSomeday) {
+        updated.date = payload.date;
       }
-      renderTaskElement(box, newTask);
-      return newTask;
+      renderTaskElement(box, updated);
+      return updated;
     }
 
-    // Update existing task
-    const res = await fetch(`https://tweek-web-app-2.onrender.com/api/tasks/${taskId}`, {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      credentials: "include",
-      body: JSON.stringify(payload)
-    });
+    function activateInput(box, taskDate) {
+      const input = createInput();
+      box.textContent = "";
+      box.appendChild(input);
+      input.focus();
 
-
-    if (!res.ok) {
-      console.error("Failed to update task", await res.text());
-      return;
-    }
-
-    const updated = await res.json();
-    box.dataset.id = updated._id;
-    if (!updated.isSomeday) {
-      updated.date = payload.date;
-    }
-    renderTaskElement(box, updated);
-    return updated;
-  }
-
-  function activateInput(box, taskDate) {
-    const input = createInput();
-    box.textContent = "";
-    box.appendChild(input);
-    input.focus();
-
-    const save = () => {
-      if (input.value.trim()) {
-        if (taskDate) {
-          saveTask(box, input.value.trim(), null, taskDate);
+      const save = () => {
+        if (input.value.trim()) {
+          if (taskDate) {
+            saveTask(box, input.value.trim(), null, taskDate);
+          } else {
+            saveTask(box, input.value.trim(), null, null, null, false, true);
+          }
         } else {
-          saveTask(box, input.value.trim(), null, null, null, false, true);
+          box.textContent = "";
         }
-      } else {
-        box.textContent = "";
+      };
+
+      input.addEventListener("blur", () => setTimeout(save, 0));
+
+      input.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") {
+          e.preventDefault();
+          save();
+
+          const currentBox = input.parentElement;
+          const container = currentBox.parentElement;
+          if (!container) return;
+
+          const siblings = Array.from(container.children);
+          const currentIndex = siblings.indexOf(currentBox);
+
+          let nextBox = null;
+          let newRowWasAdded = null;
+
+          for (let i = currentIndex + 1; i < siblings.length; i++) {
+            if (!siblings[i].textContent.trim() && !siblings[i].querySelector('input')) {
+              nextBox = siblings[i];
+              break;
+            }
+          }
+
+          if (!nextBox) {
+            const newBox = document.createElement(currentBox.tagName);
+            newBox.style.height = "40px";
+            if (currentBox.tagName.toLowerCase() === 'li') {
+              newBox.style.borderBottom = "1px solid #e0e0e0";
+            }
+            container.appendChild(newBox);
+            nextBox = newBox;
+
+            newRowWasAdded = true;
+
+          }
+          if (nextBox) {
+            activateInput(nextBox, taskDate);
+          }
+
+          if (newRowWasAdded) {
+            // if (offset === 5) {
+            //   const totalRows = saturdayBox.querySelectorAll(".todo-list li").length;
+            //   saturdayBox.style.maxHeight = `${totalRows * rowHeight}px`;
+
+            //   allDayBoxes.forEach((otherBox, idx) => {
+            //     if (idx !== 5 && idx !== 6) {
+            //       const otherTodoContainer = otherBox.querySelector(".todo-list");
+            //       const newBox = document.createElement("li");
+            //       newBox.style.height = `${rowHeight}`;
+            //       otherTodoContainer.appendChild(newBox);
+            //     }
+            //   });
+            // } else {
+            //   const totalRows = saturdayBox.querySelectorAll(".todo-list li").length;
+            //   saturdayBox.style.maxHeight = `${totalRows * rowHeight}px`;
+
+            //   allDayBoxes.forEach((otherBox, idx) => {
+            //     if (idx !== offset && idx !== 5) {
+            //       const otherTodoContainer = otherBox.querySelector(".todo-list");
+            //       const newBox = document.createElement("li");
+            //       newBox.style.height = `${rowHeight}px`;
+            //       otherTodoContainer.appendChild(newBox);
+            //     }
+            //   });
+            // }
+            balanceRows();
+          }
+
+        }
+      });
+    }
+
+
+    // --- Weekly Days ---
+    for (let offset = 0; offset < 7; offset++) {
+      const date = new Date(monday);
+      date.setDate(monday.getDate() + offset);
+      const dateString = date.toISOString().split('T')[0];
+      const tasksForThisDay = tasksByDate.get(dateString) || [];
+
+      const dayBox = document.createElement("div");
+      dayBox.className = "day-box";
+
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0'); // Months are 0-indexed
+      const day = String(date.getDate()).padStart(2, '0');
+      const dateStringForColumn = `${year}-${month}-${day}`;
+
+      dayBox.dataset.dateColumn = dateStringForColumn;
+
+      addDropZoneListeners(dayBox);
+
+      Object.assign(dayBox.style, {
+        padding: "0 10px",
+        borderRadius: "8px",
+        display: "flex",
+        flexDirection: "column",
+        minWidth: "150px",
+        flexGrow: "1",
+        cursor: "pointer",
+      });
+
+      const headerDiv = document.createElement("div");
+      Object.assign(headerDiv.style, {
+        display: "flex",
+        justifyContent: "space-between",
+        borderBottom: "2px solid black",
+        paddingBottom: "7px",
+      });
+      const todoContainer = document.createElement("ul");
+      applyHeaderStyle();
+
+      function applyHeaderStyle() {
+        if (window.innerWidth < 1024) {
+          Object.assign(headerDiv.style, {
+            width: "100%"
+          });
+          Object.assign(todoContainer.style, {
+            width: "100%"
+          })
+        } else {
+          Object.assign(headerDiv.style, {
+            width: "105%"
+          });
+          Object.assign(todoContainer.style, {
+            width: "105%"
+          })
+        }
       }
-    };
 
-    input.addEventListener("blur", () => setTimeout(save, 0));
+      const dayNumber = date.getDate().toString().padStart(2, "0");
+      const monthNumber = (date.getMonth() + 1).toString().padStart(2, "0");
 
-    input.addEventListener("keydown", (e) => {
-      if (e.key === "Enter") {
-        e.preventDefault();
-        save();
+      const dateDiv = document.createElement("div");
+      dateDiv.style.fontWeight = "bold";
+      dateDiv.textContent = `${dayNumber}.${monthNumber}`;
 
-        const currentBox = input.parentElement;
-        const container = currentBox.parentElement;
-        if (!container) return;
+      const weekdayDiv = document.createElement("div");
+      weekdayDiv.textContent = weekdays[offset];
+      weekdayDiv.style.color = "#000";
+      weekdayDiv.style.textTransform = "capitalize";
+      weekdayDiv.style.opacity = ".2";
+      weekdayDiv.style.fontFamily = primaryFont;
+      weekdayDiv.style.fontWeight = "400";
 
-        const siblings = Array.from(container.children);
-        const currentIndex = siblings.indexOf(currentBox);
+      headerDiv.append(dateDiv, weekdayDiv);
 
-        let nextBox = null;
-        let newRowWasAdded = null;
+      // const todoContainer = document.createElement("ul");
+      todoContainer.className = "todo-list";
+      Object.assign(todoContainer.style, {
+        margin: "0",
+        paddingLeft: "1px",
+        flexGrow: "1",
+        listStyle: "none",
+        fontSize: "16px",
+      });
 
-        for (let i = currentIndex + 1; i < siblings.length; i++) {
-          if (!siblings[i].textContent.trim() && !siblings[i].querySelector('input')) {
-            nextBox = siblings[i];
-            break;
-          }
+      // --- Dynamic row limits ---
+      const minWeekdayRows = 12;
+      const minWeekendRows = 5;
+
+
+      // Count how many tasks we already have (if loaded from DB)
+      const taskCount = tasksForThisDay.length;
+
+      // Decide how many rows to render initially
+      const minLimit = offset < 5 ? minWeekdayRows : minWeekendRows;
+      const limit = Math.max(minLimit, taskCount);  // ensure at least min
+
+      for (let i = 0; i < limit; i++) {
+        const taskBox = document.createElement("li");
+        taskBox.style.height = "40px";
+        todoContainer.appendChild(taskBox);
+      }
+
+      // 2. NEW: Get a reference to all the rows you just created
+      const allTaskBoxes = todoContainer.querySelectorAll('li');
+
+      // 3. NEW: Loop through your fetched tasks and render each one into a row
+      tasksForThisDay.forEach((task, index) => {
+        // Make sure there is a box to put the task in
+        if (allTaskBoxes[index]) {
+          renderTaskElement(allTaskBoxes[index], task);
         }
+      });
 
-        if (!nextBox) {
-          const newBox = document.createElement(currentBox.tagName);
+      // highlight today / selected
+      const isToday =
+        date.getDate() === currentDate.getDate() &&
+        date.getMonth() === currentDate.getMonth() &&
+        date.getFullYear() === currentDate.getFullYear();
+
+      const isSelected =
+        highlightDate &&
+        date.getDate() === highlightDate.getDate() &&
+        date.getMonth() === highlightDate.getMonth() &&
+        date.getFullYear() === highlightDate.getFullYear();
+
+      if (isSelected) {
+        dateDiv.style.color = "#5167f4";
+        weekdayDiv.style.color = "#5167f4";
+      } else if (isToday) {
+        dateDiv.style.color = "#5167f4";
+        weekdayDiv.style.color = "#5167f4";
+      }
+
+      dayBox.append(headerDiv, todoContainer);
+
+      dayBox.addEventListener("click", () => {
+        const emptyBox = [...todoContainer.children].find(
+          (box) => !box.textContent.trim() && !box.querySelector("input")
+        );
+
+        let newRowWasAdded = false;
+
+        if (emptyBox) {
+          activateInput(emptyBox, date);
+        } else {
+          const newBox = document.createElement("li");
           newBox.style.height = "40px";
-          if (currentBox.tagName.toLowerCase() === 'li') {
-            newBox.style.borderBottom = "1px solid #e0e0e0";
-          }
-          container.appendChild(newBox);
-          nextBox = newBox;
-
+          todoContainer.appendChild(newBox);
+          activateInput(newBox, date);
           newRowWasAdded = true;
+        }
 
-        }
-        if (nextBox) {
-          activateInput(nextBox, taskDate);
-        }
+        // All day boxes
+        const allDayBoxes = [...weekContainer.querySelectorAll(".day-box")];
+        const saturdayBox = allDayBoxes[5];
+        const rowHeight = 40;
 
         if (newRowWasAdded) {
           // if (offset === 5) {
@@ -1010,349 +1210,161 @@ function renderWeeklyView(baseDate = new Date(), highlightDate = null) {
           // }
           balanceRows();
         }
+      });
 
-      }
+      if (offset < 5) firstRow.appendChild(dayBox);
+      else satSunColumn.appendChild(dayBox);
+    }
+
+    firstRow.appendChild(satSunColumn);
+    weekContainer.appendChild(firstRow);
+
+    // --- Someday Section ---
+    const somedayDiv = document.createElement("div");
+    Object.assign(somedayDiv.style, {
+      marginTop: "40px",
+      width: "100%",
+      cursor: "pointer",
+      height: "40px"
     });
-  }
 
+    const label = document.createElement("strong");
+    label.textContent = "Someday";
+    label.style.fontFamily = primaryFont;
+    label.style.fontWeight = "700";
+    label.style.fontSize = "21px";
+    somedayDiv.appendChild(label);
 
-  // --- Weekly Days ---
-  for (let offset = 0; offset < 7; offset++) {
-    const date = new Date(monday);
-    date.setDate(monday.getDate() + offset);
-    const dateString = date.toISOString().split('T')[0];
-    const tasksForThisDay = tasksByDate.get(dateString) || [];
+    const taskContainer = document.createElement("div");
+    taskContainer.dataset.isSomeday = "true";
+    addDropZoneListeners(taskContainer);
 
-    const dayBox = document.createElement("div");
-    dayBox.className = "day-box";
-
-    const year = date.getFullYear();
-    const month = String(date.getMonth() + 1).padStart(2, '0'); // Months are 0-indexed
-    const day = String(date.getDate()).padStart(2, '0');
-    const dateStringForColumn = `${year}-${month}-${day}`;
-
-    dayBox.dataset.dateColumn = dateStringForColumn;
-
-    addDropZoneListeners(dayBox);
-
-    Object.assign(dayBox.style, {
-      padding: "0 10px",
-      borderRadius: "8px",
+    Object.assign(taskContainer.style, {
       display: "flex",
       flexDirection: "column",
-      minWidth: "150px",
-      flexGrow: "1",
-      cursor: "pointer",
+      gap: "10px",
+      marginTop: "10px",
     });
 
-    const headerDiv = document.createElement("div");
-    Object.assign(headerDiv.style, {
-      display: "flex",
-      justifyContent: "space-between",
-      borderBottom: "2px solid black",
-      paddingBottom: "7px",
-    });
-    const todoContainer = document.createElement("ul");
-    applyHeaderStyle();
-
-    function applyHeaderStyle() {
-      if (window.innerWidth < 1024) {
-        Object.assign(headerDiv.style, {
-          width: "100%"
-        });
-        Object.assign(todoContainer.style, {
-          width: "100%"
-        })
-      } else {
-        Object.assign(headerDiv.style, {
-          width: "105%"
-        });
-        Object.assign(todoContainer.style, {
-          width: "105%"
-        })
-      }
+    for (let i = 0; i < 5; i++) {
+      const taskBox = document.createElement("div");
+      Object.assign(taskBox.style, {
+        height: "40px",
+        borderBottom: "1px solid #e0e0e0",
+      });
+      taskContainer.appendChild(taskBox);
     }
 
-    const dayNumber = date.getDate().toString().padStart(2, "0");
-    const monthNumber = (date.getMonth() + 1).toString().padStart(2, "0");
+    somedayDiv.appendChild(taskContainer);
+    weekContainer.appendChild(somedayDiv);
 
-    const dateDiv = document.createElement("div");
-    dateDiv.style.fontWeight = "bold";
-    dateDiv.textContent = `${dayNumber}.${monthNumber}`;
-
-    const weekdayDiv = document.createElement("div");
-    weekdayDiv.textContent = weekdays[offset];
-    weekdayDiv.style.color = "#000";
-    weekdayDiv.style.textTransform = "capitalize";
-    weekdayDiv.style.opacity = ".2";
-    weekdayDiv.style.fontFamily = primaryFont;
-    weekdayDiv.style.fontWeight = "400";
-
-    headerDiv.append(dateDiv, weekdayDiv);
-
-    // const todoContainer = document.createElement("ul");
-    todoContainer.className = "todo-list";
-    Object.assign(todoContainer.style, {
-      margin: "0",
-      paddingLeft: "1px",
-      flexGrow: "1",
-      listStyle: "none",
-      fontSize: "16px",
-    });
-
-    // --- Dynamic row limits ---
-    const minWeekdayRows = 12;
-    const minWeekendRows = 5;
-
-
-    // Count how many tasks we already have (if loaded from DB)
-    const taskCount = tasksForThisDay.length;
-
-    // Decide how many rows to render initially
-    const minLimit = offset < 5 ? minWeekdayRows : minWeekendRows;
-    const limit = Math.max(minLimit, taskCount);  // ensure at least min
-
-    for (let i = 0; i < limit; i++) {
-      const taskBox = document.createElement("li");
-      taskBox.style.height = "40px";
-      todoContainer.appendChild(taskBox);
-    }
-
-    // 2. NEW: Get a reference to all the rows you just created
-    const allTaskBoxes = todoContainer.querySelectorAll('li');
-
-    // 3. NEW: Loop through your fetched tasks and render each one into a row
-    tasksForThisDay.forEach((task, index) => {
-      // Make sure there is a box to put the task in
-      if (allTaskBoxes[index]) {
-        renderTaskElement(allTaskBoxes[index], task);
-      }
-    });
-
-    // highlight today / selected
-    const isToday =
-      date.getDate() === currentDate.getDate() &&
-      date.getMonth() === currentDate.getMonth() &&
-      date.getFullYear() === currentDate.getFullYear();
-
-    const isSelected =
-      highlightDate &&
-      date.getDate() === highlightDate.getDate() &&
-      date.getMonth() === highlightDate.getMonth() &&
-      date.getFullYear() === highlightDate.getFullYear();
-
-    if (isSelected) {
-      dateDiv.style.color = "#5167f4";
-      weekdayDiv.style.color = "#5167f4";
-    } else if (isToday) {
-      dateDiv.style.color = "#5167f4";
-      weekdayDiv.style.color = "#5167f4";
-    }
-
-    dayBox.append(headerDiv, todoContainer);
-
-    dayBox.addEventListener("click", () => {
-      const emptyBox = [...todoContainer.children].find(
+    somedayDiv.addEventListener("click", () => {
+      const emptyBox = [...taskContainer.children].find(
         (box) => !box.textContent.trim() && !box.querySelector("input")
       );
 
-      let newRowWasAdded = false;
+      const targetBox = emptyBox || (() => {
+        const newBox = document.createElement("div");
+        taskContainer.appendChild(newBox);
+        return newBox;
+      })();
 
-      if (emptyBox) {
-        activateInput(emptyBox, date);
-      } else {
-        const newBox = document.createElement("li");
-        newBox.style.height = "40px";
-        todoContainer.appendChild(newBox);
-        activateInput(newBox, date);
-        newRowWasAdded = true;
-      }
-
-      // All day boxes
-      const allDayBoxes = [...weekContainer.querySelectorAll(".day-box")];
-      const saturdayBox = allDayBoxes[5];
-      const rowHeight = 40;
-
-      if (newRowWasAdded) {
-        // if (offset === 5) {
-        //   const totalRows = saturdayBox.querySelectorAll(".todo-list li").length;
-        //   saturdayBox.style.maxHeight = `${totalRows * rowHeight}px`;
-
-        //   allDayBoxes.forEach((otherBox, idx) => {
-        //     if (idx !== 5 && idx !== 6) {
-        //       const otherTodoContainer = otherBox.querySelector(".todo-list");
-        //       const newBox = document.createElement("li");
-        //       newBox.style.height = `${rowHeight}`;
-        //       otherTodoContainer.appendChild(newBox);
-        //     }
-        //   });
-        // } else {
-        //   const totalRows = saturdayBox.querySelectorAll(".todo-list li").length;
-        //   saturdayBox.style.maxHeight = `${totalRows * rowHeight}px`;
-
-        //   allDayBoxes.forEach((otherBox, idx) => {
-        //     if (idx !== offset && idx !== 5) {
-        //       const otherTodoContainer = otherBox.querySelector(".todo-list");
-        //       const newBox = document.createElement("li");
-        //       newBox.style.height = `${rowHeight}px`;
-        //       otherTodoContainer.appendChild(newBox);
-        //     }
-        //   });
-        // }
-        balanceRows();
-      }
+      activateInput(targetBox, null);
     });
 
-    if (offset < 5) firstRow.appendChild(dayBox);
-    else satSunColumn.appendChild(dayBox);
-  }
 
-  firstRow.appendChild(satSunColumn);
-  weekContainer.appendChild(firstRow);
-
-  // --- Someday Section ---
-  const somedayDiv = document.createElement("div");
-  Object.assign(somedayDiv.style, {
-    marginTop: "40px",
-    width: "100%",
-    cursor: "pointer",
-    height: "40px"
-  });
-
-  const label = document.createElement("strong");
-  label.textContent = "Someday";
-  label.style.fontFamily = primaryFont;
-  label.style.fontWeight = "700";
-  label.style.fontSize = "21px";
-  somedayDiv.appendChild(label);
-
-  const taskContainer = document.createElement("div");
-  taskContainer.dataset.isSomeday = "true";
-  addDropZoneListeners(taskContainer);
-
-  Object.assign(taskContainer.style, {
-    display: "flex",
-    flexDirection: "column",
-    gap: "10px",
-    marginTop: "10px",
-  });
-
-  for (let i = 0; i < 5; i++) {
-    const taskBox = document.createElement("div");
-    Object.assign(taskBox.style, {
-      height: "40px",
-      borderBottom: "1px solid #e0e0e0",
-    });
-    taskContainer.appendChild(taskBox);
-  }
-
-  somedayDiv.appendChild(taskContainer);
-  weekContainer.appendChild(somedayDiv);
-
-  somedayDiv.addEventListener("click", () => {
-    const emptyBox = [...taskContainer.children].find(
-      (box) => !box.textContent.trim() && !box.querySelector("input")
-    );
-
-    const targetBox = emptyBox || (() => {
-      const newBox = document.createElement("div");
-      taskContainer.appendChild(newBox);
-      return newBox;
-    })();
-
-    activateInput(targetBox, null);
-  });
-
-
-  async function loadTasksFromDB() {
-    // Helper function to get the weekId on the frontend (no changes needed here)
-    function getWeekNumber(d) {
-      d = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
-      d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7));
-      const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
-      const weekNo = Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
-      return `${d.getUTCFullYear()}-W${String(weekNo).padStart(2, '0')}`;
-    }
-
-    try {
-      const currentWeekId = getWeekNumber(monday); // Assuming 'monday' is available in this scope
-
-      const weeklyTasksUrl = `https://tweek-web-app-2.onrender.com/api/tasks/week/${currentWeekId}`;
-      const somedayTasksUrl = `https://tweek-web-app-2.onrender.com/api/tasks/someday`;
-
-      const [weeklyRes, somedayRes] = await Promise.all([
-        fetch(weeklyTasksUrl, {
-          credentials: 'include',
-          headers: { "Authorization": `Bearer ${localStorage.getItem("token")}` }
-        }),
-        fetch(somedayTasksUrl, {
-          credentials: 'include',
-          headers: { "Authorization": `Bearer ${localStorage.getItem("token")}` }
-        })
-      ]);
-
-      if (!weeklyRes.ok || !somedayRes.ok) {
-        console.error("Failed to fetch tasks");
-        return;
+    async function loadTasksFromDB() {
+      // Helper function to get the weekId on the frontend (no changes needed here)
+      function getWeekNumber(d) {
+        d = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+        d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7));
+        const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+        const weekNo = Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+        return `${d.getUTCFullYear()}-W${String(weekNo).padStart(2, '0')}`;
       }
 
-      // The response is now an array of user profiles
-      const weeklyDataByUser = await weeklyRes.json();
-      const somedayTasks = await somedayRes.json();
+      try {
+        const currentWeekId = getWeekNumber(monday); // Assuming 'monday' is available in this scope
 
-      // --- Render Weekly Tasks (UPDATED LOGIC) ---
-      const allDayBoxes = [...weekContainer.querySelectorAll(".day-box")];
+        const weeklyTasksUrl = `https://tweek-web-app-2.onrender.com/api/tasks/week/${currentWeekId}`;
+        const somedayTasksUrl = `https://tweek-web-app-2.onrender.com/api/tasks/someday`;
 
-      // 1. Loop through each user profile from the API response
-      weeklyDataByUser.forEach(userProfile => {
-        // 2. Then, loop through the tasks for that specific user
-        userProfile.tasks
-          .sort((a, b) => new Date(a.date) - new Date(b.date))
-          .forEach(task => {
-            const taskDate = new Date(task.date);
-            let jsDay = taskDate.getDay();
-            let idx = (jsDay === 0) ? 6 : jsDay - 1; // Monday = 0, ..., Sunday = 6
-            const todoList = allDayBoxes[idx].querySelector(".todo-list");
+        const [weeklyRes, somedayRes] = await Promise.all([
+          fetch(weeklyTasksUrl, {
+            credentials: 'include',
+            headers: { "Authorization": `Bearer ${localStorage.getItem("token")}` }
+          }),
+          fetch(somedayTasksUrl, {
+            credentials: 'include',
+            headers: { "Authorization": `Bearer ${localStorage.getItem("token")}` }
+          })
+        ]);
 
-            const dateString = new Date(task.date).toISOString().split('T')[0];
-            if (!tasksByDate.has(dateString)) {
-              tasksByDate.set(dateString, []);
-            }
-            tasksByDate.get(dateString).push(task);
-
-            // Find the next available empty list item to render the task in
-            let box = [...todoList.children].find(
-              li => !li.textContent.trim() && !li.querySelector("input")
-            );
-            if (box) {
-              // Pass the userName to the render function to optionally display it
-              renderTaskElement(box, task, userProfile.userName);
-            }
-
-
-          });
-      });
-
-
-      // --- Render Someday Tasks (NO CHANGES NEEDED) ---
-      somedayTasks.forEach(task => {
-        let box = [...taskContainer.children].find(
-          div => !div.textContent.trim() && !div.querySelector("input")
-        );
-        if (box) {
-          renderTaskElement(box, task); // Someday tasks don't have a separate owner to display
+        if (!weeklyRes.ok || !somedayRes.ok) {
+          console.error("Failed to fetch tasks");
+          return;
         }
-      });
 
-      balanceColumnHeights();
+        // The response is now an array of user profiles
+        const weeklyDataByUser = await weeklyRes.json();
+        const somedayTasks = await somedayRes.json();
 
-    } catch (err) {
-      console.error("Error loading tasks from DB:", err);
+        // --- Render Weekly Tasks (UPDATED LOGIC) ---
+        const allDayBoxes = [...weekContainer.querySelectorAll(".day-box")];
+
+        // 1. Loop through each user profile from the API response
+        weeklyDataByUser.forEach(userProfile => {
+          // 2. Then, loop through the tasks for that specific user
+          userProfile.tasks
+            .sort((a, b) => new Date(a.date) - new Date(b.date))
+            .forEach(task => {
+              const taskDate = new Date(task.date);
+              let jsDay = taskDate.getDay();
+              let idx = (jsDay === 0) ? 6 : jsDay - 1; // Monday = 0, ..., Sunday = 6
+              const todoList = allDayBoxes[idx].querySelector(".todo-list");
+
+              const dateString = new Date(task.date).toISOString().split('T')[0];
+              if (!tasksByDate.has(dateString)) {
+                tasksByDate.set(dateString, []);
+              }
+              tasksByDate.get(dateString).push(task);
+
+              // Find the next available empty list item to render the task in
+              let box = [...todoList.children].find(
+                li => !li.textContent.trim() && !li.querySelector("input")
+              );
+              if (box) {
+                // Pass the userName to the render function to optionally display it
+                renderTaskElement(box, task, userProfile.userName);
+              }
+
+
+            });
+        });
+
+
+        // --- Render Someday Tasks (NO CHANGES NEEDED) ---
+        somedayTasks.forEach(task => {
+          let box = [...taskContainer.children].find(
+            div => !div.textContent.trim() && !div.querySelector("input")
+          );
+          if (box) {
+            renderTaskElement(box, task); // Someday tasks don't have a separate owner to display
+          }
+        });
+
+        balanceColumnHeights();
+
+      } catch (err) {
+        console.error("Error loading tasks from DB:", err);
+      }
     }
+
+
+    loadTasksFromDB();
+  } finally {
+    isRendering = false;
   }
-
-
-  loadTasksFromDB();
 }
 
 
