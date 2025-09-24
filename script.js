@@ -207,6 +207,8 @@ document.addEventListener('DOMContentLoaded', () => {
     await authSystem.checkLoginStatus();
 
     initializeApp();
+
+    renderWeeklyView();
   });
 
   // Function to translate all static text with data-i18n attributes
@@ -546,6 +548,7 @@ function addDropZoneListeners(element) {
 const weekContainer = document.getElementById("weekly-view");
 const rootStyles = getComputedStyle(document.documentElement);
 const primaryFont = rootStyles.getPropertyValue("--primary-font").trim();
+
 
 function renderWeeklyView(baseDate = new Date(), highlightDate = null) {
   currentViewDate = baseDate;

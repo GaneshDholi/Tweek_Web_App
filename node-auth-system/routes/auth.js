@@ -31,35 +31,36 @@ const loginValidationRules = [
     body('password').not().isEmpty().withMessage('Password cannot be empty.'),
 ];
 
-router.post('/', authMiddleware, async (req, res) => {
-    try {
-        const { title, date, isSomeday, notes, color, repeat, calendar } = req.body;
-        const task = new Task({
-            user: req.user.id,
-            title, date, isSomeday, notes, color, repeat, calendar
-        });
-        await task.save();
-        res.status(201).json(task);
-    } catch (error) {
-        res.status(500).json({ message: 'Server error while creating task.' });
-    }
-});
+// router.post('/', authMiddleware, async (req, res) => {
+//     try {
+//         const { title, date, isSomeday, notes, color, repeat, calendar } = req.body;
+//         const task = new Task({
+//             user: req.user.id,
+//             title, date, isSomeday, notes, color, repeat, calendar
+//         });
+//         await task.save();
+//         res.status(201).json(task);
+//     } catch (error) {
+//         res.status(500).json({ message: 'Server error while creating task.' });
+//     }
+// });
 
-router.post('/batch-create', authMiddleware, async (req, res) => {
-    try {
-        const { tasks } = req.body;
-        if (!tasks || !Array.isArray(tasks)) {
-            return res.status(400).json({ message: 'Request body must contain a "tasks" array.' });
-        }
-        const tasksToInsert = tasks.map(task => ({ ...task, user: req.user.id }));
-        await Task.insertMany(tasksToInsert);
-        res.status(201).json({ message: 'Tasks synced successfully.' });
-    } catch (error) {
-        res.status(500).json({ message: 'Server error while syncing tasks.' });
-    }
-});
+// router.post('/batch-create', authMiddleware, async (req, res) => {
+//     try {
+//         const { tasks } = req.body;
+//         if (!tasks || !Array.isArray(tasks)) {
+//             return res.status(400).json({ message: 'Request body must contain a "tasks" array.' });
+//         }
+//         const tasksToInsert = tasks.map(task => ({ ...task, user: req.user.id }));
+//         await Task.insertMany(tasksToInsert);
+//         res.status(201).json({ message: 'Tasks synced successfully.' });
+//     } catch (error) {
+//         res.status(500).json({ message: 'Server error while syncing tasks.' });
+//     }
+// });
 
 // --- FLOW STEP 1: Register with Password & Send OTP ---
+
 router.post('/register', authLimiter, registerValidationRules, async (req, res) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
