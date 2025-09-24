@@ -189,7 +189,7 @@ document.addEventListener('DOMContentLoaded', () => {
       i18next.changeLanguage(lang, () => {
         // ... your existing updateContent() and renderDynamicCalendar() calls ...
         updateStaticContent();
-        renderWeeklyView();
+        // renderWeeklyView();
         // Add this line to close the menu
         if (languageSubmenu) {
           languageSubmenu.classList.remove('open');
