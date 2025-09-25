@@ -607,7 +607,16 @@ async function renderWeeklyView(baseDate = new Date(), highlightDate = null) {
     // Set time to the beginning of the day to avoid timezone issues
     monday.setHours(0, 0, 0, 0);
 
-    let tasksByDate = new Map();
+    const { allWeeklyTasks, somedayTasks } = await fetchTasksForView(monday);
+
+    const tasksByDate = new Map();
+    allWeeklyTasks.forEach(task => {
+      const dateString = new Date(task.date).toISOString().split('T')[0];
+      if (!tasksByDate.has(dateString)) {
+        tasksByDate.set(dateString, []);
+      }
+      tasksByDate.get(dateString).push(task);
+    });
     // Add this new helper function inside your renderWeeklyView function
     function balanceRows() {
       const weekdayColumns = Array.from(document.querySelectorAll(".day-box")).slice(0, 5);
@@ -1030,7 +1039,6 @@ async function renderWeeklyView(baseDate = new Date(), highlightDate = null) {
       date.setDate(monday.getDate() + offset);
       const dateString = date.toISOString().split('T')[0];
       const tasksForThisDay = tasksByDate.get(dateString) || [];
-
       const dayBox = document.createElement("div");
       dayBox.className = "day-box";
 
@@ -1123,6 +1131,10 @@ async function renderWeeklyView(baseDate = new Date(), highlightDate = null) {
       for (let i = 0; i < limit; i++) {
         const taskBox = document.createElement("li");
         taskBox.style.height = "40px";
+
+        if (tasksForThisDay[i]) {
+          renderTaskElement(taskBox, tasksForThisDay[i]);
+        }
         todoContainer.appendChild(taskBox);
       }
 
@@ -1272,8 +1284,107 @@ async function renderWeeklyView(baseDate = new Date(), highlightDate = null) {
     });
 
 
-    async function loadTasksFromDB() {
-      // Helper function to get the weekId on the frontend (no changes needed here)
+    // async function loadTasksFromDB() {
+    //   // Helper function to get the weekId on the frontend (no changes needed here)
+    //   function getWeekNumber(d) {
+    //     d = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
+    //     d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7));
+    //     const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+    //     const weekNo = Math.ceil((((d - yearStart) / 86400000) + 1) / 7);
+    //     return `${d.getUTCFullYear()}-W${String(weekNo).padStart(2, '0')}`;
+    //   }
+
+    //   try {
+    //     let weeklyData = [];
+    //     let somedayData = [];
+
+    //     if (isLoggedIn) {
+    //       const currentWeekId = getWeekNumber(monday); // Assuming 'monday' is available in this scope
+
+    //       const weeklyTasksUrl = `https://tweek-web-app-2.onrender.com/api/tasks/week/${currentWeekId}`;
+    //       const somedayTasksUrl = `https://tweek-web-app-2.onrender.com/api/tasks/someday`;
+
+    //       const [weeklyRes, somedayRes] = await Promise.all([
+    //         fetch(weeklyTasksUrl, {
+    //           credentials: 'include',
+    //           headers: { "Authorization": `Bearer ${localStorage.getItem("token")}` }
+    //         }),
+    //         fetch(somedayTasksUrl, {
+    //           credentials: 'include',
+    //           headers: { "Authorization": `Bearer ${localStorage.getItem("token")}` }
+    //         })
+    //       ]);
+
+    //       if (!weeklyRes.ok || !somedayRes.ok) {
+    //         throw new Error("Failed to fetch tasks");
+    //         weeklyData = await weeklyRes.json();
+    //         somedayData = await somedayRes.json();
+    //       } else {
+    //         weeklyData = getGuestTasks(); // Assuming guest tasks are 'weekly'
+    //       }
+
+    //       // The response is now an array of user profiles
+    //       const weeklyDataByUser = await weeklyRes.json();
+    //       const somedayTasks = await somedayRes.json();
+
+    //       // --- Render Weekly Tasks (UPDATED LOGIC) ---
+    //       const allDayBoxes = [...weekContainer.querySelectorAll(".day-box")];
+
+    //       // 1. Loop through each user profile from the API response
+    //       weeklyDataByUser.forEach(userProfile => {
+    //         // 2. Then, loop through the tasks for that specific user
+    //         userProfile.tasks
+    //           .sort((a, b) => new Date(a.date) - new Date(b.date))
+    //           .forEach(task => {
+    //             const taskDate = new Date(task.date);
+    //             let jsDay = taskDate.getDay();
+    //             let idx = (jsDay === 0) ? 6 : jsDay - 1; // Monday = 0, ..., Sunday = 6
+    //             const todoList = allDayBoxes[idx].querySelector(".todo-list");
+
+    //             const dateString = new Date(task.date).toISOString().split('T')[0];
+    //             if (!tasksByDate.has(dateString)) {
+    //               tasksByDate.set(dateString, []);
+    //             }
+    //             tasksByDate.get(dateString).push(task);
+
+    //             // Find the next available empty list item to render the task in
+    //             let box = [...todoList.children].find(
+    //               li => !li.textContent.trim() && !li.querySelector("input")
+    //             );
+
+    //             // If all the pre-made rows are full, create a new one!
+    //             if (!box) {
+    //               box = document.createElement("li");
+    //               todoList.appendChild(box);
+    //             }
+
+    //             // Now that we guarantee a 'box' exists, render the task into it.
+    //             renderTaskElement(box, task, userProfile.userName);
+    //           });
+    //       });
+
+
+    //       // --- Render Someday Tasks (NO CHANGES NEEDED) ---
+    //       somedayTasks.forEach(task => {
+    //         let box = [...taskContainer.children].find(
+    //           div => !div.textContent.trim() && !div.querySelector("input")
+    //         );
+    //         if (box) {
+    //           renderTaskElement(box, task); // Someday tasks don't have a separate owner to display
+    //         }
+    //       });
+
+    //       balanceColumnHeights();
+
+    //     }
+    //   } catch (err) {
+    //     console.error("Error loading tasks:", err)
+    //   }
+    // }
+
+    // NEW FUNCTION (replaces the old loadTasksFromDB)
+    async function fetchTasksForView(monday) {
+      // Helper to get the week ID
       function getWeekNumber(d) {
         d = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
         d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7));
@@ -1283,91 +1394,65 @@ async function renderWeeklyView(baseDate = new Date(), highlightDate = null) {
       }
 
       try {
-        let weeklyData = [];
-        let somedayData = [];
-
-        if (isLoggedIn) {
-          const currentWeekId = getWeekNumber(monday); // Assuming 'monday' is available in this scope
-
-          const weeklyTasksUrl = `https://tweek-web-app-2.onrender.com/api/tasks/week/${currentWeekId}`;
-          const somedayTasksUrl = `https://tweek-web-app-2.onrender.com/api/tasks/someday`;
-
-          const [weeklyRes, somedayRes] = await Promise.all([
-            fetch(weeklyTasksUrl, {
-              credentials: 'include',
-              headers: { "Authorization": `Bearer ${localStorage.getItem("token")}` }
-            }),
-            fetch(somedayTasksUrl, {
-              credentials: 'include',
-              headers: { "Authorization": `Bearer ${localStorage.getItem("token")}` }
-            })
-          ]);
-
-          if (!weeklyRes.ok || !somedayRes.ok) {
-            throw new Error("Failed to fetch tasks");
-            weeklyData = await weeklyRes.json();
-            somedayData = await somedayRes.json();
-          } else {
-            weeklyData = getGuestTasks(); // Assuming guest tasks are 'weekly'
-          }
-
-          // The response is now an array of user profiles
-          const weeklyDataByUser = await weeklyRes.json();
-          const somedayTasks = await somedayRes.json();
-
-          // --- Render Weekly Tasks (UPDATED LOGIC) ---
-          const allDayBoxes = [...weekContainer.querySelectorAll(".day-box")];
-
-          // 1. Loop through each user profile from the API response
-          weeklyDataByUser.forEach(userProfile => {
-            // 2. Then, loop through the tasks for that specific user
-            userProfile.tasks
-              .sort((a, b) => new Date(a.date) - new Date(b.date))
-              .forEach(task => {
-                const taskDate = new Date(task.date);
-                let jsDay = taskDate.getDay();
-                let idx = (jsDay === 0) ? 6 : jsDay - 1; // Monday = 0, ..., Sunday = 6
-                const todoList = allDayBoxes[idx].querySelector(".todo-list");
-
-                const dateString = new Date(task.date).toISOString().split('T')[0];
-                if (!tasksByDate.has(dateString)) {
-                  tasksByDate.set(dateString, []);
-                }
-                tasksByDate.get(dateString).push(task);
-
-                // Find the next available empty list item to render the task in
-                let box = [...todoList.children].find(
-                  li => !li.textContent.trim() && !li.querySelector("input")
-                );
-                if (box) {
-                  // Pass the userName to the render function to optionally display it
-                  renderTaskElement(box, task, userProfile.userName);
-                }
-
-
-              });
-          });
-
-
-          // --- Render Someday Tasks (NO CHANGES NEEDED) ---
-          somedayTasks.forEach(task => {
-            let box = [...taskContainer.children].find(
-              div => !div.textContent.trim() && !div.querySelector("input")
-            );
-            if (box) {
-              renderTaskElement(box, task); // Someday tasks don't have a separate owner to display
-            }
-          });
-
-          balanceColumnHeights();
-
+        if (!isLoggedIn) { // Assuming isLoggedIn is a global flag
+          return { weeklyTasks: [], somedayTasks: [] };
         }
+
+        const currentWeekId = getWeekNumber(monday);
+        const weeklyTasksUrl = `https://tweek-web-app-2.onrender.com/api/tasks/week/${currentWeekId}`;
+        const somedayTasksUrl = `https://tweek-web-app-2.onrender.com/api/tasks/someday`;
+
+        const [weeklyRes, somedayRes] = await Promise.all([
+          fetch(weeklyTasksUrl, {
+            credentials: 'include',
+            headers: { "Authorization": `Bearer ${localStorage.getItem("token")}` }
+          }),
+          fetch(somedayTasksUrl, {
+            credentials: 'include',
+            headers: { "Authorization": `Bearer ${localStorage.getItem("token")}` }
+          })
+        ]);
+
+        if (!weeklyRes.ok || !somedayRes.ok) {
+          console.error("Failed to fetch tasks");
+          return { weeklyTasks: [], somedayTasks: [] };
+        }
+
+        const weeklyDataByUser = await weeklyRes.json();
+        const somedayTasks = await somedayRes.json();
+
+        // Combine all users' tasks into one array for the weekly view
+        const allWeeklyTasks = weeklyDataByUser.flatMap(user => user.tasks);
+
+        return { allWeeklyTasks, somedayTasks };
+
       } catch (err) {
-        console.error("Error loading tasks:", err)
+        console.error("Error fetching tasks:", err);
+        return { weeklyTasks: [], somedayTasks: [] };
       }
     }
 
-    await loadTasksFromDB();
+    const somedayTaskContainer = somedayDiv.querySelector("[data-is-someday='true']");
+
+    // Ensure there are enough rows for all someday tasks
+    while (somedayTaskContainer.children.length < somedayTasks.length) {
+      const taskBox = document.createElement("div");
+      Object.assign(taskBox.style, {
+        height: "40px",
+        borderBottom: "1px solid #e0e0e0",
+      });
+      somedayTaskContainer.appendChild(taskBox);
+    }
+
+    // Render each someday task into a box
+    somedayTasks.forEach((task, index) => {
+      const box = somedayTaskContainer.children[index];
+      if (box) {
+        renderTaskElement(box, task);
+      }
+    });
+
+    // await loadTasksFromDB();
 
     balanceColumnHeights();
   } finally {
