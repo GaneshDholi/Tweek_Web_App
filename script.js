@@ -706,17 +706,43 @@ async function renderWeeklyView(baseDate = new Date(), highlightDate = null) {
 
     function balanceColumnHeights() {
       const allDayBoxes = [...document.querySelectorAll(".day-box")];
+      if (allDayBoxes.length < 7) {
+        console.error("Aborting balance: Not all 7 day boxes were found.");
+        return;
+      }
+
       const mainBoxes = allDayBoxes.slice(0, 5); // Mon-Fri
-      const saturdayBox = allDayBoxes[5];
+      // const saturdayBox = allDayBoxes[5];
       const sundayBox = allDayBoxes[6];
 
       // Safety check to ensure all elements are found
-      if (mainBoxes.length < 5 || !saturdayBox || !sundayBox) {
+      if (mainBoxes.length < 5 || !sundayBox) {
         console.error("Aborting balance: Not all day boxes were found on the page.");
         return;
       }
 
       let maxRows = 0;
+
+      // 1. Find the tallest column among Mon-Fri AND Sunday
+      const columnsToCompare = [...mainBoxes, sundayBox]; // Compare Mon-Fri + Sun
+
+      columnsToCompare.forEach(box => {
+        const taskCount = box.querySelector('.todo-list').children.length;
+        if (taskCount > maxRows) {
+          maxRows = taskCount;
+        }
+      });
+
+      // 2. Equalize heights for Mon-Fri AND Sunday by adding empty rows
+      columnsToCompare.forEach(box => {
+        const todoList = box.querySelector('.todo-list');
+        while (todoList.children.length < maxRows) {
+          const emptyTaskBox = document.createElement("li");
+          emptyTaskBox.style.height = "40px";
+          emptyTaskBox.style.borderBottom = "1px solid #e0e0e0";
+          todoList.appendChild(emptyTaskBox);
+        }
+      });
 
       // 1. Find the tallest column among Mon-Fri
       mainBoxes.forEach(box => {
@@ -959,7 +985,7 @@ async function renderWeeklyView(baseDate = new Date(), highlightDate = null) {
 
           const currentBox = input.parentElement;
           const container = currentBox.parentElement;
-          
+
           if (!container) return;
 
           const siblings = Array.from(container.children);
