@@ -959,7 +959,6 @@ async function renderWeeklyView(baseDate = new Date(), highlightDate = null) {
 
           const currentBox = input.parentElement;
           const container = currentBox.parentElement;
-          console.log(currentBox,container)
           
           if (!container) return;
 
