@@ -1500,7 +1500,7 @@ async function renderWeeklyView(baseDate = new Date(), highlightDate = null) {
             }
           });
 
-          balanceColumnHeights();
+          // balanceColumnHeights();
 
         }
       } catch (err) {
