@@ -704,27 +704,142 @@ async function renderWeeklyView(baseDate = new Date(), highlightDate = null) {
     }
 
 
+    // function balanceColumnHeights() {
+    //   const allDayBoxes = [...document.querySelectorAll(".day-box")];
+    //   if (allDayBoxes.length < 7) {
+    //     console.error("Aborting balance: Not all 7 day boxes were found.");
+    //     return;
+    //   }
+
+    //   const mainBoxes = allDayBoxes.slice(0, 5); // Mon-Fri
+    //   const saturdayBox = allDayBoxes[5];
+    //   const sundayBox = allDayBoxes[6];
+
+    //   // Safety check to ensure all elements are found
+    //   if (mainBoxes.length < 5 || !saturdayBox || !sundayBox) {
+    //     console.error("Aborting balance: Not all day boxes were found on the page.");
+    //     return;
+    //   }
+
+    //   const columnsToBalance = [...mainBoxes, sundayBox];
+
+    //   let maxRows = 0;
+
+    //   columnsToBalance.forEach(box => {
+    //     const taskCount = box.querySelector('.todo-list').children.length;
+    //     if (taskCount > maxRows) {
+    //       maxRows = taskCount;
+    //     }
+    //   });
+
+    //   columnsToBalance.forEach(box => {
+    //     const todoList = box.querySelector('.todo-list');
+    //     while (todoList.children.length < maxRows) {
+    //       const emptyTaskBox = document.createElement("li");
+    //       emptyTaskBox.style.height = "40px";
+    //       emptyTaskBox.style.borderBottom = "1px solid #e0e0e0";
+    //       todoList.appendChild(emptyTaskBox);
+    //     }
+    //   });
+    //   // 1. Find the tallest column among Mon-Fri AND Sunday
+    //   const columnsToCompare = [...mainBoxes, sundayBox]; // Compare Mon-Fri + Sun
+
+    //   columnsToCompare.forEach(box => {
+    //     const taskCount = box.querySelector('.todo-list').children.length;
+    //     if (taskCount > maxRows) {
+    //       maxRows = taskCount;
+    //     }
+    //   });
+
+    //   // 2. Equalize heights for Mon-Fri AND Sunday by adding empty rows
+    //   columnsToCompare.forEach(box => {
+    //     const todoList = box.querySelector('.todo-list');
+    //     while (todoList.children.length < maxRows) {
+    //       const emptyTaskBox = document.createElement("li");
+    //       emptyTaskBox.style.height = "40px";
+    //       emptyTaskBox.style.borderBottom = "1px solid #e0e0e0";
+    //       todoList.appendChild(emptyTaskBox);
+    //     }
+    //   });
+
+    //   // 1. Find the tallest column among Mon-Fri
+    //   mainBoxes.forEach(box => {
+    //     const taskCount = box.querySelector('.todo-list').children.length;
+    //     if (taskCount > maxRows) maxRows = taskCount;
+    //   });
+
+    //   // 2. Equalize Mon-Fri heights by adding empty rows
+    //   mainBoxes.forEach(box => {
+    //     const todoList = box.querySelector('.todo-list');
+    //     while (todoList.children.length < maxRows) {
+    //       const emptyTaskBox = document.createElement("li");
+    //       emptyTaskBox.style.height = "40px";
+    //       emptyTaskBox.style.borderBottom = "1px solid #e0e0e0";
+    //       todoList.appendChild(emptyTaskBox);
+    //     }
+    //   });
+
+    //   // --- REVISED LOGIC FOR WEEKEND ---
+
+    //   // 3. Measure the final, actual height of a now-balanced weekday column
+    //   const targetHeight = mainBoxes[0].offsetHeight;
+
+    //   // 4. Calculate the total height available for the Sunday box
+    //   const gapBetweenWeekend = 40; // This MUST match the 'gap' style on your satSunColumn
+    //   const availableHeightForSunday = targetHeight - saturdayBox.offsetHeight - gapBetweenWeekend;
+
+    //   // 5. Calculate the space available for just the task list (<ul>) inside the Sunday box
+    //   const sundayHeader = sundayBox.querySelector('div:first-child');
+    //   if (!sundayHeader) return; // Safety check
+
+    //   const availableHeightForSundayRows = availableHeightForSunday - sundayHeader.offsetHeight;
+
+    //   // 6. Calculate how many 40px rows can fit in that available space
+    //   const rowHeight = 40;
+    //   // Use Math.max(0, ...) to ensure we don't get a negative number if space is tight
+    //   const numRowsForSunday = Math.max(0, Math.floor(availableHeightForSundayRows / rowHeight));
+
+    //   // 7. Add the required number of rows to Sunday's list to fill the space
+    //   const sundayTodoList = sundayBox.querySelector('.todo-list');
+    //   // First, remove any extra empty rows that might exist from a previous render
+    //   while (sundayTodoList.children.length > numRowsForSunday) {
+    //     if (!sundayTodoList.lastChild.textContent.trim()) { // Only remove empty rows
+    //       sundayTodoList.removeChild(sundayTodoList.lastChild);
+    //     } else {
+    //       break; // Stop if we hit a row with a task
+    //     }
+    //   }
+    //   // Then, add rows until the count is correct
+    //   while (sundayTodoList.children.length < numRowsForSunday) {
+    //     const emptyTaskBox = document.createElement("li");
+    //     emptyTaskBox.style.height = "40px";
+    //     emptyTaskBox.style.borderBottom = "1px solid #e0e0e0";
+    //     sundayTodoList.appendChild(emptyTaskBox);
+    //   }
+    // }
+
+    // Add this new function to your script.js
     function balanceColumnHeights() {
+      // 1. Get all the day columns from the page.
       const allDayBoxes = [...document.querySelectorAll(".day-box")];
       if (allDayBoxes.length < 7) {
         console.error("Aborting balance: Not all 7 day boxes were found.");
         return;
       }
 
-      const mainBoxes = allDayBoxes.slice(0, 5); // Mon-Fri
-      const saturdayBox = allDayBoxes[5];
-      const sundayBox = allDayBoxes[6];
+      // 2. Separate the columns into logical groups.
+      const mainBoxes = allDayBoxes.slice(0, 5); // This is Mon, Tue, Wed, Thu, Fri
+      const sundayBox = allDayBoxes[6];          // This is Sunday
+      // Saturday (allDayBoxes[5]) is deliberately left alone.
 
-      // Safety check to ensure all elements are found
-      if (mainBoxes.length < 5 || !saturdayBox || !sundayBox) {
-        console.error("Aborting balance: Not all day boxes were found on the page.");
-        return;
-      }
-
+      // 3. Create the group of columns that MUST have the same height.
+      // We include Mon-Fri and Sunday in this group, but EXCLUDE Saturday.
       const columnsToBalance = [...mainBoxes, sundayBox];
 
       let maxRows = 0;
 
+      // 4. Find the maximum number of rows from any column within our balancing group.
+      // If Sunday has more tasks than any weekday, its height will now correctly set the maximum.
       columnsToBalance.forEach(box => {
         const taskCount = box.querySelector('.todo-list').children.length;
         if (taskCount > maxRows) {
@@ -732,6 +847,8 @@ async function renderWeeklyView(baseDate = new Date(), highlightDate = null) {
         }
       });
 
+      // 5. Make every column IN THE GROUP match that maximum height by adding empty rows.
+      // This will stretch Mon-Fri to match a tall Sunday, or stretch Sunday to match a tall weekday.
       columnsToBalance.forEach(box => {
         const todoList = box.querySelector('.todo-list');
         while (todoList.children.length < maxRows) {
@@ -741,84 +858,9 @@ async function renderWeeklyView(baseDate = new Date(), highlightDate = null) {
           todoList.appendChild(emptyTaskBox);
         }
       });
-      // 1. Find the tallest column among Mon-Fri AND Sunday
-      const columnsToCompare = [...mainBoxes, sundayBox]; // Compare Mon-Fri + Sun
 
-      columnsToCompare.forEach(box => {
-        const taskCount = box.querySelector('.todo-list').children.length;
-        if (taskCount > maxRows) {
-          maxRows = taskCount;
-        }
-      });
-
-      // 2. Equalize heights for Mon-Fri AND Sunday by adding empty rows
-      columnsToCompare.forEach(box => {
-        const todoList = box.querySelector('.todo-list');
-        while (todoList.children.length < maxRows) {
-          const emptyTaskBox = document.createElement("li");
-          emptyTaskBox.style.height = "40px";
-          emptyTaskBox.style.borderBottom = "1px solid #e0e0e0";
-          todoList.appendChild(emptyTaskBox);
-        }
-      });
-
-      // 1. Find the tallest column among Mon-Fri
-      mainBoxes.forEach(box => {
-        const taskCount = box.querySelector('.todo-list').children.length;
-        if (taskCount > maxRows) maxRows = taskCount;
-      });
-
-      // 2. Equalize Mon-Fri heights by adding empty rows
-      mainBoxes.forEach(box => {
-        const todoList = box.querySelector('.todo-list');
-        while (todoList.children.length < maxRows) {
-          const emptyTaskBox = document.createElement("li");
-          emptyTaskBox.style.height = "40px";
-          emptyTaskBox.style.borderBottom = "1px solid #e0e0e0";
-          todoList.appendChild(emptyTaskBox);
-        }
-      });
-
-      // --- REVISED LOGIC FOR WEEKEND ---
-
-      // 3. Measure the final, actual height of a now-balanced weekday column
-      const targetHeight = mainBoxes[0].offsetHeight;
-
-      // 4. Calculate the total height available for the Sunday box
-      const gapBetweenWeekend = 40; // This MUST match the 'gap' style on your satSunColumn
-      const availableHeightForSunday = targetHeight - saturdayBox.offsetHeight - gapBetweenWeekend;
-
-      // 5. Calculate the space available for just the task list (<ul>) inside the Sunday box
-      const sundayHeader = sundayBox.querySelector('div:first-child');
-      if (!sundayHeader) return; // Safety check
-
-      const availableHeightForSundayRows = availableHeightForSunday - sundayHeader.offsetHeight;
-
-      // 6. Calculate how many 40px rows can fit in that available space
-      const rowHeight = 40;
-      // Use Math.max(0, ...) to ensure we don't get a negative number if space is tight
-      const numRowsForSunday = Math.max(0, Math.floor(availableHeightForSundayRows / rowHeight));
-
-      // 7. Add the required number of rows to Sunday's list to fill the space
-      const sundayTodoList = sundayBox.querySelector('.todo-list');
-      // First, remove any extra empty rows that might exist from a previous render
-      while (sundayTodoList.children.length > numRowsForSunday) {
-        if (!sundayTodoList.lastChild.textContent.trim()) { // Only remove empty rows
-          sundayTodoList.removeChild(sundayTodoList.lastChild);
-        } else {
-          break; // Stop if we hit a row with a task
-        }
-      }
-      // Then, add rows until the count is correct
-      while (sundayTodoList.children.length < numRowsForSunday) {
-        const emptyTaskBox = document.createElement("li");
-        emptyTaskBox.style.height = "40px";
-        emptyTaskBox.style.borderBottom = "1px solid #e0e0e0";
-        sundayTodoList.appendChild(emptyTaskBox);
-      }
+      // That's it. Saturday is never touched and the other columns are perfectly aligned.
     }
-
-    // Add this new function to your script.js
     async function updateTaskStatus(taskId, isCompleted) {
       try {
         const response = await fetch(`https://tweek-web-app-2.onrender.com/api/tasks/${taskId}`, {
