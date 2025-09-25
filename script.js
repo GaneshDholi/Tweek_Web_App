@@ -1510,7 +1510,7 @@ async function renderWeeklyView(baseDate = new Date(), highlightDate = null) {
 
     await loadTasksFromDB();
 
-    balanceColumnHeights();
+    // balanceColumnHeights();
   } finally {
     isRendering = false;
   }
