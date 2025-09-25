@@ -1339,10 +1339,15 @@ async function renderWeeklyView(baseDate = new Date(), highlightDate = null) {
                 let box = [...todoList.children].find(
                   li => !li.textContent.trim() && !li.querySelector("input")
                 );
-                if (box) {
-                  // Pass the userName to the render function to optionally display it
-                  renderTaskElement(box, task, userProfile.userName);
+
+                // If all the pre-made rows are full, create a new one!
+                if (!box) {
+                  box = document.createElement("li");
+                  todoList.appendChild(box);
                 }
+
+                // Now that we guarantee a 'box' exists, render the task into it.
+                renderTaskElement(box, task, userProfile.userName);
 
 
               });
