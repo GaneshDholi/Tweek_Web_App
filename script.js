@@ -817,6 +817,7 @@ async function renderWeeklyView(baseDate = new Date(), highlightDate = null) {
         sundayTodoList.appendChild(emptyTaskBox);
       }
     }
+    
 
     // Add this new function to your script.js
     
@@ -1360,7 +1361,7 @@ async function renderWeeklyView(baseDate = new Date(), highlightDate = null) {
       marginTop: "40px",
       width: "100%",
       cursor: "pointer",
-      height: "40px"
+      height: "30px"
     });
 
     const label = document.createElement("strong");
