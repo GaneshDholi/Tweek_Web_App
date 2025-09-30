@@ -986,7 +986,7 @@ async function renderWeeklyView(baseDate = new Date(), highlightDate = null) {
       });
 
       Object.assign(box.style, {
-        height: "40px",
+        height: "30px",
         display: "flex",
         borderBottom: "1px solid #e0e0e0",
         justifyContent: "space-between",
@@ -1385,7 +1385,7 @@ async function renderWeeklyView(baseDate = new Date(), highlightDate = null) {
     for (let i = 0; i < 5; i++) {
       const taskBox = document.createElement("div");
       Object.assign(taskBox.style, {
-        height: "30px",
+        height: "40px",
         borderBottom: "1px solid #e0e0e0",
       });
       taskContainer.appendChild(taskBox);
