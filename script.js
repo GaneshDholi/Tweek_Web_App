@@ -1436,39 +1436,33 @@ async function renderWeeklyView(baseDate = new Date(), highlightDate = null) {
 
           // 1. Loop through each user profile from the API response
           weeklyDataByUser.forEach(userProfile => {
-            // 2. Then, loop through the tasks for that specific user
-            userProfile.tasks
+
+            // --- TEMPORARY FIX: De-duplicate the tasks list ---
+            const uniqueTasks = new Map();
+            userProfile.tasks.forEach(task => {
+              // We use the task's unique _id to ensure we only keep one copy
+              uniqueTasks.set(task._id, task);
+            });
+
+            // Now, loop over the de-duplicated list of tasks
+            Array.from(uniqueTasks.values())
               .sort((a, b) => new Date(a.date) - new Date(b.date))
               .forEach(task => {
+                // Find the correct day column for this task
                 const taskDate = new Date(task.date);
-                let jsDay = taskDate.getDay();
-                let idx = (jsDay === 0) ? 6 : jsDay - 1; // Monday = 0, ..., Sunday = 6
-                const todoList = allDayBoxes[idx].querySelector(".todo-list");
+                const dateString = taskDate.toISOString().split('T')[0];
+                const dayColumn = document.querySelector(`.day-box[data-date-column="${dateString}"]`);
 
-                const dateString = new Date(task.date).toISOString().split('T')[0];
-                if (!tasksByDate.has(dateString)) {
-                  tasksByDate.set(dateString, []);
+                if (dayColumn) {
+                  // Find the first empty list item (<li>) in that column
+                  const emptyTaskBox = dayColumn.querySelector('.todo-list li:not([data-id])');
+                  if (emptyTaskBox) {
+                    // Render the task into that empty slot
+                    renderTaskElement(emptyTaskBox, task);
+                  }
                 }
-                tasksByDate.get(dateString).push(task);
-
-                // Find the next available empty list item to render the task in
-                let box = [...todoList.children].find(
-                  li => !li.textContent.trim() && !li.querySelector("input")
-                );
-
-                // If all the pre-made rows are full, create a new one!
-                if (!box) {
-                  box = document.createElement("li");
-                  todoList.appendChild(box);
-                }
-
-                // Now that we guarantee a 'box' exists, render the task into it.
-                renderTaskElement(box, task, userProfile.userName);
-
-
               });
           });
-
 
           // --- Render Someday Tasks (NO CHANGES NEEDED) ---
           somedayTasks.forEach(task => {
