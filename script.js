@@ -916,27 +916,32 @@ async function renderWeeklyView(baseDate = new Date(), highlightDate = null) {
         return newTask;
       }
 
+
       // Update existing task
-      const res = await fetch(`https://tweek-web-app-2.onrender.com/api/tasks/${taskId}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        credentials: "include",
-        body: JSON.stringify(payload)
-      });
+      try {
+        const res = await fetch(`https://tweek-web-app-2.onrender.com/api/tasks/${taskId}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          credentials: "include",
+          body: JSON.stringify(payload)
+        });
 
 
-      if (!res.ok) {
-        console.error("Failed to update task", await res.text());
-        return;
+        if (!res.ok) {
+          console.error("Failed to update task", await res.text());
+          return;
+        }
+
+        const updated = await res.json();
+        box.dataset.id = updated._id;
+        if (!updated.isSomeday) {
+          updated.date = payload.date;
+        }
+        renderTaskElement(box, updated);
+        return updated;
+      } catch (error) {
+        console.error("Network error while updating task:", error);
       }
-
-      const updated = await res.json();
-      box.dataset.id = updated._id;
-      if (!updated.isSomeday) {
-        updated.date = payload.date;
-      }
-      renderTaskElement(box, updated);
-      return updated;
     }
 
     function activateInput(box, taskDate) {
