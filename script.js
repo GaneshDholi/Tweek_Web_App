@@ -715,56 +715,46 @@ async function renderWeeklyView(baseDate = new Date(), highlightDate = null) {
       const saturdayBox = allDayBoxes[5];
       const sundayBox = allDayBoxes[6];
 
+      // Safety check to ensure all elements are found
       if (mainBoxes.length < 5 || !saturdayBox || !sundayBox) {
-        console.error("Aborting balance: Critical day boxes were not found.");
+        console.error("Aborting balance: Not all day boxes were found on the page.");
         return;
       }
-
-      // --- Part 1: Determine the true target height for the entire layout ---
+      let combineheight = saturdayBox.offsetHeight + sundayBox.offsetHeight + 40; // 40px gap
+      const columnsToBalance = [...mainBoxes, combineheight];
 
       let maxRows = 0;
-      // First, find the max number of tasks from Mon-Fri AND Sun.
-      const columnsToFindMax = [...mainBoxes, sundayBox];
-      columnsToFindMax.forEach(box => {
-        const todoList = box.querySelector('.todo-list');
-        if (todoList && todoList.children.length > maxRows) {
-          maxRows = todoList.children.length;
+
+      columnsToBalance.forEach(box => {
+        const taskCount = box.querySelector('.todo-list').children.length;
+        if (taskCount > maxRows) {
+          maxRows = taskCount;
         }
       });
 
-      // To accurately measure, clone a weekday box, fill it to maxRows, and get its height.
-      // This avoids visual flicker from resizing the actual element on screen.
-      const tempBox = mainBoxes[0].cloneNode(true);
-      tempBox.style.visibility = 'hidden';
-      document.body.appendChild(tempBox);
-      const tempBoxList = tempBox.querySelector('.todo-list');
-      while (tempBoxList.children.length < maxRows) {
-        const emptyTaskBox = document.createElement("li");
-        emptyTaskBox.style.height = "40px"; // Your standard row height
-        tempBoxList.appendChild(emptyTaskBox);
-      }
-      const weekdayTargetHeight = tempBox.offsetHeight;
-      document.body.removeChild(tempBox); // Clean up the clone
-
-      // Now, calculate the actual current height of the weekend column.
-      const weekendTargetHeight = saturdayBox.offsetHeight + sundayBox.offsetHeight + 40; // 40 is the gap.
-
-      // The final, correct target height is the larger of the two potential maximums.
-      const targetHeight = Math.max(weekdayTargetHeight, weekendTargetHeight);
-
-
-      // --- Part 2: Adjust all columns to match the final target height ---
-
-      // Adjust Mon-Fri columns by adding empty rows until they reach the target height.
-      mainBoxes.forEach(box => {
+      columnsToBalance.forEach(box => {
         const todoList = box.querySelector('.todo-list');
-        const header = box.querySelector('div:first-child');
-        if (!todoList || !header) return;
+        while (todoList.children.length < maxRows) {
+          const emptyTaskBox = document.createElement("li");
+          emptyTaskBox.style.height = "40px";
+          emptyTaskBox.style.borderBottom = "1px solid #e0e0e0";
+          todoList.appendChild(emptyTaskBox);
+        }
+      });
+      // 1. Find the tallest column among Mon-Fri AND Sunday
+      const columnsToCompare = [...mainBoxes, combineheight]; // Compare Mon-Fri + Sun
 
-        const requiredListHeight = targetHeight - header.offsetHeight;
-        const requiredRows = Math.floor(requiredListHeight / 40); // 40 is row height
+      columnsToCompare.forEach(box => {
+        const taskCount = box.querySelector('.todo-list').children.length;
+        if (taskCount > maxRows) {
+          maxRows = taskCount;
+        }
+      });
 
-        while (todoList.children.length < requiredRows) {
+      // 2. Equalize heights for Mon-Fri AND Sunday by adding empty rows
+      columnsToCompare.forEach(box => {
+        const todoList = box.querySelector('.todo-list');
+        while (todoList.children.length < maxRows) {
           const emptyTaskBox = document.createElement("li");
           emptyTaskBox.style.height = "40px";
           emptyTaskBox.style.borderBottom = "1px solid #e0e0e0";
@@ -772,34 +762,56 @@ async function renderWeeklyView(baseDate = new Date(), highlightDate = null) {
         }
       });
 
-      // Adjust the Sunday column to perfectly fill the remaining space in the weekend stack.
-      const sundayTodoList = sundayBox.querySelector('.todo-list');
+      // 1. Find the tallest column among Mon-Fri
+      mainBoxes.forEach(box => {
+        const taskCount = box.querySelector('.todo-list').children.length;
+        if (taskCount > maxRows) maxRows = taskCount;
+      });
+
+      // 2. Equalize Mon-Fri heights by adding empty rows
+      mainBoxes.forEach(box => {
+        const todoList = box.querySelector('.todo-list');
+        while (todoList.children.length < maxRows) {
+          const emptyTaskBox = document.createElement("li");
+          emptyTaskBox.style.height = "40px";
+          emptyTaskBox.style.borderBottom = "1px solid #e0e0e0";
+          todoList.appendChild(emptyTaskBox);
+        }
+      });
+      // 3. Measure the final, actual height of a now-balanced weekday column
+      const targetHeight = mainBoxes[0].offsetHeight;
+
+      const gapBetweenWeekend = 40; // This MUST match the 'gap' style on your satSunColumn
+      const availableHeightForSunday = targetHeight - saturdayBox.offsetHeight - gapBetweenWeekend;
+
       const sundayHeader = sundayBox.querySelector('div:first-child');
-      if (!sundayTodoList || !sundayHeader) return; // Safety check
+      if (!sundayHeader) return; // Safety check
 
-      const availableHeightForSundayList = targetHeight - saturdayBox.offsetHeight - 40 - sundayHeader.offsetHeight;
-      const requiredSundayRows = Math.max(0, Math.floor(availableHeightForSundayList / 40));
+      const availableHeightForSundayRows = availableHeightForSunday - sundayHeader.offsetHeight;
 
-      // Add or remove empty rows from Sunday to precisely fill the calculated space.
-      while (sundayTodoList.children.length < requiredSundayRows) {
+      const rowHeight = 40;
+      const numRowsForSunday = Math.max(0, Math.floor(availableHeightForSundayRows / rowHeight));
+
+      const sundayTodoList = sundayBox.querySelector('.todo-list');
+      while (sundayTodoList.children.length > numRowsForSunday) {
+        if (!sundayTodoList.lastChild.textContent.trim()) { // Only remove empty rows
+          sundayTodoList.removeChild(sundayTodoList.lastChild);
+        } else {
+          break; // Stop if we hit a row with a task
+        }
+      }
+      // Then, add rows until the count is correct
+      while (sundayTodoList.children.length < numRowsForSunday) {
         const emptyTaskBox = document.createElement("li");
         emptyTaskBox.style.height = "40px";
         emptyTaskBox.style.borderBottom = "1px solid #e0e0e0";
         sundayTodoList.appendChild(emptyTaskBox);
       }
-      while (sundayTodoList.children.length > requiredSundayRows) {
-        // Only remove empty rows, not actual tasks.
-        if (!sundayTodoList.lastChild.textContent.trim() && !sundayTodoList.lastChild.querySelector('input')) {
-          sundayTodoList.removeChild(sundayTodoList.lastChild);
-        } else {
-          break; // Stop if we hit a real task
-        }
-      }
     }
-
+    
 
     // Add this new function to your script.js
-
+    
     // function balanceColumnHeights() {
     //   const allDayBoxes = [...document.querySelectorAll(".day-box")];
     //   if (allDayBoxes.length < 7) {
@@ -1436,33 +1448,39 @@ async function renderWeeklyView(baseDate = new Date(), highlightDate = null) {
 
           // 1. Loop through each user profile from the API response
           weeklyDataByUser.forEach(userProfile => {
-
-            // --- TEMPORARY FIX: De-duplicate the tasks list ---
-            const uniqueTasks = new Map();
-            userProfile.tasks.forEach(task => {
-              // We use the task's unique _id to ensure we only keep one copy
-              uniqueTasks.set(task._id, task);
-            });
-
-            // Now, loop over the de-duplicated list of tasks
-            Array.from(uniqueTasks.values())
+            // 2. Then, loop through the tasks for that specific user
+            userProfile.tasks
               .sort((a, b) => new Date(a.date) - new Date(b.date))
               .forEach(task => {
-                // Find the correct day column for this task
                 const taskDate = new Date(task.date);
-                const dateString = taskDate.toISOString().split('T')[0];
-                const dayColumn = document.querySelector(`.day-box[data-date-column="${dateString}"]`);
+                let jsDay = taskDate.getDay();
+                let idx = (jsDay === 0) ? 6 : jsDay - 1; // Monday = 0, ..., Sunday = 6
+                const todoList = allDayBoxes[idx].querySelector(".todo-list");
 
-                if (dayColumn) {
-                  // Find the first empty list item (<li>) in that column
-                  const emptyTaskBox = dayColumn.querySelector('.todo-list li:not([data-id])');
-                  if (emptyTaskBox) {
-                    // Render the task into that empty slot
-                    renderTaskElement(emptyTaskBox, task);
-                  }
+                const dateString = new Date(task.date).toISOString().split('T')[0];
+                if (!tasksByDate.has(dateString)) {
+                  tasksByDate.set(dateString, []);
                 }
+                tasksByDate.get(dateString).push(task);
+
+                // Find the next available empty list item to render the task in
+                let box = [...todoList.children].find(
+                  li => !li.textContent.trim() && !li.querySelector("input")
+                );
+
+                // If all the pre-made rows are full, create a new one!
+                if (!box) {
+                  box = document.createElement("li");
+                  todoList.appendChild(box);
+                }
+
+                // Now that we guarantee a 'box' exists, render the task into it.
+                renderTaskElement(box, task, userProfile.userName);
+
+
               });
           });
+
 
           // --- Render Someday Tasks (NO CHANGES NEEDED) ---
           somedayTasks.forEach(task => {
