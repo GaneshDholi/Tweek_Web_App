@@ -720,10 +720,8 @@ async function renderWeeklyView(baseDate = new Date(), highlightDate = null) {
         console.error("Aborting balance: Not all day boxes were found on the page.");
         return;
       }
-      const combineheight = saturdayBox.offsetHeight + sundayBox.offsetHeight + 40; // 40px gap
-      console.log(combineheight);
-      console.log(mainBoxes.offsetHeight, mainBoxes)
-      const columnsToBalance = [...mainBoxes, sundayBox];
+      let combineheight = saturdayBox.offsetHeight + sundayBox.offsetHeight + 40; // 40px gap
+      const columnsToBalance = [...mainBoxes, combineheight];
 
       let maxRows = 0;
 
@@ -744,7 +742,7 @@ async function renderWeeklyView(baseDate = new Date(), highlightDate = null) {
         }
       });
       // 1. Find the tallest column among Mon-Fri AND Sunday
-      const columnsToCompare = [...mainBoxes, sundayBox]; // Compare Mon-Fri + Sun
+      const columnsToCompare = [...mainBoxes, combineheight]; // Compare Mon-Fri + Sun
 
       columnsToCompare.forEach(box => {
         const taskCount = box.querySelector('.todo-list').children.length;
@@ -780,30 +778,21 @@ async function renderWeeklyView(baseDate = new Date(), highlightDate = null) {
           todoList.appendChild(emptyTaskBox);
         }
       });
-
-      // --- REVISED LOGIC FOR WEEKEND ---
-
       // 3. Measure the final, actual height of a now-balanced weekday column
       const targetHeight = mainBoxes[0].offsetHeight;
 
-      // 4. Calculate the total height available for the Sunday box
       const gapBetweenWeekend = 40; // This MUST match the 'gap' style on your satSunColumn
       const availableHeightForSunday = targetHeight - saturdayBox.offsetHeight - gapBetweenWeekend;
 
-      // 5. Calculate the space available for just the task list (<ul>) inside the Sunday box
       const sundayHeader = sundayBox.querySelector('div:first-child');
       if (!sundayHeader) return; // Safety check
 
       const availableHeightForSundayRows = availableHeightForSunday - sundayHeader.offsetHeight;
 
-      // 6. Calculate how many 40px rows can fit in that available space
       const rowHeight = 40;
-      // Use Math.max(0, ...) to ensure we don't get a negative number if space is tight
       const numRowsForSunday = Math.max(0, Math.floor(availableHeightForSundayRows / rowHeight));
 
-      // 7. Add the required number of rows to Sunday's list to fill the space
       const sundayTodoList = sundayBox.querySelector('.todo-list');
-      // First, remove any extra empty rows that might exist from a previous render
       while (sundayTodoList.children.length > numRowsForSunday) {
         if (!sundayTodoList.lastChild.textContent.trim()) { // Only remove empty rows
           sundayTodoList.removeChild(sundayTodoList.lastChild);
