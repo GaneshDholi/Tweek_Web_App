@@ -742,7 +742,7 @@ async function renderWeeklyView(baseDate = new Date(), highlightDate = null) {
         }
       });
       // 1. Find the tallest column among Mon-Fri AND Sunday
-      const columnsToCompare = [...mainBoxes, sundayBox]; // Compare Mon-Fri + Sun
+      const columnsToCompare = [...mainBoxes, sundayBox + saturdayBox]; // Compare Mon-Fri + Sun
 
       columnsToCompare.forEach(box => {
         const taskCount = box.querySelector('.todo-list').children.length;
