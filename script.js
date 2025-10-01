@@ -707,7 +707,6 @@ async function renderWeeklyView(baseDate = new Date(), highlightDate = null) {
     function balanceColumnHeights() {
       const allDayBoxes = [...document.querySelectorAll(".day-box")];
       if (allDayBoxes.length < 7) {
-        console.error("Aborting balance: Not all 7 day boxes were found.");
         return;
       }
 
@@ -716,14 +715,11 @@ async function renderWeeklyView(baseDate = new Date(), highlightDate = null) {
       const sundayBox = allDayBoxes[6];
 
       if (mainBoxes.length < 5 || !saturdayBox || !sundayBox) {
-        console.error("Aborting balance: Critical day boxes were not found.");
         return;
       }
 
       // --- Part 1: Determine the true target height for the entire layout ---
-
       let maxRows = 0;
-      // First, find the max number of tasks from Mon-Fri AND Sun.
       const columnsToFindMax = [...mainBoxes, sundayBox];
       columnsToFindMax.forEach(box => {
         const todoList = box.querySelector('.todo-list');
@@ -732,37 +728,29 @@ async function renderWeeklyView(baseDate = new Date(), highlightDate = null) {
         }
       });
 
-      // To accurately measure, clone a weekday box, fill it to maxRows, and get its height.
-      // This avoids visual flicker from resizing the actual element on screen.
       const tempBox = mainBoxes[0].cloneNode(true);
       tempBox.style.visibility = 'hidden';
       document.body.appendChild(tempBox);
       const tempBoxList = tempBox.querySelector('.todo-list');
       while (tempBoxList.children.length < maxRows) {
         const emptyTaskBox = document.createElement("li");
-        emptyTaskBox.style.height = "40px"; // Your standard row height
+        emptyTaskBox.style.height = "40px";
         tempBoxList.appendChild(emptyTaskBox);
       }
       const weekdayTargetHeight = tempBox.offsetHeight;
-      document.body.removeChild(tempBox); // Clean up the clone
+      document.body.removeChild(tempBox);
 
-      // Now, calculate the actual current height of the weekend column.
       const weekendTargetHeight = saturdayBox.offsetHeight + sundayBox.offsetHeight + 40; // 40 is the gap.
-
-      // The final, correct target height is the larger of the two potential maximums.
       const targetHeight = Math.max(weekdayTargetHeight, weekendTargetHeight);
 
-
       // --- Part 2: Adjust all columns to match the final target height ---
-
-      // Adjust Mon-Fri columns by adding empty rows until they reach the target height.
       mainBoxes.forEach(box => {
         const todoList = box.querySelector('.todo-list');
         const header = box.querySelector('div:first-child');
         if (!todoList || !header) return;
 
         const requiredListHeight = targetHeight - header.offsetHeight;
-        const requiredRows = Math.floor(requiredListHeight / 40); // 40 is row height
+        const requiredRows = Math.floor(requiredListHeight / 40);
 
         while (todoList.children.length < requiredRows) {
           const emptyTaskBox = document.createElement("li");
@@ -772,15 +760,13 @@ async function renderWeeklyView(baseDate = new Date(), highlightDate = null) {
         }
       });
 
-      // Adjust the Sunday column to perfectly fill the remaining space in the weekend stack.
       const sundayTodoList = sundayBox.querySelector('.todo-list');
       const sundayHeader = sundayBox.querySelector('div:first-child');
-      if (!sundayTodoList || !sundayHeader) return; // Safety check
+      if (!sundayTodoList || !sundayHeader) return;
 
       const availableHeightForSundayList = targetHeight - saturdayBox.offsetHeight - 40 - sundayHeader.offsetHeight;
       const requiredSundayRows = Math.max(0, Math.floor(availableHeightForSundayList / 40));
 
-      // Add or remove empty rows from Sunday to precisely fill the calculated space.
       while (sundayTodoList.children.length < requiredSundayRows) {
         const emptyTaskBox = document.createElement("li");
         emptyTaskBox.style.height = "40px";
@@ -788,107 +774,13 @@ async function renderWeeklyView(baseDate = new Date(), highlightDate = null) {
         sundayTodoList.appendChild(emptyTaskBox);
       }
       while (sundayTodoList.children.length > requiredSundayRows) {
-        // Only remove empty rows, not actual tasks.
         if (!sundayTodoList.lastChild.textContent.trim() && !sundayTodoList.lastChild.querySelector('input')) {
           sundayTodoList.removeChild(sundayTodoList.lastChild);
         } else {
-          break; // Stop if we hit a real task
+          break;
         }
       }
     }
-
-
-    // Add this new function to your script.js
-
-    // function balanceColumnHeights() {
-    //   const allDayBoxes = [...document.querySelectorAll(".day-box")];
-    //   if (allDayBoxes.length < 7) {
-    //     console.error("Aborting balance: Not all 7 day boxes were found.");
-    //     return;
-    //   }
-
-    //   const mainBoxes = allDayBoxes.slice(0, 5); // Mon-Fri
-    //   const saturdayBox = allDayBoxes[5];
-    //   const sundayBox = allDayBoxes[6];
-
-    //   if (mainBoxes.length < 5 || !saturdayBox || !sundayBox) {
-    //     console.error("Aborting balance: Critical day boxes were not found.");
-    //     return;
-    //   }
-
-    //   // --- Part 1: Determine the target height ---
-
-    //   let maxRows = 0;
-    //   // First, find the max number of rows from Mon-Fri AND Sun's initial state.
-    //   const columnsToCompare = [...mainBoxes, sundayBox];
-    //   columnsToCompare.forEach(box => {
-    //     const taskCount = box.querySelector('.todo-list').children.length;
-    //     if (taskCount > maxRows) {
-    //       maxRows = taskCount;
-    //     }
-    //   });
-
-    //   // Temporarily add rows to a weekday column to measure its potential max height.
-    //   // We do this off-screen on a clone to avoid visual flicker.
-    //   const tempMon = mainBoxes[0].cloneNode(true);
-    //   tempMon.style.visibility = 'hidden';
-    //   document.body.appendChild(tempMon);
-    //   const tempMonList = tempMon.querySelector('.todo-list');
-    //   while (tempMonList.children.length < maxRows) {
-    //     const emptyTaskBox = document.createElement("li");
-    //     emptyTaskBox.style.height = "40px";
-    //     tempMonList.appendChild(emptyTaskBox);
-    //   }
-    //   const weekdayTargetHeight = tempMon.offsetHeight;
-    //   document.body.removeChild(tempMon); // Clean up the clone
-
-    //   // Now, calculate the potential height of the weekend column
-    //   const weekendTargetHeight = saturdayBox.offsetHeight + sundayBox.offsetHeight + 40; // 40 is the gap
-
-    //   // The final target height is the larger of the two
-    //   const targetHeight = Math.max(weekdayTargetHeight, weekendTargetHeight);
-
-
-    //   // --- Part 2: Adjust all columns to the final target height ---
-
-    //   // Adjust Mon-Fri columns
-    //   mainBoxes.forEach(box => {
-    //     const todoList = box.querySelector('.todo-list');
-    //     const headerHeight = box.querySelector('div:first-child').offsetHeight;
-    //     const requiredListHeight = targetHeight - headerHeight;
-    //     const requiredRows = Math.floor(requiredListHeight / 40); // 40 is row height
-
-    //     while (todoList.children.length < requiredRows) {
-    //       const emptyTaskBox = document.createElement("li");
-    //       emptyTaskBox.style.height = "40px";
-    //       emptyTaskBox.style.borderBottom = "1px solid #e0e0e0";
-    //       todoList.appendChild(emptyTaskBox);
-    //     }
-    //   });
-
-    //   // Adjust Sunday column
-    //   const sundayTodoList = sundayBox.querySelector('.todo-list');
-    //   const sundayHeader = sundayBox.querySelector('div:first-child');
-    //   if (!sundayHeader) return; // Safety check
-
-    //   const availableHeightForSundayList = targetHeight - saturdayBox.offsetHeight - 40 - sundayHeader.offsetHeight;
-    //   const requiredSundayRows = Math.max(0, Math.floor(availableHeightForSundayList / 40));
-
-    //   // Add or remove rows from Sunday to precisely fill the remaining space
-    //   while (sundayTodoList.children.length < requiredSundayRows) {
-    //     const emptyTaskBox = document.createElement("li");
-    //     emptyTaskBox.style.height = "40px";
-    //     emptyTaskBox.style.borderBottom = "1px solid #e0e0e0";
-    //     sundayTodoList.appendChild(emptyTaskBox);
-    //   }
-    //   while (sundayTodoList.children.length > requiredSundayRows) {
-    //     if (!sundayTodoList.lastChild.textContent.trim() && !sundayTodoList.lastChild.querySelector('input')) {
-    //       sundayTodoList.removeChild(sundayTodoList.lastChild);
-    //     } else {
-    //       break; // Stop if we hit a real task
-    //     }
-    //   }
-    // }
 
     async function updateTaskStatus(taskId, isCompleted) {
       try {
@@ -1389,7 +1281,6 @@ async function renderWeeklyView(baseDate = new Date(), highlightDate = null) {
 
 
     async function loadTasksFromDB() {
-      // Helper function to get the weekId on the frontend (no changes needed here)
       function getWeekNumber(d) {
         d = new Date(Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()));
         d.setUTCDate(d.getUTCDate() + 4 - (d.getUTCDay() || 7));
@@ -1399,93 +1290,66 @@ async function renderWeeklyView(baseDate = new Date(), highlightDate = null) {
       }
 
       try {
-        let weeklyData = [];
-        let somedayData = [];
-
         if (isLoggedIn) {
-          const currentWeekId = getWeekNumber(monday); // Assuming 'monday' is available in this scope
-
+          const currentWeekId = getWeekNumber(monday);
           const weeklyTasksUrl = `https://tweek-web-app-2.onrender.com/api/tasks/week/${currentWeekId}`;
           const somedayTasksUrl = `https://tweek-web-app-2.onrender.com/api/tasks/someday`;
 
           const [weeklyRes, somedayRes] = await Promise.all([
-            fetch(weeklyTasksUrl, {
-              credentials: 'include',
-              headers: { "Authorization": `Bearer ${localStorage.getItem("token")}` }
-            }),
-            fetch(somedayTasksUrl, {
-              credentials: 'include',
-              headers: { "Authorization": `Bearer ${localStorage.getItem("token")}` }
-            })
+            fetch(weeklyTasksUrl, { credentials: 'include', headers: { "Authorization": `Bearer ${localStorage.getItem("token")}` } }),
+            fetch(somedayTasksUrl, { credentials: 'include', headers: { "Authorization": `Bearer ${localStorage.getItem("token")}` } })
           ]);
 
           if (!weeklyRes.ok || !somedayRes.ok) {
             throw new Error("Failed to fetch tasks");
-            weeklyData = await weeklyRes.json();
-            somedayData = await somedayRes.json();
-          } else {
-            weeklyData = getGuestTasks(); // Assuming guest tasks are 'weekly'
           }
 
-          // The response is now an array of user profiles
           const weeklyDataByUser = await weeklyRes.json();
           const somedayTasks = await somedayRes.json();
 
-          console.log("RAW DATA FROM SERVER:", JSON.stringify(weeklyDataByUser, null, 2));
-          // --- Render Weekly Tasks (UPDATED LOGIC) ---
           const allDayBoxes = [...weekContainer.querySelectorAll(".day-box")];
 
-          // 1. Loop through each user profile from the API response
           weeklyDataByUser.forEach(userProfile => {
-            // 2. Then, loop through the tasks for that specific user
-            userProfile.tasks
+            // FIX: De-duplicate the tasks list first to prevent double rendering.
+            const uniqueTasks = new Map();
+            userProfile.tasks.forEach(task => {
+              uniqueTasks.set(task._id, task); // The Map automatically handles duplicates.
+            });
+
+            // Now, loop over the clean, de-duplicated list.
+            Array.from(uniqueTasks.values())
               .sort((a, b) => new Date(a.date) - new Date(b.date))
               .forEach(task => {
                 const taskDate = new Date(task.date);
-                let jsDay = taskDate.getDay();
-                let idx = (jsDay === 0) ? 6 : jsDay - 1; // Monday = 0, ..., Sunday = 6
-                const todoList = allDayBoxes[idx].querySelector(".todo-list");
+                const dateString = taskDate.toISOString().split('T')[0];
+                const dayColumn = document.querySelector(`.day-box[data-date-column="${dateString}"]`);
 
-                const dateString = new Date(task.date).toISOString().split('T')[0];
-                if (!tasksByDate.has(dateString)) {
-                  tasksByDate.set(dateString, []);
+                if (dayColumn) {
+                  const todoList = dayColumn.querySelector(".todo-list");
+                  let box = [...todoList.children].find(li => !li.hasAttribute('data-id'));
+
+                  if (!box) {
+                    box = document.createElement("li");
+                    box.style.height = "40px";
+                    box.style.borderBottom = "1px solid #e0e0e0";
+                    todoList.appendChild(box);
+                  }
+                  renderTaskElement(box, task);
                 }
-                tasksByDate.get(dateString).push(task);
-
-                // Find the next available empty list item to render the task in
-                let box = [...todoList.children].find(
-                  li => !li.textContent.trim() && !li.querySelector("input")
-                );
-
-                // If all the pre-made rows are full, create a new one!
-                if (!box) {
-                  box = document.createElement("li");
-                  todoList.appendChild(box);
-                }
-
-                // Now that we guarantee a 'box' exists, render the task into it.
-                renderTaskElement(box, task, userProfile.userName);
-
-
               });
           });
 
-
-          // --- Render Someday Tasks (NO CHANGES NEEDED) ---
+          // --- Render Someday Tasks ---
+          const taskContainer = document.querySelector('[data-is-someday="true"]');
           somedayTasks.forEach(task => {
-            let box = [...taskContainer.children].find(
-              div => !div.textContent.trim() && !div.querySelector("input")
-            );
+            let box = [...taskContainer.children].find(div => !div.hasAttribute('data-id'));
             if (box) {
-              renderTaskElement(box, task); // Someday tasks don't have a separate owner to display
+              renderTaskElement(box, task);
             }
           });
-
-          // balanceColumnHeights();
-
         }
       } catch (err) {
-        console.error("Error loading tasks:", err)
+        console.error("Error loading tasks:", err);
       }
     }
 
