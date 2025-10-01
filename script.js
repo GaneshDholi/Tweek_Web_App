@@ -939,6 +939,8 @@ async function renderWeeklyView(baseDate = new Date(), highlightDate = null) {
         }
         renderTaskElement(box, updated);
         return updated;
+
+        await renderWeeklyView(currentViewDate);
       } catch (error) {
         console.error("Network error while updating task:", error);
       }
