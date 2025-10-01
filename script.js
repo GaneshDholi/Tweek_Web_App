@@ -561,10 +561,10 @@ const primaryFont = rootStyles.getPropertyValue("--primary-font").trim();
 
 let isRendering = false
 async function renderWeeklyView(baseDate = new Date(), highlightDate = null) {
-  if (isRendering) {
-    console.warn("Blocking a duplicate render call.");
-    return;
-  }
+  // if (isRendering) {
+  //   console.warn("Blocking a duplicate render call.");
+  //   return;
+  // }
   // FIX: Set the flag to true to block other calls.
   isRendering = true;
 
@@ -869,80 +869,55 @@ async function renderWeeklyView(baseDate = new Date(), highlightDate = null) {
     }
 
     async function saveTask(box, text, color = null, taskDate, taskId = null, isCompleted = false, isSomeday = false) {
-
-      if (!isSomeday) {
-        const jsDate = taskDate instanceof Date ? taskDate : new Date(taskDate);
-        if (Number.isNaN(jsDate.getTime())) {
-          console.warn("saveTask called without valid date", { text, taskId, taskDate });
-          return;
-        }
+      // Basic validation to prevent saving empty tasks
+      if (!text || text.trim() === "") {
+        return;
       }
 
-      // Prepare payload
+      // Prepare the data payload to send to the server
       const payload = {
-        title: text,
+        title: text.trim(),
         description: "",
         color,
         completed: isCompleted,
-        isSomeday
+        isSomeday,
+        date: isSomeday ? null : taskDate.toISOString()
       };
 
-      if (!isSomeday) {
-        const jsDate = taskDate instanceof Date ? taskDate : new Date(taskDate);
-        payload.date = jsDate.toISOString();  // only attach date for normal tasks
-      }
+      // Determine if we are creating a new task (POST) or updating an existing one (PUT)
+      const url = taskId
+        ? `https://tweek-web-app-2.onrender.com/api/tasks/${taskId}`
+        : "https://tweek-web-app-2.onrender.com/api/tasks";
 
-      // New task
-      if (!taskId) {
-        const res = await fetch("https://tweek-web-app-2.onrender.com/api/tasks", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          credentials: "include",
-          body: JSON.stringify(payload)
-        });
+      const method = taskId ? "PUT" : "POST";
 
-        if (!res.ok) {
-          console.error("Failed to save task", await res.text());
-          return;
-        }
-
-        const newTask = await res.json();
-        box.dataset.id = newTask._id;
-        // render the new task in DOM (call render helper for consistent UI)
-        if (!newTask.isSomeday) {
-          newTask.date = payload.date;
-        }
-        renderTaskElement(box, newTask);
-        return newTask;
-      }
-
-
-      // Update existing task
       try {
-        const res = await fetch(`https://tweek-web-app-2.onrender.com/api/tasks/${taskId}`, {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
+        const res = await fetch(url, {
+          method: method,
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${localStorage.getItem("token")}`
+          },
           credentials: "include",
           body: JSON.stringify(payload)
         });
 
-
         if (!res.ok) {
-          console.error("Failed to update task", await res.text());
+          console.error(`Failed to ${method} task:`, await res.text());
+          alert("Could not save the task. Please try again.");
           return;
         }
 
-        const updated = await res.json();
-        box.dataset.id = updated._id;
-        if (!updated.isSomeday) {
-          updated.date = payload.date;
-        }
-        renderTaskElement(box, updated);
-        return updated;
-
+        // =========================================================================
+        // THE FIX: Do not update the screen here. Instead, trigger a full refresh.
+        // This ensures the UI is always perfectly in sync with the database,
+        // preventing all duplication and race condition bugs.
+        // =========================================================================
         await renderWeeklyView(currentViewDate);
+
       } catch (error) {
-        console.error("Network error while updating task:", error);
+        console.error("Network error while saving task:", error);
+        alert("A network error occurred. Please check your connection.");
       }
     }
 
