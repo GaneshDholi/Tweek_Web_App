@@ -720,7 +720,9 @@ async function renderWeeklyView(baseDate = new Date(), highlightDate = null) {
         console.error("Aborting balance: Not all day boxes were found on the page.");
         return;
       }
-
+      const combineheight = saturdayBox.offsetHeight + sundayBox.offsetHeight + 40; // 40px gap
+      console.log(combineheight);
+      console.log(mainBoxes.offsetHeight, mainBoxes)
       const columnsToBalance = [...mainBoxes, sundayBox];
 
       let maxRows = 0;
@@ -742,7 +744,7 @@ async function renderWeeklyView(baseDate = new Date(), highlightDate = null) {
         }
       });
       // 1. Find the tallest column among Mon-Fri AND Sunday
-      const columnsToCompare = [...mainBoxes, sundayBox + saturdayBox]; // Compare Mon-Fri + Sun
+      const columnsToCompare = [...mainBoxes, sundayBox]; // Compare Mon-Fri + Sun
 
       columnsToCompare.forEach(box => {
         const taskCount = box.querySelector('.todo-list').children.length;
