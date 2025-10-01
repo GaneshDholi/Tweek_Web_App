@@ -1308,34 +1308,42 @@ async function renderWeeklyView(baseDate = new Date(), highlightDate = null) {
           const somedayTasks = await somedayRes.json();
 
           weeklyDataByUser.forEach(userProfile => {
+            // =================================================================
+            // CRITICAL FIX: This block removes duplicates from the server data.
+            // =================================================================
             const uniqueTasks = new Map();
             userProfile.tasks.forEach(task => {
+              // By using the task's unique _id as the key, the Map automatically
+              // overwrites any duplicates, ensuring we only have one of each.
               uniqueTasks.set(task._id, task);
             });
 
+            // Now, we loop over the CLEAN, DE-DUPLICATED list of tasks.
             Array.from(uniqueTasks.values())
               .sort((a, b) => new Date(a.date) - new Date(b.date))
               .forEach(task => {
-                const taskDate = new Date(task.date); // Converts UTC string from DB to local date object
+                const taskDate = new Date(task.date);
 
-                // THE FIX: Build the date string from the local date parts to match the calendar grid.
                 const year = taskDate.getFullYear();
                 const month = String(taskDate.getMonth() + 1).padStart(2, '0');
                 const day = String(taskDate.getDate()).padStart(2, '0');
-                const dateString = `${year}-${month}-${day}`; // e.g., "2025-10-04"
+                const dateString = `${year}-${month}-${day}`;
 
                 const dayColumn = document.querySelector(`.day-box[data-date-column="${dateString}"]`);
 
                 if (dayColumn) {
                   const todoList = dayColumn.querySelector(".todo-list");
+                  // Find the first empty row that doesn't already have a task ID
                   let box = [...todoList.children].find(li => !li.hasAttribute('data-id'));
 
+                  // If no empty rows exist, create a new one
                   if (!box) {
                     box = document.createElement("li");
                     box.style.height = "40px";
                     box.style.borderBottom = "1px solid #e0e0e0";
                     todoList.appendChild(box);
                   }
+                  // Render the single, unique task into the row
                   renderTaskElement(box, task);
                 }
               });
@@ -1343,12 +1351,14 @@ async function renderWeeklyView(baseDate = new Date(), highlightDate = null) {
 
           // --- Render Someday Tasks ---
           const taskContainer = document.querySelector('[data-is-someday="true"]');
-          somedayTasks.forEach(task => {
-            let box = [...taskContainer.children].find(div => !div.hasAttribute('data-id'));
-            if (box) {
-              renderTaskElement(box, task);
-            }
-          });
+          if (taskContainer) { // Safety check
+            somedayTasks.forEach(task => {
+              let box = [...taskContainer.children].find(div => !div.hasAttribute('data-id'));
+              if (box) {
+                renderTaskElement(box, task);
+              }
+            });
+          }
         }
       } catch (err) {
         console.error("Error loading tasks:", err);
