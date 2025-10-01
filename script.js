@@ -1307,21 +1307,23 @@ async function renderWeeklyView(baseDate = new Date(), highlightDate = null) {
           const weeklyDataByUser = await weeklyRes.json();
           const somedayTasks = await somedayRes.json();
 
-          const allDayBoxes = [...weekContainer.querySelectorAll(".day-box")];
-
           weeklyDataByUser.forEach(userProfile => {
-            // FIX: De-duplicate the tasks list first to prevent double rendering.
             const uniqueTasks = new Map();
             userProfile.tasks.forEach(task => {
-              uniqueTasks.set(task._id, task); // The Map automatically handles duplicates.
+              uniqueTasks.set(task._id, task);
             });
 
-            // Now, loop over the clean, de-duplicated list.
             Array.from(uniqueTasks.values())
               .sort((a, b) => new Date(a.date) - new Date(b.date))
               .forEach(task => {
-                const taskDate = new Date(task.date);
-                const dateString = taskDate.toISOString().split('T')[0];
+                const taskDate = new Date(task.date); // Converts UTC string from DB to local date object
+
+                // THE FIX: Build the date string from the local date parts to match the calendar grid.
+                const year = taskDate.getFullYear();
+                const month = String(taskDate.getMonth() + 1).padStart(2, '0');
+                const day = String(taskDate.getDate()).padStart(2, '0');
+                const dateString = `${year}-${month}-${day}`; // e.g., "2025-10-04"
+
                 const dayColumn = document.querySelector(`.day-box[data-date-column="${dateString}"]`);
 
                 if (dayColumn) {
