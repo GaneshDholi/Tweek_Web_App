@@ -9,25 +9,28 @@ router.get("/", async (req, res) => {
     try {
         const userId = new mongoose.Types.ObjectId(req.user.id);
 
-        // Find calendars shared with the user
-        const sharedCalendars = await Calendar.find({ sharedWith: userId }).populate('owner', 'firstName lastName').lean();
+        const calendars = await Calendar.find({
+            $or: [
+                { owner: userId }, // Calendars they own
+                { sharedWith: userId } // Calendars shared with them
+            ]
+        }).populate('owner', 'firstName'); // Populate owner's name for display
 
-        // Add the user's own "My Calendar"
-        const myCalendar = {
-            _id: userId, // Use user's own ID for the personal calendar key
-            name: "My Calendar",
-            owner: { _id: userId, firstName: "My", lastName: "Tasks" },
-            isPersonal: true
-        };
+        if (!calendars) {
+            return res.json([]);
+        }
 
-        const allCalendars = [myCalendar, ...sharedCalendars];
+        // Add a flag to easily identify the user's own calendars on the frontend
+        const processedCalendars = calendars.map(cal => ({
+            ...cal.toObject(),
+            isOwnedByCurrentUser: cal.owner._id.equals(userId)
+        }));
 
-        res.json(allCalendars);
+        res.json(processedCalendars);
 
     } catch (err) {
-        console.error("Error in GET /api/calendars:", err);
-        res.status(500).json({ error: "An unexpected error occurred." });
+        console.error("Error fetching calendars:", err);
+        res.status(500).json({ error: "Could not fetch calendars." });
     }
 });
-
 module.exports = router;

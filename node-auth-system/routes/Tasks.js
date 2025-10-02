@@ -416,5 +416,41 @@ router.get("/shared-with", async (req, res) => {
     }
 });
 
+// The generic share modal is replaced by a per-calendar share action
+router.post("/:calendarId/share", async (req, res) => {
+    try {
+        const { calendarId } = req.params;
+        const { shareWithEmail } = req.body;
+        const ownerId = new mongoose.Types.ObjectId(req.user.id);
+
+        const calendar = await Calendar.findById(calendarId);
+        if (!calendar) {
+            return res.status(404).json({ error: "Calendar not found." });
+        }
+
+        // Authorization: Only the owner can share it
+        if (!calendar.owner.equals(ownerId)) {
+            return res.status(403).json({ error: "You are not authorized to share this calendar." });
+        }
+
+        const userToShareWith = await User.findOne({ email: shareWithEmail });
+        if (!userToShareWith) {
+            return res.status(404).json({ error: "User to share with not found." });
+        }
+
+        // Add user to the sharedWith array
+        await Calendar.updateOne(
+            { _id: calendarId },
+            { $addToSet: { sharedWith: userToShareWith._id } }
+        );
+
+        res.status(200).json({ message: `Successfully shared '${calendar.name}' with ${shareWithEmail}.` });
+
+    } catch (err) {
+        console.error("Error sharing calendar:", err);
+        res.status(500).json({ error: "An unexpected error occurred." });
+    }
+});
+
 module.exports = router;
 

@@ -561,10 +561,10 @@ const primaryFont = rootStyles.getPropertyValue("--primary-font").trim();
 
 let isRendering = false
 async function renderWeeklyView(baseDate = new Date(), highlightDate = null) {
-  // if (isRendering) {
-  //   console.warn("Blocking a duplicate render call.");
-  //   return;
-  // }
+  if (isRendering) {
+    console.warn("Blocking a duplicate render call.");
+    return;
+  }
   // FIX: Set the flag to true to block other calls.
   isRendering = true;
 
@@ -1867,23 +1867,54 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // --- 3. FETCHING DATA FROM API ---
 
-  // Fetches the list of calendars (personal + shared)
+  // This function replaces your old fetchAndRenderCalendars
   async function fetchAndRenderCalendars() {
     try {
+      // This endpoint is the new GET /api/calendars from the backend section
       const response = await fetch(`${API_BASE_URL}/api/calendars`, {
-        headers: {
-          'Authorization': `Bearer ${getAuthToken()}` // Implement getAuthToken()
-        },
-        credentials: 'include'
+        headers: { 'Authorization': `Bearer ${getAuthToken()}` }
       });
       if (!response.ok) throw new Error('Failed to fetch calendars');
 
-      allCalendars = await response.json();
+      allCalendars = await response.json(); // Contains both owned and shared calendars
       renderCalendarList();
 
     } catch (error) {
       console.error('Error fetching calendars:', error);
     }
+  }
+
+  function renderCalendarList() {
+    const container = document.getElementById('calendar-list-container');
+    container.innerHTML = '';
+    selectedCalendarIds = []; // Reset selections
+
+    allCalendars.forEach(calendar => {
+      // The unique ID for filtering is now the calendar's own ID
+      const calendarId = calendar._id;
+      selectedCalendarIds.push(calendarId); // Select all by default
+
+      const calendarItem = document.createElement('label');
+      calendarItem.className = 'calendar-item';
+      calendarItem.setAttribute('for', `cal-checkbox-${calendarId}`);
+
+      // Display the owner's name if it's a shared calendar
+      const displayName = calendar.isOwnedByCurrentUser
+        ? calendar.name
+        : `${calendar.name} (${calendar.owner.firstName})`;
+
+      calendarItem.innerHTML = `
+            <input type="checkbox" id="cal-checkbox-${calendarId}" value="${calendarId}" checked>
+            <span>${displayName}</span>
+            `;
+      container.appendChild(calendarItem);
+
+      calendarItem.querySelector('input').addEventListener('change', (event) => {
+        handleCalendarSelection(event.target.value, event.target.checked);
+      });
+    });
+
+    renderVisibleTasks(); // Initial render with all calendars selected
   }
 
   // Fetches all tasks for a given week from all accessible calendars
@@ -1913,65 +1944,38 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   }
 
-
-  // --- 4. RENDERING LOGIC ---
-
-  // Builds the HTML for the calendar list in the dropdown
-  function renderCalendarList() {
-    const container = document.getElementById('calendar-list-container');
-    if (!container) return;
-
-    container.innerHTML = ''; // Clear previous list
-    selectedCalendarIds = []; // Reset selections
-
-    allCalendars.forEach(calendar => {
-      // This is the unique ID for the calendar's owner, used for filtering.
-      // It's guaranteed to exist for both personal and shared calendars.
-      const calendarOwnerId = calendar.owner._id;
-      const calendarUniqueId = calendar._id;
-      selectedCalendarIds.push(calendarOwnerId); // Select all by default
-
-      const calendarItem = document.createElement('label');
-      calendarItem.className = 'calendar-item';
-      // The 'for' attribute of a label should match the 'id' of an input
-      calendarItem.setAttribute('for', `cal-checkbox-${calendarUniqueId}`);
-
-      // Add an icon for the user's personal calendar
-      const iconHtml = calendar.isPersonal
-        ? `<svg fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>`
-        : '';
-
-      calendarItem.innerHTML = `
-            <input type="checkbox" id="cal-checkbox-${calendarUniqueId}" value="${calendarOwnerId}" checked>
-            ${iconHtml}
-            <span>${calendar.name}</span>
-        `;
-
-      container.appendChild(calendarItem);
-
-      // Add event listener to the checkbox
-      calendarItem.querySelector('input[type="checkbox"]').addEventListener('change', (event) => {
-        handleCalendarSelection(event.target.value, event.target.checked);
+  // This function is updated
+  async function fetchAndRenderTasks(weekId) {
+    try {
+      // This single call gets ALL visible tasks (yours and shared) for the week
+      const response = await fetch(`${API_BASE_URL}/api/tasks/week/${weekId}`, {
+        headers: { 'Authorization': `Bearer ${getAuthToken()}` }
       });
-    });
+      if (!response.ok) throw new Error('Failed to fetch tasks');
+
+      // The response is now a flat array, no processing needed
+      allFetchedTasks = await response.json();
+
+      console.log("Fetched all visible tasks:", allFetchedTasks);
+      renderVisibleTasks(); // Render based on currently selected calendars
+
+    } catch (error) {
+      console.error(`Error fetching tasks for ${weekId}:`, error);
+    }
   }
 
-  // Renders only the tasks that belong to the currently selected calendars
+  // Update the filtering logic to use task.calendar
   function renderVisibleTasks() {
-    // Filter the master list of tasks
     const tasksToDisplay = allFetchedTasks.filter(task =>
-      selectedCalendarIds.includes(task.userId) // The backend uses userId to identify the owner
+      // The task object has a 'calendar' field with the Calendar's ID
+      selectedCalendarIds.includes(task.calendar)
     );
 
-    // Now, call your existing function to render tasks on the screen
-    // IMPORTANT: You need to replace 'displayTasksOnGrid' with the name of YOUR function
-    // that actually puts the tasks into the HTML.
+    // This is your function that draws the tasks on the screen
     displayTasksOnGrid(tasksToDisplay);
   }
 
-  // --- 5. EVENT HANDLERS ---
-
-  // Updates the list of selected calendars and re-renders the tasks
+  // handleCalendarSelection remains the same, as it already works with the selectedCalendarIds array
   function handleCalendarSelection(calendarId, isSelected) {
     if (isSelected) {
       if (!selectedCalendarIds.includes(calendarId)) {
@@ -1980,10 +1984,79 @@ document.addEventListener('DOMContentLoaded', () => {
     } else {
       selectedCalendarIds = selectedCalendarIds.filter(id => id !== calendarId);
     }
-
-    // Re-render the visible tasks without fetching from the server again
     renderVisibleTasks();
   }
+
+  // --- 4. RENDERING LOGIC ---
+
+  // // Builds the HTML for the calendar list in the dropdown
+  // function renderCalendarList() {
+  //   const container = document.getElementById('calendar-list-container');
+  //   if (!container) return;
+
+  //   container.innerHTML = ''; // Clear previous list
+  //   selectedCalendarIds = []; // Reset selections
+
+  //   allCalendars.forEach(calendar => {
+  //     // This is the unique ID for the calendar's owner, used for filtering.
+  //     // It's guaranteed to exist for both personal and shared calendars.
+  //     const calendarOwnerId = calendar.owner._id;
+  //     const calendarUniqueId = calendar._id;
+  //     selectedCalendarIds.push(calendarOwnerId); // Select all by default
+
+  //     const calendarItem = document.createElement('label');
+  //     calendarItem.className = 'calendar-item';
+  //     // The 'for' attribute of a label should match the 'id' of an input
+  //     calendarItem.setAttribute('for', `cal-checkbox-${calendarUniqueId}`);
+
+  //     // Add an icon for the user's personal calendar
+  //     const iconHtml = calendar.isPersonal
+  //       ? `<svg fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path></svg>`
+  //       : '';
+
+  //     calendarItem.innerHTML = `
+  //           <input type="checkbox" id="cal-checkbox-${calendarUniqueId}" value="${calendarOwnerId}" checked>
+  //           ${iconHtml}
+  //           <span>${calendar.name}</span>
+  //       `;
+
+  //     container.appendChild(calendarItem);
+
+  //     // Add event listener to the checkbox
+  //     calendarItem.querySelector('input[type="checkbox"]').addEventListener('change', (event) => {
+  //       handleCalendarSelection(event.target.value, event.target.checked);
+  //     });
+  //   });
+  // }
+
+  // // Renders only the tasks that belong to the currently selected calendars
+  // function renderVisibleTasks() {
+  //   // Filter the master list of tasks
+  //   const tasksToDisplay = allFetchedTasks.filter(task =>
+  //     selectedCalendarIds.includes(task.userId) // The backend uses userId to identify the owner
+  //   );
+
+  //   // Now, call your existing function to render tasks on the screen
+  //   // IMPORTANT: You need to replace 'displayTasksOnGrid' with the name of YOUR function
+  //   // that actually puts the tasks into the HTML.
+  //   displayTasksOnGrid(tasksToDisplay);
+  // }
+
+  // // --- 5. EVENT HANDLERS ---
+
+  // // Updates the list of selected calendars and re-renders the tasks
+  // function handleCalendarSelection(calendarId, isSelected) {
+  //   if (isSelected) {
+  //     if (!selectedCalendarIds.includes(calendarId)) {
+  //       selectedCalendarIds.push(calendarId);
+  //     }
+  //   } else {
+  //     selectedCalendarIds = selectedCalendarIds.filter(id => id !== calendarId);
+  //   }
+
+  //   // Re-render the visible tasks without fetching from the server again
+  //   renderVisibleTasks();
+  // }
 
 
   // --- 6. HELPER FUNCTIONS (You need to provide these) ---
