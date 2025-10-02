@@ -117,41 +117,30 @@
           </div>
 
           <div class="dropdown-body">
-            <div class="calendar-section">
-              <div id="calendar-list-container"></div>
-            </div>
-            <!-- <div class="calendar-section">
-              <div class="my-calendar">
-                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                    d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
-                </svg>
-                My calendar
-              </div>
-              <button class="settings-btn">Settings</button>
-            </div> -->
-            <button class="new-calendar-btn">New calendar</button>
-          </div>
-
-          <div class="dropdown-footer">
-            <a href="#" class="footer-link">
-              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                  d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
-              </svg>
-              Account
-            </a>
-            <button id="logout-button" class="footer-link" type="button">
-              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                  d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
-              </svg>
-              Log out
-            </button>
+            <a href="/account" class="dropdown-item">Account</a>
+            <a href="/logout" class="dropdown-item">Log out</a>
           </div>
         </div>
-      </nav>
-    </main>
+
+        <div class="dropdown-footer">
+          <a href="#" class="footer-link">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+            </svg>
+            Account
+          </a>
+          <button id="logout-button" class="footer-link" type="button">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
+            </svg>
+            Log out
+          </button>
+        </div>
+  </div>
+  </nav>
+  </main>
   </div>
 
   <div class="Main-content">
@@ -289,7 +278,7 @@
               placeholder="Enter your password" required autocomplete="current-password">
           </div>
           <button type="submit" class="primary-action-btn" data-i18n="auth.loginButton">Login</button>
-          <p class="form-toggle-text" >
+          <p class="form-toggle-text">
             Don't have an account? <a href="#" id="showRegisterLink">Register</a>
           </p>
         </form>
