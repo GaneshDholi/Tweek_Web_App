@@ -14,7 +14,7 @@ router.get("/", async (req, res) => {
                 { owner: userId }, // Calendars they own
                 { sharedWith: userId } // Calendars shared with them
             ]
-        }).populate('owner', 'firstName'); // Populate owner's name for display
+        }).populate('owner', 'firstName lastName'); // Populate owner's name for display
 
         if (!calendars) {
             return res.json([]);

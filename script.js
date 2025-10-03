@@ -2884,3 +2884,43 @@ document.addEventListener("click", (e) => {
   }
 });
 
+async function loadCalendars() {
+  try {
+    const res = await fetch("/api/calendars", {
+      method: "GET",
+      headers: { "Content-Type": "application/json" }
+    });
+
+    const calendars = await res.json();
+    const container = document.getElementById("calendar-list-container");
+    container.innerHTML = ""; // Clear old list
+
+    if (!calendars.length) {
+      container.innerHTML = "<p>No calendars found</p>";
+      return;
+    }
+
+    calendars.forEach(cal => {
+      const calDiv = document.createElement("div");
+      calDiv.classList.add("calendar-item");
+
+      calDiv.innerHTML = `
+        <span class="calendar-name">${cal.name}</span>
+        <small class="calendar-owner">
+          ${cal.isOwnedByCurrentUser ? "(You)" : "Shared by " + cal.owner.firstName}
+        </small>
+      `;
+
+      container.appendChild(calDiv);
+    });
+  } catch (err) {
+    console.error("Error loading calendars:", err);
+  }
+}
+
+// Load when dropdown opens
+document.getElementById("auth-trigger").addEventListener("click", () => {
+  loadCalendars();
+});
+
+
