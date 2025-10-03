@@ -2888,7 +2888,8 @@ async function loadCalendars() {
   try {
     const res = await fetch(`${API_BASE_URL}/api/calendars`, {
       method: "GET",
-      headers: { "Content-Type": "application/json" }
+      headers: { "Content-Type": "application/json" },
+      credentials: "include"
     });
 
     const calendars = await res.json();
