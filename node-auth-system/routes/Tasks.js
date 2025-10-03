@@ -316,8 +316,6 @@ router.delete("/:id", async (req, res) => {
     }
 });
 
-
-
 // --- SHARE FUNCTIONALITY ---
 const Calendar = require('../models/Calendar');
 

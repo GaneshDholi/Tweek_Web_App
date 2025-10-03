@@ -2923,6 +2923,36 @@ function renderCalendars(calendars) {
 }
 
 
+async function loadCalendarData(calendarId) {
+  try {
+    const res = await fetch(`${API_BASE_URL}/api/calendars/${calendarId}/tasks`, {
+      headers: { "Content-Type": "application/json" },
+      credentials: "include"
+    });
+
+    const tasks = await res.json();
+
+    const taskContainer = document.getElementById("task-container");
+    taskContainer.innerHTML = ""; // Clear previous tasks
+
+    if (!tasks.length) {
+      taskContainer.innerHTML = "<p>No tasks found</p>";
+      return;
+    }
+
+    tasks.forEach(task => {
+      const taskDiv = document.createElement("div");
+      taskDiv.classList.add("task-item");
+      taskDiv.innerText = task.title || "Untitled Task";
+      taskContainer.appendChild(taskDiv);
+    });
+
+  } catch (err) {
+    console.error("Error loading tasks:", err);
+  }
+}
+
+
 async function loadCalendars() {
   try {
     const res = await fetch(`${API_BASE_URL}/api/calendars`, {
@@ -2954,8 +2984,8 @@ async function loadCalendars() {
 
       calDiv.addEventListener("click", () => {
         selectedCalendarId = cal.id;
-        loadCalendarData(selectedCalendarId);
         renderCalendars(calendars);
+        loadCalendarData(selectedCalendarId);
       });
 
       container.appendChild(calDiv);
