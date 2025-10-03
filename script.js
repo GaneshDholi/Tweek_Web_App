@@ -2866,8 +2866,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- SELECT ALL BUTTONS AND DROPDOWNS ---
     // Main "More Options" Menu
-    const menuBtn = document.getElementById('menu-button'); // Use ID for reliability
-    const dropdown = document.getElementById('dropdown-menu');
+    const menuBtn = document.getElementById('menu-button'); 
+    // CHANGED: The ID of the dropdown is now 'main-dropdown'
+    const dropdown = document.getElementById('main-dropdown');
 
     // Profile Menu
     const authTrigger = document.getElementById('auth-trigger');
@@ -2877,11 +2878,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const calendarMenuBtn = document.getElementById('calendar-menu-btn');
     const calendarDropdown = document.getElementById('calendar-dropdown');
 
-
     // --- FUNCTION TO HIDE ALL DROPDOWNS ---
     function hideAllDropdowns() {
-        dropdown.classList.remove('show');
-        profileDropdown.classList.add('hidden');
+        // Use your actual visibility classes here
+        dropdown.classList.remove('show'); // Assuming 'show' makes it visible
+        profileDropdown.classList.add('hidden');   // Assuming 'hidden' hides it
         calendarDropdown.classList.add('hidden');
     }
 
@@ -2889,10 +2890,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // 1. Main "More Options" Menu (⋮)
     menuBtn.addEventListener("click", (e) => {
-        e.stopPropagation(); // Prevent click from reaching the window
-        const isHidden = dropdown.classList.contains('show');
-        hideAllDropdowns(); // Hide others first
-        if (!isHidden) {
+        e.stopPropagation();
+        const isHidden = !dropdown.classList.contains('show');
+        hideAllDropdowns();
+        if (isHidden) {
             dropdown.classList.add('show');
         }
     });
@@ -2901,7 +2902,7 @@ document.addEventListener('DOMContentLoaded', () => {
     authTrigger.addEventListener('click', (e) => {
         e.stopPropagation();
         const isHidden = profileDropdown.classList.contains('hidden');
-        hideAllDropdowns(); // Hide others first
+        hideAllDropdowns();
         if (isHidden) {
             profileDropdown.classList.remove('hidden');
         }
@@ -2911,7 +2912,7 @@ document.addEventListener('DOMContentLoaded', () => {
     calendarMenuBtn.addEventListener('click', (e) => {
         e.stopPropagation();
         const isHidden = calendarDropdown.classList.contains('hidden');
-        hideAllDropdowns(); // Hide others first
+        hideAllDropdowns();
         if (isHidden) {
             calendarDropdown.classList.remove('hidden');
         }
@@ -2919,8 +2920,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
     // --- GLOBAL LISTENERS TO CLOSE MENUS ---
-
-    // Listener to close all menus when clicking anywhere on the page
     window.addEventListener("click", () => {
         hideAllDropdowns();
     });
