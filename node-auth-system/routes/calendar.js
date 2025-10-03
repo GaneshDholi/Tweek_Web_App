@@ -23,7 +23,7 @@ router.get("/", authMiddleware, async (req, res) => {
 
     // 3. Merge and format for frontend
     const calendars = [...owned, ...shared].map(cal => ({
-      id: cal._id,
+      id: cal._id.toString(),
       name: cal.name,
       color: cal.color,
       owner: cal.owner,

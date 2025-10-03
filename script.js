@@ -2976,16 +2976,16 @@ async function loadCalendars() {
       if (cal.id === selectedCalendarId) calDiv.classList.add("active");
 
       calDiv.innerHTML = `
-      <span class="calendar-name">${cal.name}</span>
-      <small class="calendar-owner">
-        ${cal.isOwnedByCurrentUser ? "(You)" : "Shared by " + cal.owner.firstName}
-      </small>
-    `;
+    <span class="calendar-name">${cal.name}</span>
+    <small class="calendar-owner">
+      ${cal.isOwnedByCurrentUser ? "(You)" : "Shared by " + cal.owner.firstName}
+    </small>
+  `;
 
       calDiv.addEventListener("click", () => {
         selectedCalendarId = cal.id;
-        renderCalendars(calendars);
         loadCalendarData(selectedCalendarId);
+        renderCalendars(calendars);
       });
 
       container.appendChild(calDiv);
@@ -2997,14 +2997,26 @@ async function loadCalendars() {
     }
 
     async function loadCalendarData(calendarId) {
-      const res = await fetch(`${API_BASE_URL}/api/calendars/${calendarId}/tasks`, {
-        headers: { "Content-Type": "application/json" },
-        credentials: "include"
-      });
+      if (!calendarId) {
+        console.error("No calendarId provided to loadCalendarData");
+        return;
+      }
+      try {
+        const res = await fetch(`${API_BASE_URL}/api/calendars/${calendarId}/tasks`, {
+          headers: { "Content-Type": "application/json" },
+          credentials: "include"
+        });
 
-      const tasks = await res.json();
-      console.log("Tasks for calendar:", calendarId, tasks);
-      // render tasks in UI...
+        if (!res.ok) {
+          throw new Error(`Failed to fetch tasks: ${res.status}`);
+        }
+
+        const tasks = await res.json();
+        console.log("Tasks for calendar:", calendarId, tasks);
+        // render tasks in UI...
+      } catch (err) {
+        console.error("Error loading tasks:", err);
+      }
     }
   } catch (err) {
     console.error("Error loading calendars:", err);
