@@ -116,6 +116,23 @@
             <div class="user-name" id="dropdown-fullname">Ganesh Dholi</div>
           </div>
 
+          <div class="dropdown-body">
+            <div class="calendar-section">
+              <div id="calendar-list-container"></div>
+            </div>
+            <!-- <div class="calendar-section">
+              <div class="my-calendar">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                </svg>
+                My calendar
+              </div>
+              <button class="settings-btn">Settings</button>
+            </div> -->
+            <button class="new-calendar-btn">New calendar</button>
+          </div>
+
           <div class="dropdown-footer">
             <a href="#" class="footer-link">
               <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
@@ -131,14 +148,6 @@
               </svg>
               Log out
             </button>
-          </div>
-        </div>
-        <div id="calendar-dropdown" class="hidden">
-          <div class="dropdown-body">
-            <div class="calendar-section">
-              <div id="calendar-list-container"></div>
-            </div>
-            <button class="new-calendar-btn">New calendar</button>
           </div>
         </div>
       </nav>
@@ -280,7 +289,7 @@
               placeholder="Enter your password" required autocomplete="current-password">
           </div>
           <button type="submit" class="primary-action-btn" data-i18n="auth.loginButton">Login</button>
-          <p class="form-toggle-text">
+          <p class="form-toggle-text" >
             Don't have an account? <a href="#" id="showRegisterLink">Register</a>
           </p>
         </form>
