@@ -37,4 +37,38 @@ router.get("/", authMiddleware, async (req, res) => {
   }
 });
 
+router.get("/:calendarId/tasks", authMiddleware, async (req, res) => {
+  try {
+    const { calendarId } = req.params;
+    const userId = req.user.id;
+
+    const calendar = await Calendar.findById(calendarId);
+    if (!calendar) return res.status(404).json({ error: "Calendar not found." });
+
+    // Authorization check
+    if (
+      !calendar.owner.equals(userId) &&
+      !calendar.sharedWith.some(uid => String(uid) === String(userId))
+    ) {
+      return res.status(403).json({ error: "You do not have access to this calendar." });
+    }
+
+    // Fetch tasks from the userTasksProfile of the calendar owner
+    const profile = await UserTasksProfile.findOne({ userId: calendar.owner }).lean();
+
+    if (!profile) return res.json([]);
+
+    // Flatten tasks (someday + all weeks)
+    const tasks = [
+      ...(profile.somedayTasks || []),
+      ...Object.values(profile.weeklyTasks || {}).flatMap(w => w.tasks || [])
+    ];
+
+    res.json(tasks);
+  } catch (err) {
+    console.error("Error fetching calendar tasks:", err);
+    res.status(500).json({ error: "An error occurred." });
+  }
+});
+
 module.exports = router;
