@@ -1555,7 +1555,7 @@ async function handleTaskSave(box, newText, color, notes, newDate) {
 
   // --- 1. Send Update to Server ---
   try {
-    const response = await fetch(`https://tweek-web-app-2.onrender.com/api/tasks/${taskId}`, {
+    const response = await fetch(`${API_BASE_URL}api/tasks/${taskId}`, {
       method: "PUT",
       headers: {
         "Authorization": `Bearer ${localStorage.getItem("token")}`,

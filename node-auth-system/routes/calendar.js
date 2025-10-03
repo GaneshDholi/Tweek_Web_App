@@ -1,36 +1,40 @@
 const express = require("express");
 const router = express.Router();
-const mongoose = require('mongoose');
-const User = require("../models/User");
 const Calendar = require("../models/Calendar");
 
-// GET all calendars accessible by the current user
+// GET /api/calendars
 router.get("/", async (req, res) => {
-    try {
-        const userId = new mongoose.Types.ObjectId(req.user.id);
+  try {
+    const userId = req.user.id;
 
-        const calendars = await Calendar.find({
-            $or: [
-                { owner: userId }, // Calendars they own
-                { sharedWith: userId } // Calendars shared with them
-            ]
-        }).populate('owner', 'firstName lastName'); // Populate owner's name for display
+    // 1. Calendars owned by the user
+    const ownedCalendars = await Calendar.find({ owner: userId }).lean();
 
-        if (!calendars) {
-            return res.json([]);
-        }
+    // 2. Calendars shared with the user
+    const sharedCalendars = await Calendar.find({ sharedWith: userId })
+      .populate("owner", "firstName lastName")
+      .lean();
 
-        // Add a flag to easily identify the user's own calendars on the frontend
-        const processedCalendars = calendars.map(cal => ({
-            ...cal.toObject(),
-            isOwnedByCurrentUser: cal.owner._id.equals(userId)
-        }));
+    const allCalendars = [
+      ...ownedCalendars.map(c => ({
+        _id: c._id,
+        name: c.isPersonal ? "My Calendar" : c.name,
+        isOwnedByCurrentUser: true,
+        owner: { firstName: "You" }
+      })),
+      ...sharedCalendars.map(c => ({
+        _id: c._id,
+        name: c.name,
+        isOwnedByCurrentUser: false,
+        owner: { firstName: c.owner.firstName }
+      }))
+    ];
 
-        res.json(processedCalendars);
-
-    } catch (err) {
-        console.error("Error fetching calendars:", err);
-        res.status(500).json({ error: "Could not fetch calendars." });
-    }
+    res.json(allCalendars);
+  } catch (err) {
+    console.error("Error fetching calendars:", err);
+    res.status(500).json({ error: "An error occurred while fetching calendars." });
+  }
 });
+
 module.exports = router;
