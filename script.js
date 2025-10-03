@@ -2862,55 +2862,62 @@ async function deleteTask(taskId) {
 
 
 
-// : button dropdown
+document.addEventListener('DOMContentLoaded', () => {
 
-// Your existing query selectors, with '.circle-menu' changed to the new ID
-const menuBtn = document.getElementById("main-menu-btn");
-const dropdown = document.querySelector(".dropdown-content"); // This still targets the first one
-const authTrigger = document.getElementById('auth-trigger');
-const profileDropdown = document.getElementById('profile-dropdown');
+    // --- Select all buttons and their corresponding dropdowns ---
+    const authTrigger = document.getElementById('auth-trigger');
+    const profileDropdown = document.getElementById('profile-dropdown');
 
-// --- ADDED: Selectors for the new calendar menu ---
-const calendarMenuBtn = document.getElementById('calendar-menu-btn');
-const calendarDropdown = document.getElementById('calendar-dropdown');
+    const mainMenuBtn = document.getElementById('main-menu-btn');
+    const mainDropdown = document.getElementById('main-dropdown');
 
-// --- Your existing Main Menu logic ---
-menuBtn.addEventListener("click", (e) => {
-  e.stopPropagation();
-  profileDropdown.classList.add('hidden');
-  calendarDropdown.classList.add('hidden'); // ADDED: Hide calendar menu
-  dropdown.classList.toggle("show");
-});
+    const calendarMenuBtn = document.getElementById('calendar-menu-btn');
+    const calendarDropdown = document.getElementById('calendar-dropdown');
 
-// --- ADDED: Logic to open the Profile Menu ---
-authTrigger.addEventListener('click', (e) => {
-  e.stopPropagation();
-  dropdown.classList.remove('show');
-  calendarDropdown.classList.add('hidden'); // ADDED: Hide calendar menu
-  profileDropdown.classList.toggle('hidden');
-});
+    // --- Function to close all menus ---
+    function hideAllDropdowns() {
+        profileDropdown.classList.add('hidden');
+        mainDropdown.classList.remove('show'); // Use 'show' or 'hidden' based on your CSS
+        calendarDropdown.classList.add('hidden');
+    }
 
-// --- ADDED: Logic to open the Calendar Menu ---
-calendarMenuBtn.addEventListener('click', (e) => {
-  e.stopPropagation();
-  dropdown.classList.remove('show');
-  profileDropdown.classList.add('hidden');
-  calendarDropdown.classList.toggle('hidden'); // Toggles its own visibility
-});
+    // --- Event listener for the Profile button ---
+    authTrigger.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const isHidden = profileDropdown.classList.contains('hidden');
+        hideAllDropdowns(); // Close others
+        if (isHidden) {
+            profileDropdown.classList.remove('hidden'); // Open this one
+        }
+    });
 
+    // --- Event listener for the Main Menu button (⋮) ---
+    mainMenuBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const isHidden = !mainDropdown.classList.contains('show');
+        hideAllDropdowns(); // Close others
+        if (isHidden) {
+            mainDropdown.classList.add('show'); // Open this one
+        }
+    });
 
-// --- Your existing "click outside" logic, with additions ---
-document.addEventListener("click", (e) => {
-  // Closes profile dropdown if click is outside
-  if (!authTrigger.contains(e.target) && !profileDropdown.contains(e.target)) {
-    profileDropdown.classList.add("hidden");
-  }
-  // Closes main dropdown if click is outside
-  if (!menuBtn.contains(e.target) && !dropdown.contains(e.target)) {
-    dropdown.classList.remove("show");
-  }
-  // ADDED: Closes calendar dropdown if click is outside
-  if (!calendarMenuBtn.contains(e.target) && !calendarDropdown.contains(e.target)) {
-    calendarDropdown.classList.add("hidden");
-  }
+    // --- Event listener for the Calendar button (🗓️) ---
+    calendarMenuBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const isHidden = calendarDropdown.classList.contains('hidden');
+        hideAllDropdowns(); // Close others
+        if (isHidden) {
+            calendarDropdown.classList.remove('hidden'); // Open this one
+        }
+    });
+
+    // --- Close all menus when clicking anywhere else on the page ---
+    window.addEventListener('click', () => {
+        hideAllDropdowns();
+    });
+
+    // --- Stop clicks inside the menus from closing them ---
+    profileDropdown.addEventListener('click', e => e.stopPropagation());
+    mainDropdown.addEventListener('click', e => e.stopPropagation());
+    calendarDropdown.addEventListener('click', e => e.stopPropagation());
 });
