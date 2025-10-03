@@ -1,39 +1,39 @@
+// routes/calendars.js
 const express = require("express");
 const router = express.Router();
 const Calendar = require("../models/Calendar");
+const User = require("../models/User");
+const mongoose = require("mongoose");
+const authMiddleware = require("../middleware/authMiddleware"); // assume you already have this
 
 // GET /api/calendars
-router.get("/", async (req, res) => {
+router.get("/", authMiddleware, async (req, res) => {
   try {
-    const userId = req.user.id;
+    const userId = new mongoose.Types.ObjectId(req.user.id);
 
-    // 1. Calendars owned by the user
-    const ownedCalendars = await Calendar.find({ owner: userId }).lean();
-
-    // 2. Calendars shared with the user
-    const sharedCalendars = await Calendar.find({ sharedWith: userId })
-      .populate("owner", "firstName lastName")
+    // 1. Calendars the user owns
+    const owned = await Calendar.find({ owner: userId })
+      .populate("owner", "firstName lastName email")
       .lean();
 
-    const allCalendars = [
-      ...ownedCalendars.map(c => ({
-        _id: c._id,
-        name: c.isPersonal ? "My Calendar" : c.name,
-        isOwnedByCurrentUser: true,
-        owner: { firstName: "You" }
-      })),
-      ...sharedCalendars.map(c => ({
-        _id: c._id,
-        name: c.name,
-        isOwnedByCurrentUser: false,
-        owner: { firstName: c.owner.firstName }
-      }))
-    ];
+    // 2. Calendars shared with the user
+    const shared = await Calendar.find({ sharedWith: userId })
+      .populate("owner", "firstName lastName email")
+      .lean();
 
-    res.json(allCalendars);
+    // 3. Merge and format for frontend
+    const calendars = [...owned, ...shared].map(cal => ({
+      id: cal._id,
+      name: cal.name,
+      color: cal.color,
+      owner: cal.owner,
+      isOwnedByCurrentUser: String(cal.owner._id) === String(userId)
+    }));
+
+    res.json(calendars);
   } catch (err) {
     console.error("Error fetching calendars:", err);
-    res.status(500).json({ error: "An error occurred while fetching calendars." });
+    res.status(500).json({ error: "An error occurred fetching calendars." });
   }
 });
 

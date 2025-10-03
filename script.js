@@ -2886,77 +2886,6 @@ document.addEventListener("click", (e) => {
 
 let selectedCalendarId = null;
 
-function renderCalendars(calendars) {
-  const container = document.getElementById("calendar-list-container");
-  container.innerHTML = "";
-
-  calendars.forEach(cal => {
-    const calDiv = document.createElement("div");
-    calDiv.classList.add("calendar-item");
-
-    // highlight the selected one
-    if (cal.id === selectedCalendarId) {
-      calDiv.classList.add("active");
-    }
-
-    calDiv.innerHTML = `
-      <span class="calendar-name">${cal.name}</span>
-      <small class="calendar-owner">
-        ${cal.isOwnedByCurrentUser ? "(You)" : "Shared by " + cal.owner.firstName}
-      </small>
-    `;
-
-    // when user clicks → switch active calendar
-    calDiv.addEventListener("click", () => {
-      selectedCalendarId = cal.id;
-      renderCalendars(calendars); // re-render list with new active
-      loadCalendarData(selectedCalendarId); // load only this calendar’s tasks
-    });
-
-    container.appendChild(calDiv);
-  });
-}
-
-async function loadCalendarData(calendarId) {
-  try {
-    if (!calendarId) return;
-
-    // API endpoint for fetching events/tasks of that calendar
-    const res = await fetch(`${API_BASE_URL}/api/calendars/${calendarId}/tasks`, {
-      method: "GET",
-      headers: { "Content-Type": "application/json" },
-      credentials: "include"
-    });
-
-    const tasks = await res.json();
-
-    // container where you display the week/day view
-    const calendarView = document.getElementById("calendar-view");
-    calendarView.innerHTML = ""; // clear old data
-
-    if (!tasks.length) {
-      calendarView.innerHTML = "<p>No tasks found</p>";
-      return;
-    }
-
-    tasks.forEach(task => {
-      const taskEl = document.createElement("div");
-      taskEl.classList.add("task-item");
-
-      taskEl.innerHTML = `
-        <span class="task-title">${task.title}</span>
-        <small class="task-date">${task.date}</small>
-      `;
-
-      calendarView.appendChild(taskEl);
-    });
-
-  } catch (err) {
-    console.error("Error loading calendar data:", err);
-  }
-}
-
-// Example: fetch calendars and auto-select first one
 async function loadCalendars() {
   try {
     const res = await fetch(`${API_BASE_URL}/api/calendars`, {
@@ -2964,22 +2893,60 @@ async function loadCalendars() {
       headers: { "Content-Type": "application/json" },
       credentials: "include"
     });
-    const calendars = await res.json();
 
-    if (calendars.length > 0 && !selectedCalendarId) {
-      selectedCalendarId = calendars[0].id; // default to first calendar
+    const calendars = await res.json();
+    const container = document.getElementById("calendar-list-container");
+    container.innerHTML = ""; // Clear old list
+
+    if (!calendars.length) {
+      container.innerHTML = "<p>No calendars found</p>";
+      return;
     }
 
-    renderCalendars(calendars);
-    loadCalendarData(selectedCalendarId);
+    calendars.forEach(cal => {
+      const calDiv = document.createElement("div");
+      calDiv.classList.add("calendar-item");
+      if (cal.id === selectedCalendarId) calDiv.classList.add("active");
 
+      calDiv.innerHTML = `
+      <span class="calendar-name">${cal.name}</span>
+      <small class="calendar-owner">
+        ${cal.isOwnedByCurrentUser ? "(You)" : "Shared by " + cal.owner.firstName}
+      </small>
+    `;
+
+      calDiv.addEventListener("click", () => {
+        selectedCalendarId = cal.id;
+        loadCalendarData(selectedCalendarId);
+        renderCalendars(calendars);
+      });
+
+      container.appendChild(calDiv);
+    });
+
+    if (!selectedCalendarId) {
+      selectedCalendarId = calendars[0].id;
+      loadCalendarData(selectedCalendarId);
+    }
+
+    async function loadCalendarData(calendarId) {
+      const res = await fetch(`${API_BASE_URL}/api/calendars/${calendarId}/tasks`, {
+        headers: { "Content-Type": "application/json" },
+        credentials: "include"
+      });
+
+      const tasks = await res.json();
+      console.log("Tasks for calendar:", calendarId, tasks);
+      // render tasks in UI...
+    }
   } catch (err) {
     console.error("Error loading calendars:", err);
   }
 }
 
-
 // Load when dropdown opens
 document.getElementById("auth-trigger").addEventListener("click", () => {
   loadCalendars();
 });
+
+
