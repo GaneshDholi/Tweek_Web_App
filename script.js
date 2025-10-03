@@ -2886,6 +2886,43 @@ document.addEventListener("click", (e) => {
 
 let selectedCalendarId = null;
 
+function renderCalendars(calendars) {
+  const container = document.getElementById("calendar-list-container");
+  container.innerHTML = "";
+
+  if (!calendars.length) {
+    container.innerHTML = "<p>No calendars found</p>";
+    return;
+  }
+
+  calendars.forEach(cal => {
+    const calDiv = document.createElement("div");
+    calDiv.classList.add("calendar-item");
+
+    // Highlight the active one
+    if (cal.id === selectedCalendarId) {
+      calDiv.classList.add("active");
+    }
+
+    calDiv.innerHTML = `
+      <span class="calendar-name">${cal.name}</span>
+      <small class="calendar-owner">
+        ${cal.isOwnedByCurrentUser ? "(You)" : "Shared by " + cal.owner.firstName}
+      </small>
+    `;
+
+    // Click to switch calendars
+    calDiv.addEventListener("click", () => {
+      selectedCalendarId = cal.id;
+      renderCalendars(calendars);     // re-render to update active highlight
+      loadCalendarData(selectedCalendarId); // load tasks for this calendar
+    });
+
+    container.appendChild(calDiv);
+  });
+}
+
+
 async function loadCalendars() {
   try {
     const res = await fetch(`${API_BASE_URL}/api/calendars`, {
