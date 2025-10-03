@@ -2862,24 +2862,72 @@ async function deleteTask(taskId) {
 
 
 
-// : button dropdown
-const menuBtn = document.querySelector(".circle-menu");
-const dropdown = document.querySelector(".dropdown-content");
-const authTrigger = document.getElementById('auth-trigger');
-const profileDropdown = document.getElementById('profile-dropdown');
-// --- CIRCLE MENU ---
-menuBtn.addEventListener("click", (e) => {
-  e.stopPropagation();
-  profileDropdown.classList.add('hidden');
-  dropdown.classList.toggle("show");
-});
+document.addEventListener('DOMContentLoaded', () => {
 
-document.addEventListener("click", (e) => {
-  if (!authTrigger.contains(e.target) && !profileDropdown.contains(e.target)) {
-    profileDropdown.classList.add("hidden");
-  }
-  if (!menuBtn.contains(e.target) && !dropdown.contains(e.target)) {
-    dropdown.classList.remove("show");
-  }
+    // --- SELECT ALL BUTTONS AND DROPDOWNS ---
+    // Main "More Options" Menu
+    const menuBtn = document.getElementById('menu-button'); // Use ID for reliability
+    const dropdown = document.getElementById('dropdown-menu');
+
+    // Profile Menu
+    const authTrigger = document.getElementById('auth-trigger');
+    const profileDropdown = document.getElementById('profile-dropdown');
+    
+    // Calendar Menu
+    const calendarMenuBtn = document.getElementById('calendar-menu-btn');
+    const calendarDropdown = document.getElementById('calendar-dropdown');
+
+
+    // --- FUNCTION TO HIDE ALL DROPDOWNS ---
+    function hideAllDropdowns() {
+        dropdown.classList.remove('show');
+        profileDropdown.classList.add('hidden');
+        calendarDropdown.classList.add('hidden');
+    }
+
+    // --- EVENT LISTENERS FOR EACH BUTTON ---
+
+    // 1. Main "More Options" Menu (⋮)
+    menuBtn.addEventListener("click", (e) => {
+        e.stopPropagation(); // Prevent click from reaching the window
+        const isHidden = dropdown.classList.contains('show');
+        hideAllDropdowns(); // Hide others first
+        if (!isHidden) {
+            dropdown.classList.add('show');
+        }
+    });
+
+    // 2. Profile Menu (The user's initials circle)
+    authTrigger.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const isHidden = profileDropdown.classList.contains('hidden');
+        hideAllDropdowns(); // Hide others first
+        if (isHidden) {
+            profileDropdown.classList.remove('hidden');
+        }
+    });
+
+    // 3. Calendar Menu (🗓️)
+    calendarMenuBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const isHidden = calendarDropdown.classList.contains('hidden');
+        hideAllDropdowns(); // Hide others first
+        if (isHidden) {
+            calendarDropdown.classList.remove('hidden');
+        }
+    });
+
+
+    // --- GLOBAL LISTENERS TO CLOSE MENUS ---
+
+    // Listener to close all menus when clicking anywhere on the page
+    window.addEventListener("click", () => {
+        hideAllDropdowns();
+    });
+
+    // Prevent clicks inside the open dropdowns from closing them
+    dropdown.addEventListener('click', e => e.stopPropagation());
+    profileDropdown.addEventListener('click', e => e.stopPropagation());
+    calendarDropdown.addEventListener('click', e => e.stopPropagation());
 });
 
