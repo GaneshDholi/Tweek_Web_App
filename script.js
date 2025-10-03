@@ -2924,7 +2924,8 @@ async function loadCalendarData(calendarId) {
     // API endpoint for fetching events/tasks of that calendar
     const res = await fetch(`${API_BASE_URL}/api/calendars/${calendarId}/tasks`, {
       method: "GET",
-      headers: { "Content-Type": "application/json" }
+      headers: { "Content-Type": "application/json" },
+      credentials: "include"
     });
 
     const tasks = await res.json();
@@ -2958,7 +2959,11 @@ async function loadCalendarData(calendarId) {
 // Example: fetch calendars and auto-select first one
 async function loadCalendars() {
   try {
-    const res = await fetch(`${API_BASE_URL}/api/calendars`);
+    const res = await fetch(`${API_BASE_URL}/api/calendars`, {
+      method: "GET",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include"
+    });
     const calendars = await res.json();
 
     if (calendars.length > 0 && !selectedCalendarId) {
@@ -2978,5 +2983,3 @@ async function loadCalendars() {
 document.getElementById("auth-trigger").addEventListener("click", () => {
   loadCalendars();
 });
-
-
