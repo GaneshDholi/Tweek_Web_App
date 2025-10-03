@@ -98,7 +98,7 @@
             </li>
           </ul>
         </div>
-         <div id="dropdown-menu" class="dropdown-content">
+        <div id="dropdown-menu" class="dropdown-content">
         </div>
         <div id="prevweek" class="circle dark">
           <svg xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 24 24" width="24" height="24"
@@ -112,17 +112,17 @@
             <path d="M8.59 16.59 10 18l6-6-6-6-1.41 1.41L13.17 12z" />
           </svg>
         </div>
-        <div id="calendar-dropdown profile-dropdown" class="hidden">
+        <div id="profile-dropdown" class="hidden">
           <div class="dropdown-header">
             <div class="initials-circle-large" id="dropdown-initials">GD</div>
             <div class="user-name" id="dropdown-fullname">Ganesh Dholi</div>
           </div>
-
-          <div class="dropdown-body">
-            <div class="calendar-section">
-              <div id="calendar-list-container"></div>
-            </div>
-            <!-- <div class="calendar-section">
+          <div id="calendar-dropdown" class="hidden">
+            <div class="dropdown-body">
+              <div class="calendar-section">
+                <div id="calendar-list-container"></div>
+              </div>
+              <!-- <div class="calendar-section">
               <div class="my-calendar">
                 <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -132,7 +132,8 @@
               </div>
               <button class="settings-btn">Settings</button>
             </div> -->
-            <button class="new-calendar-btn">New calendar</button>
+              <button class="new-calendar-btn">New calendar</button>
+            </div>
           </div>
 
           <div class="dropdown-footer">
@@ -291,7 +292,7 @@
               placeholder="Enter your password" required autocomplete="current-password">
           </div>
           <button type="submit" class="primary-action-btn" data-i18n="auth.loginButton">Login</button>
-          <p class="form-toggle-text" >
+          <p class="form-toggle-text">
             Don't have an account? <a href="#" id="showRegisterLink">Register</a>
           </p>
         </form>
