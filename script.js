@@ -2862,71 +2862,55 @@ async function deleteTask(taskId) {
 
 
 
-document.addEventListener('DOMContentLoaded', () => {
+// : button dropdown
 
-    // --- SELECT ALL BUTTONS AND DROPDOWNS ---
-    // Main "More Options" Menu
-    const menuBtn = document.getElementById('menu-button'); 
-    // CHANGED: The ID of the dropdown is now 'main-dropdown'
-    const dropdown = document.getElementById('main-dropdown');
+// Your existing query selectors, with '.circle-menu' changed to the new ID
+const menuBtn = document.getElementById("main-menu-btn");
+const dropdown = document.querySelector(".dropdown-content"); // This still targets the first one
+const authTrigger = document.getElementById('auth-trigger');
+const profileDropdown = document.getElementById('profile-dropdown');
 
-    // Profile Menu
-    const authTrigger = document.getElementById('auth-trigger');
-    const profileDropdown = document.getElementById('profile-dropdown');
-    
-    // Calendar Menu
-    const calendarMenuBtn = document.getElementById('calendar-menu-btn');
-    const calendarDropdown = document.getElementById('calendar-dropdown');
+// --- ADDED: Selectors for the new calendar menu ---
+const calendarMenuBtn = document.getElementById('calendar-menu-btn');
+const calendarDropdown = document.getElementById('calendar-dropdown');
 
-    // --- FUNCTION TO HIDE ALL DROPDOWNS ---
-    function hideAllDropdowns() {
-        // Use your actual visibility classes here
-        dropdown.classList.remove('show'); // Assuming 'show' makes it visible
-        profileDropdown.classList.add('hidden');   // Assuming 'hidden' hides it
-        calendarDropdown.classList.add('hidden');
-    }
-
-    // --- EVENT LISTENERS FOR EACH BUTTON ---
-
-    // 1. Main "More Options" Menu (⋮)
-    menuBtn.addEventListener("click", (e) => {
-        e.stopPropagation();
-        const isHidden = !dropdown.classList.contains('show');
-        hideAllDropdowns();
-        if (isHidden) {
-            dropdown.classList.add('show');
-        }
-    });
-
-    // 2. Profile Menu (The user's initials circle)
-    authTrigger.addEventListener('click', (e) => {
-        e.stopPropagation();
-        const isHidden = profileDropdown.classList.contains('hidden');
-        hideAllDropdowns();
-        if (isHidden) {
-            profileDropdown.classList.remove('hidden');
-        }
-    });
-
-    // 3. Calendar Menu (🗓️)
-    calendarMenuBtn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        const isHidden = calendarDropdown.classList.contains('hidden');
-        hideAllDropdowns();
-        if (isHidden) {
-            calendarDropdown.classList.remove('hidden');
-        }
-    });
-
-
-    // --- GLOBAL LISTENERS TO CLOSE MENUS ---
-    window.addEventListener("click", () => {
-        hideAllDropdowns();
-    });
-
-    // Prevent clicks inside the open dropdowns from closing them
-    dropdown.addEventListener('click', e => e.stopPropagation());
-    profileDropdown.addEventListener('click', e => e.stopPropagation());
-    calendarDropdown.addEventListener('click', e => e.stopPropagation());
+// --- Your existing Main Menu logic ---
+menuBtn.addEventListener("click", (e) => {
+  e.stopPropagation();
+  profileDropdown.classList.add('hidden');
+  calendarDropdown.classList.add('hidden'); // ADDED: Hide calendar menu
+  dropdown.classList.toggle("show");
 });
 
+// --- ADDED: Logic to open the Profile Menu ---
+authTrigger.addEventListener('click', (e) => {
+  e.stopPropagation();
+  dropdown.classList.remove('show');
+  calendarDropdown.classList.add('hidden'); // ADDED: Hide calendar menu
+  profileDropdown.classList.toggle('hidden');
+});
+
+// --- ADDED: Logic to open the Calendar Menu ---
+calendarMenuBtn.addEventListener('click', (e) => {
+  e.stopPropagation();
+  dropdown.classList.remove('show');
+  profileDropdown.classList.add('hidden');
+  calendarDropdown.classList.toggle('hidden'); // Toggles its own visibility
+});
+
+
+// --- Your existing "click outside" logic, with additions ---
+document.addEventListener("click", (e) => {
+  // Closes profile dropdown if click is outside
+  if (!authTrigger.contains(e.target) && !profileDropdown.contains(e.target)) {
+    profileDropdown.classList.add("hidden");
+  }
+  // Closes main dropdown if click is outside
+  if (!menuBtn.contains(e.target) && !dropdown.contains(e.target)) {
+    dropdown.classList.remove("show");
+  }
+  // ADDED: Closes calendar dropdown if click is outside
+  if (!calendarMenuBtn.contains(e.target) && !calendarDropdown.contains(e.target)) {
+    calendarDropdown.classList.add("hidden");
+  }
+});
