@@ -2884,40 +2884,95 @@ document.addEventListener("click", (e) => {
   }
 });
 
-async function loadCalendars() {
-  try {
-    const res = await fetch(`${API_BASE_URL}/api/calendars`, {
-      method: "GET",
-      headers: { "Content-Type": "application/json" },
-      credentials: "include"
+let selectedCalendarId = null;
+
+function renderCalendars(calendars) {
+  const container = document.getElementById("calendar-list-container");
+  container.innerHTML = "";
+
+  calendars.forEach(cal => {
+    const calDiv = document.createElement("div");
+    calDiv.classList.add("calendar-item");
+
+    // highlight the selected one
+    if (cal.id === selectedCalendarId) {
+      calDiv.classList.add("active");
+    }
+
+    calDiv.innerHTML = `
+      <span class="calendar-name">${cal.name}</span>
+      <small class="calendar-owner">
+        ${cal.isOwnedByCurrentUser ? "(You)" : "Shared by " + cal.owner.firstName}
+      </small>
+    `;
+
+    // when user clicks → switch active calendar
+    calDiv.addEventListener("click", () => {
+      selectedCalendarId = cal.id;
+      renderCalendars(calendars); // re-render list with new active
+      loadCalendarData(selectedCalendarId); // load only this calendar’s tasks
     });
 
-    const calendars = await res.json();
-    const container = document.getElementById("calendar-list-container");
-    container.innerHTML = ""; // Clear old list
+    container.appendChild(calDiv);
+  });
+}
 
-    if (!calendars.length) {
-      container.innerHTML = "<p>No calendars found</p>";
+async function loadCalendarData(calendarId) {
+  try {
+    if (!calendarId) return;
+
+    // API endpoint for fetching events/tasks of that calendar
+    const res = await fetch(`${API_BASE_URL}/api/calendars/${calendarId}/tasks`, {
+      method: "GET",
+      headers: { "Content-Type": "application/json" }
+    });
+
+    const tasks = await res.json();
+
+    // container where you display the week/day view
+    const calendarView = document.getElementById("calendar-view");
+    calendarView.innerHTML = ""; // clear old data
+
+    if (!tasks.length) {
+      calendarView.innerHTML = "<p>No tasks found</p>";
       return;
     }
 
-    calendars.forEach(cal => {
-      const calDiv = document.createElement("div");
-      calDiv.classList.add("calendar-item");
+    tasks.forEach(task => {
+      const taskEl = document.createElement("div");
+      taskEl.classList.add("task-item");
 
-      calDiv.innerHTML = `
-        <span class="calendar-name">${cal.name}</span>
-        <small class="calendar-owner">
-          ${cal.isOwnedByCurrentUser ? "(You)" : "Shared by " + cal.owner.firstName}
-        </small>
+      taskEl.innerHTML = `
+        <span class="task-title">${task.title}</span>
+        <small class="task-date">${task.date}</small>
       `;
 
-      container.appendChild(calDiv);
+      calendarView.appendChild(taskEl);
     });
+
+  } catch (err) {
+    console.error("Error loading calendar data:", err);
+  }
+}
+
+// Example: fetch calendars and auto-select first one
+async function loadCalendars() {
+  try {
+    const res = await fetch(`${API_BASE_URL}/api/calendars`);
+    const calendars = await res.json();
+
+    if (calendars.length > 0 && !selectedCalendarId) {
+      selectedCalendarId = calendars[0].id; // default to first calendar
+    }
+
+    renderCalendars(calendars);
+    loadCalendarData(selectedCalendarId);
+
   } catch (err) {
     console.error("Error loading calendars:", err);
   }
 }
+
 
 // Load when dropdown opens
 document.getElementById("auth-trigger").addEventListener("click", () => {
