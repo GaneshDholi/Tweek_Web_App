@@ -2886,7 +2886,7 @@ document.addEventListener("click", (e) => {
 
 async function loadCalendars() {
   try {
-    const res = await fetch("/api/calendars", {
+    const res = await fetch(`${API_BASE_URL}/api/calendars`, {
       method: "GET",
       headers: { "Content-Type": "application/json" }
     });
