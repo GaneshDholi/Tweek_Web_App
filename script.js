@@ -2862,62 +2862,25 @@ async function deleteTask(taskId) {
 
 
 
-document.addEventListener('DOMContentLoaded', () => {
+// : button dropdown
+const menuBtn = document.querySelector(".circle-menu");
+const dropdown = document.querySelector(".dropdown-content");
+const authTrigger = document.getElementById('auth-trigger');
+const profileDropdown = document.getElementById('profile-dropdown');
 
-    // --- Select all buttons and their corresponding dropdowns ---
-    const authTrigger = document.getElementById('auth-trigger');
-    const profileDropdown = document.getElementById('profile-dropdown');
-
-    const mainMenuBtn = document.getElementById('main-menu-btn');
-    const mainDropdown = document.getElementById('main-dropdown');
-
-    const calendarMenuBtn = document.getElementById('calendar-menu-btn');
-    const calendarDropdown = document.getElementById('calendar-dropdown');
-
-    // --- Function to close all menus ---
-    function hideAllDropdowns() {
-        profileDropdown.classList.add('hidden');
-        mainDropdown.classList.remove('show'); // Use 'show' or 'hidden' based on your CSS
-        calendarDropdown.classList.add('hidden');
-    }
-
-    // --- Event listener for the Profile button ---
-    authTrigger.addEventListener('click', (e) => {
-        e.stopPropagation();
-        const isHidden = profileDropdown.classList.contains('hidden');
-        hideAllDropdowns(); // Close others
-        if (isHidden) {
-            profileDropdown.classList.remove('hidden'); // Open this one
-        }
-    });
-
-    // --- Event listener for the Main Menu button (⋮) ---
-    mainMenuBtn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        const isHidden = !mainDropdown.classList.contains('show');
-        hideAllDropdowns(); // Close others
-        if (isHidden) {
-            mainDropdown.classList.add('show'); // Open this one
-        }
-    });
-
-    // --- Event listener for the Calendar button (🗓️) ---
-    calendarMenuBtn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        const isHidden = calendarDropdown.classList.contains('hidden');
-        hideAllDropdowns(); // Close others
-        if (isHidden) {
-            calendarDropdown.classList.remove('hidden'); // Open this one
-        }
-    });
-
-    // --- Close all menus when clicking anywhere else on the page ---
-    window.addEventListener('click', () => {
-        hideAllDropdowns();
-    });
-
-    // --- Stop clicks inside the menus from closing them ---
-    profileDropdown.addEventListener('click', e => e.stopPropagation());
-    mainDropdown.addEventListener('click', e => e.stopPropagation());
-    calendarDropdown.addEventListener('click', e => e.stopPropagation());
+// --- CIRCLE MENU ---
+menuBtn.addEventListener("click", (e) => {
+  e.stopPropagation();
+  profileDropdown.classList.add('hidden');
+  dropdown.classList.toggle("show");
 });
+
+document.addEventListener("click", (e) => {
+  if (!authTrigger.contains(e.target) && !profileDropdown.contains(e.target)) {
+    profileDropdown.classList.add("hidden");
+  }
+  if (!menuBtn.contains(e.target) && !dropdown.contains(e.target)) {
+    dropdown.classList.remove("show");
+  }
+});
+
