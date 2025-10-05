@@ -1708,10 +1708,10 @@ document.addEventListener('DOMContentLoaded', () => {
   // Modal elements
   const shareModal = document.getElementById('share-modal'); // Your modal container
   const shareModalOverlay = document.getElementById('share-modal-overlay');
-  const closeShareModalBtn = document.getElementById('close-share-modal-btn');
-  const shareEmailInput = document.getElementById('share-email-input');
-  const shareBtn = document.getElementById('share-btn');
-  const sharedWithList = document.getElementById('shared-with-list');
+  const closeShareModalBtn = document.getElementById('closeShareModalBtn');
+  const shareEmailInput = document.getElementById('shareEmailInput');
+  const shareBtn = document.getElementById('shareBtn');
+  const sharedWithList = document.getElementById('sharedWithList');
   const shareTaskBtn = document.getElementById('share-task-btn'); // The main button to open the modal
 
   // --- FUNCTIONS ---
