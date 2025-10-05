@@ -1781,12 +1781,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Share button inside modal
   shareBtn.addEventListener('click', async () => {
-    // const calendarId = window.getSelectedCalendarId();
+    const calendarId = window.getSelectedCalendarId();
     const email = shareEmailInput.value.trim();
     if (!email) return alert('Please enter an email address.');
 
     try {
-      const res = await fetch(`${API_BASE_URL}/api/calendars/${email}}/share`, {
+      const res = await fetch(`${API_BASE_URL}/api/calendars/${calendarId}/share`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -3021,6 +3021,9 @@ async function loadAndRenderTasks(calendarId) {
 }
 
 // --- Event Handlers ---
+function getSelectedCalendarId() {
+  return selectedCalendarId;
+}
 
 // Handles a click on a calendar item efficiently.
 async function handleCalendarSelection(event) {
@@ -3031,7 +3034,7 @@ async function handleCalendarSelection(event) {
     return; // Do nothing if the already-active calendar is clicked
   }
 
-  selectedCalendarId = clickedCalendarId;
+  selectedCalendarId = event.currentTarget.dataset.calendarId;
 
   // More EFFICIENT: Update classes instead of re-rendering the whole list.
   // 1. Remove 'active' from the previously active item
