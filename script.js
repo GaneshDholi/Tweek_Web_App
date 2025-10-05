@@ -558,7 +558,7 @@ function addDropZoneListeners(element) {
 const weekContainer = document.getElementById("weekly-view");
 const rootStyles = getComputedStyle(document.documentElement);
 const primaryFont = rootStyles.getPropertyValue("--primary-font").trim();
-const taskContainer = null;
+let taskContainer = null;
 let isRendering = false
 async function renderWeeklyView(baseDate = new Date(), highlightDate = null) {
   if (isRendering) {
