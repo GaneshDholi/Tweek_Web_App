@@ -3027,5 +3027,3 @@ async function loadCalendars() {
 document.getElementById("auth-trigger").addEventListener("click", () => {
   loadCalendars();
 });
-
-

@@ -1,4 +1,3 @@
-// routes/calendars.js
 const express = require("express");
 const router = express.Router();
 const Calendar = require("../models/Calendar");
@@ -31,6 +30,7 @@ router.get("/", authMiddleware, async (req, res) => {
     }));
 
     res.json(calendars);
+    console.log(calendars);
   } catch (err) {
     console.error("Error fetching calendars:", err);
     res.status(500).json({ error: "An error occurred fetching calendars." });
@@ -40,6 +40,7 @@ router.get("/", authMiddleware, async (req, res) => {
 router.get("/:calendarId/tasks", authMiddleware, async (req, res) => {
   try {
     const { calendarId } = req.params;
+    console.log("Calendar ID:", calendarId);
     const userId = req.user.id;
 
     const calendar = await Calendar.findById(calendarId);
