@@ -154,7 +154,7 @@ const translations = {
   }
 };
 
-const API_BASE_URL = "https://tweek-web-app-2.onrender.com";
+const API_BASE_URL = ["https://tweek-web-app-2.onrender.com", "http://localhost:5000"];
 let isLoggedIn = false;
 
 let authSystem;
@@ -496,7 +496,7 @@ async function handleTaskDrop(taskId, newDate, isSomeday) {
   }
 
   try {
-    const response = await fetch(`https://tweek-web-app-2.onrender.com/api/tasks/${taskId}`, {
+    const response = await fetch(`${API_BASE_URL}/api/tasks/${taskId}`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json',
@@ -784,7 +784,7 @@ async function renderWeeklyView(baseDate = new Date(), highlightDate = null) {
 
     async function updateTaskStatus(taskId, isCompleted) {
       try {
-        const response = await fetch(`https://tweek-web-app-2.onrender.com/api/tasks/${taskId}`, {
+        const response = await fetch(`${API_BASE_URL}/api/tasks/${taskId}`, {
           method: 'PUT',
           headers: {
             'Content-Type': 'application/json',
@@ -886,8 +886,8 @@ async function renderWeeklyView(baseDate = new Date(), highlightDate = null) {
 
       // Determine if we are creating a new task (POST) or updating an existing one (PUT)
       const url = taskId
-        ? `https://tweek-web-app-2.onrender.com/api/tasks/${taskId}`
-        : "https://tweek-web-app-2.onrender.com/api/tasks";
+        ? `${API_BASE_URL}/api/tasks/${taskId}`
+        : `${API_BASE_URL}/api/tasks`;
 
       const method = taskId ? "PUT" : "POST";
 
@@ -1274,8 +1274,8 @@ async function renderWeeklyView(baseDate = new Date(), highlightDate = null) {
       try {
         if (isLoggedIn) {
           const currentWeekId = getWeekNumber(monday);
-          const weeklyTasksUrl = `https://tweek-web-app-2.onrender.com/api/tasks/week/${currentWeekId}`;
-          const somedayTasksUrl = `https://tweek-web-app-2.onrender.com/api/tasks/someday`;
+          const weeklyTasksUrl = `${API_BASE_URL}/api/tasks/week/${currentWeekId}`;
+          const somedayTasksUrl = `${API_BASE_URL}/api/tasks/someday`;
 
           const [weeklyRes, somedayRes] = await Promise.all([
             fetch(weeklyTasksUrl, { credentials: 'include', headers: { "Authorization": `Bearer ${localStorage.getItem("token")}` } }),
@@ -1651,7 +1651,7 @@ if (deleteBtn) {
     }
 
     try {
-      const response = await fetch(`https://tweek-web-app-2.onrender.com/api/tasks/${taskId}`, {
+      const response = await fetch(`${API_BASE_URL}/api/tasks/${taskId}`, {
         method: "DELETE",
         headers: {
           "Authorization": `Bearer ${localStorage.getItem("token")}`,
@@ -1718,7 +1718,7 @@ const shareTaskBtn = document.querySelector('.Sharetask'); // Your SVG button
 async function openShareModal() {
   // Fetch the list of users already shared with
   try {
-    const res = await fetch('https://tweek-web-app-2.onrender.com/api/tasks/shared-with', {
+    const res = await fetch(`${API_BASE_URL}/api/tasks/shared-with`, {
       headers: { 'Authorization': `Bearer ${localStorage.getItem("token")}` },
       credentials: 'include'
     });
@@ -1777,7 +1777,7 @@ shareBtn.addEventListener('click', async () => {
   }
 
   try {
-    const res = await fetch('https://tweek-web-app-2.onrender.com/api/tasks/share', {
+    const res = await fetch(`${API_BASE_URL}/api/tasks/share`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -1812,7 +1812,7 @@ sharedWithList.addEventListener('click', async (e) => {
     }
 
     try {
-      const res = await fetch('https://tweek-web-app-2.onrender.com/api/tasks/unshare', {
+      const res = await fetch(`${API_BASE_URL}/api/tasks/unshare`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -2500,7 +2500,6 @@ document.addEventListener('DOMContentLoaded', () => {
 // }
 
 function initializeAuthSystem() {
-  const API_BASE_URL = "https://tweek-web-app-2.onrender.com";
 
   // --- DOM ELEMENTS ---
   const authTrigger = document.getElementById('auth-trigger');
