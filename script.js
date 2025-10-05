@@ -1766,7 +1766,8 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             const token = localStorage.getItem("token");
             const res = await fetch(`${API_BASE_URL}/api/calendars`, {
-                headers: { "Authorization": `Bearer ${token}` }
+                headers: { "Authorization": `Bearer ${token}` },
+                credentials: "include"
             });
             if (!res.ok) throw new Error('Failed to fetch calendars');
             
@@ -1828,7 +1829,8 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             const token = localStorage.getItem("token");
             const res = await fetch(`${API_BASE_URL}/api/calendars/${calendarId}/tasks`, {
-                headers: { "Authorization": `Bearer ${token}` }
+                headers: { "Authorization": `Bearer ${token}` },
+                credentials: "include"
             });
             if (!res.ok) throw new Error('Failed to load tasks');
             
@@ -1871,7 +1873,8 @@ document.addEventListener('DOMContentLoaded', () => {
             const token = localStorage.getItem("token");
             // UPDATED: Fetching users for the specific calendar
             const res = await fetch(`${API_BASE_URL}/api/calendars/${calendarId}/shared-with`, {
-                headers: { 'Authorization': `Bearer ${token}` }
+                headers: { 'Authorization': `Bearer ${token}` },
+                credentials: 'include'
             });
             if (!res.ok) throw new Error('Could not fetch shared list');
 
@@ -1922,7 +1925,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${token}`
                 },
-                body: JSON.stringify({ shareWithEmail: email })
+                body: JSON.stringify({ shareWithEmail: email }),
+                credentials: 'include'
             });
             const result = await res.json();
             if (!res.ok) throw new Error(result.error || 'Failed to share.');
@@ -1951,7 +1955,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${token}`
                 },
-                body: JSON.stringify({ unshareWithEmail: email })
+                body: JSON.stringify({ unshareWithEmail: email }),
+                credentials: 'include'
             });
             const result = await res.json();
             if (!res.ok) throw new Error(result.error);
