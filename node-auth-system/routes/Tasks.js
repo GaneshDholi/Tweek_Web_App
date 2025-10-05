@@ -1,9 +1,8 @@
 const express = require("express");
 const router = express.Router();
 const mongoose = require('mongoose');
-const UserTasksProfile = require("../models/userTasksProfile");
+const UserTasksProfile = require("../models/UserTasksProfile");
 const User = require("../models/User");
-const Task = require('../models/userTasksProfile'); // Update the path to your Task model
 
 // POST /api/tasks/
 router.post('/', authMiddleware, async (req, res) => {
@@ -312,140 +311,6 @@ router.delete("/:id", async (req, res) => {
     } catch (err) {
         // This will catch any unexpected errors during the process
         console.error("CRITICAL ERROR in DELETE /:id:", err);
-        res.status(500).json({ error: "An unexpected error occurred." });
-    }
-});
-
-// --- SHARE FUNCTIONALITY ---
-const Calendar = require('../models/Calendar');
-
-router.post("/share", async (req, res) => {
-    try {
-        const sharerId = new mongoose.Types.ObjectId(req.user.id);
-        const { shareWithEmail } = req.body;
-
-        if (!shareWithEmail) {
-            return res.status(400).json({ error: "Email to share with is required." });
-        }
-
-        const [sharer, userToShareWith] = await Promise.all([
-            User.findById(sharerId),
-            User.findOne({ email: shareWithEmail })
-        ]);
-
-        if (!userToShareWith) {
-            return res.status(404).json({ error: "User to share with not found." });
-        }
-
-        if (userToShareWith._id.equals(sharerId)) {
-            return res.status(400).json({ error: "You cannot share your tasks with yourself." });
-        }
-
-        // 1. Grant view access (your existing logic)
-        userToShareWith.canViewTasksOf.addToSet(sharerId);
-        sharer.sharedWith.addToSet(userToShareWith._id);
-
-        // 2. Create the Calendar document to represent this share
-        const calendarName = `${sharer.firstName}'s Tasks`;
-        await Calendar.findOneAndUpdate(
-            { owner: sharerId, isVirtual: true }, // Find an existing virtual calendar for this owner
-            {
-                name: calendarName,
-                owner: sharerId,
-                $addToSet: { sharedWith: userToShareWith._id }, // Add the new user
-                isVirtual: true
-            },
-            { upsert: true, new: true } // Create it if it doesn't exist
-        );
-
-        await sharer.save();
-        await userToShareWith.save();
-
-        res.status(200).json({ message: `Successfully shared your tasks with ${shareWithEmail}.` });
-
-    } catch (err) {
-        console.error("Error in POST /share:", err);
-        res.status(500).json({ error: "An unexpected error occurred during sharing." });
-    }
-});
-
-router.post("/unshare", async (req, res) => {
-    try {
-        const sharerId = new mongoose.Types.ObjectId(req.user.id);
-        const { unshareWithEmail } = req.body;
-
-        const userToUnshareWith = await User.findOne({ email: unshareWithEmail });
-        if (!userToUnshareWith) {
-            return res.status(404).json({ error: "User to unshare with not found." });
-        }
-
-        // 1. Revoke view access (your existing logic)
-        await User.updateOne({ _id: userToUnshareWith._id }, { $pull: { canViewTasksOf: sharerId } });
-        await User.updateOne({ _id: sharerId }, { $pull: { sharedWith: userToUnshareWith._id } });
-
-        // 2. Remove the user from the virtual Calendar's sharedWith list
-        await Calendar.updateOne(
-            { owner: sharerId, isVirtual: true },
-            { $pull: { sharedWith: userToUnshareWith._id } }
-        );
-
-        res.status(200).json({ message: `Successfully unshared your tasks with ${unshareWithEmail}.` });
-
-    } catch (err) {
-        console.error("Error in POST /unshare:", err);
-        res.status(500).json({ error: "An unexpected error occurred during unsharing." });
-    }
-});
-
-router.get("/shared-with", async (req, res) => {
-    try {
-        const user = await User.findById(req.user.id)
-            .populate('sharedWith', 'email firstName lastName') // Get the full user object (but only select fields)
-            .lean();
-
-        if (!user) {
-            return res.status(404).json({ error: "User not found." });
-        }
-
-        res.json(user.sharedWith || []);
-    } catch (err) {
-        console.error("Error fetching shared-with list:", err);
-        res.status(500).json({ error: "An error occurred." });
-    }
-});
-
-// The generic share modal is replaced by a per-calendar share action
-router.post("/:calendarId/share", async (req, res) => {
-    try {
-        const { calendarId } = req.params;
-        const { shareWithEmail } = req.body;
-        const ownerId = new mongoose.Types.ObjectId(req.user.id);
-
-        const calendar = await Calendar.findById(calendarId);
-        if (!calendar) {
-            return res.status(404).json({ error: "Calendar not found." });
-        }
-
-        // Authorization: Only the owner can share it
-        if (!calendar.owner.equals(ownerId)) {
-            return res.status(403).json({ error: "You are not authorized to share this calendar." });
-        }
-
-        const userToShareWith = await User.findOne({ email: shareWithEmail });
-        if (!userToShareWith) {
-            return res.status(404).json({ error: "User to share with not found." });
-        }
-
-        // Add user to the sharedWith array
-        await Calendar.updateOne(
-            { _id: calendarId },
-            { $addToSet: { sharedWith: userToShareWith._id } }
-        );
-
-        res.status(200).json({ message: `Successfully shared '${calendar.name}' with ${shareWithEmail}.` });
-
-    } catch (err) {
-        console.error("Error sharing calendar:", err);
         res.status(500).json({ error: "An unexpected error occurred." });
     }
 });
