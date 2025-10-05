@@ -12,7 +12,7 @@ const Task = require('../models/UserTasksProfile');
 
 // --- Security & Validation (No changes needed) ---
 const authLimiter = rateLimit({
-    windowMs: 10 * 1000, // 15 minutes
+    windowMs: 15 * 60 * 1000, // 15 minutes
     max: 10,
     message: 'Too many attempts from this IP, please try again after 15 minutes.',
     standardHeaders: true,
