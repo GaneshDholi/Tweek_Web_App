@@ -1,7 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const mongoose = require('mongoose');
-const UserTasksProfile = require("../models/UserTasksProfile");
+const UserTasksProfile = require("../models/userTasksProfile");
 const User = require("../models/User");
 
 // POST /api/tasks/
