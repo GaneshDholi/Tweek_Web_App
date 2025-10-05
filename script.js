@@ -154,7 +154,7 @@ const translations = {
   }
 };
 
-const API_BASE_URL = ["http://localhost:5000"];
+const API_BASE_URL = "https://tweek-web-app-2.onrender.com";
 let isLoggedIn = false;
 
 let authSystem;
