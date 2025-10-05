@@ -1,8 +1,9 @@
 const express = require("express");
 const router = express.Router();
 const mongoose = require('mongoose');
-const UserTasksProfile = require("../models/userTasksProfile");
+const UserTasksProfile = require("../models/UserTasksProfile");
 const User = require("../models/User");
+const authMiddleware = require("../middleware/auth");
 
 // POST /api/tasks/
 router.post('/', authMiddleware, async (req, res) => {

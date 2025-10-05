@@ -8,7 +8,7 @@ const otpGenerator = require('otp-generator');
 const User = require('../models/User');
 const { sendEmail } = require('../utils/emailProvider');
 const authMiddleware = require('../middleware/auth');
-const Task = require('../models/userTasksProfile');
+const Task = require('../models/UserTasksProfile');
 
 // --- Security & Validation (No changes needed) ---
 const authLimiter = rateLimit({

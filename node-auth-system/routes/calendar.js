@@ -4,7 +4,7 @@ const mongoose = require("mongoose");
 const Calendar = require("../models/Calendar");
 const User = require("../models/User");
 const UserTasksProfile = require("../models/UserTasksProfile"); // Make sure to import this
-const authMiddleware = require("../middleware/authMiddleware");
+const authMiddleware = require("../middleware/auth");
 
 // This helper function creates the user's primary calendar if it doesn't exist.
 // This is useful for sharing, ensuring there's always a calendar to share.
