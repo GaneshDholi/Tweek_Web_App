@@ -1225,6 +1225,7 @@ async function renderWeeklyView(baseDate = new Date(), highlightDate = null) {
     somedayDiv.appendChild(label);
 
     const taskContainer = document.createElement("div");
+    taskContainer.className = "task-container";
     taskContainer.dataset.isSomeday = "true";
     addDropZoneListeners(taskContainer);
 
@@ -1714,6 +1715,9 @@ document.addEventListener('DOMContentLoaded', () => {
   const sharedWithList = document.getElementById('sharedWithList');
   const shareTaskBtn = document.getElementById('share-task-btn'); // The main button to open the modal
 
+  function getSelectedCalendarId() {
+    return selectedCalendarId;
+  }
   // --- FUNCTIONS ---
 
   // Opens the modal and populates it with data for the CURRENTLY selected calendar
