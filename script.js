@@ -1713,7 +1713,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- DOM ELEMENTS ---
     // Calendar View Elements
     const calendarListContainer = document.getElementById("calendar-list-container");
-    const taskContainer = document.getElementById("task-box"); // Make sure your HTML has this
+    const taskContainer = document.querySelectorAll(".task-box"); // Make sure your HTML has this
     const calendarDropdownTrigger = document.getElementById("auth-trigger"); // The button to open the calendar list
 
     // Share Modal Elements
