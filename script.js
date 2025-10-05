@@ -558,7 +558,7 @@ function addDropZoneListeners(element) {
 const weekContainer = document.getElementById("weekly-view");
 const rootStyles = getComputedStyle(document.documentElement);
 const primaryFont = rootStyles.getPropertyValue("--primary-font").trim();
-
+const taskContainer = null;
 let isRendering = false
 async function renderWeeklyView(baseDate = new Date(), highlightDate = null) {
   if (isRendering) {
@@ -1224,7 +1224,7 @@ async function renderWeeklyView(baseDate = new Date(), highlightDate = null) {
     label.style.fontSize = "21px";
     somedayDiv.appendChild(label);
 
-    const taskContainer = document.createElement("div");
+    taskContainer = document.createElement("div");
     taskContainer.className = "task-container";
     taskContainer.dataset.isSomeday = "true";
     addDropZoneListeners(taskContainer);
@@ -2896,7 +2896,6 @@ document.addEventListener("click", (e) => {
 // --- Constants and State ---
 // It's good practice to keep API URLs and DOM elements at the top.
 const calendarListContainer = document.getElementById("calendar-list-container");
-const taskContainer = document.getElementById("task-container"); // Assuming this is your task container ID
 const authTriggerBtn = document.getElementById("auth-trigger");
 
 let allCalendars = []; // Store fetched calendars to avoid re-fetching
