@@ -558,7 +558,7 @@ function addDropZoneListeners(element) {
 const weekContainer = document.getElementById("weekly-view");
 const rootStyles = getComputedStyle(document.documentElement);
 const primaryFont = rootStyles.getPropertyValue("--primary-font").trim();
-let taskContainer = null;
+
 let isRendering = false
 async function renderWeeklyView(baseDate = new Date(), highlightDate = null) {
   if (isRendering) {
@@ -1224,8 +1224,7 @@ async function renderWeeklyView(baseDate = new Date(), highlightDate = null) {
     label.style.fontSize = "21px";
     somedayDiv.appendChild(label);
 
-    taskContainer = document.createElement("div");
-    taskContainer.className = "task-container";
+    const taskContainer = document.createElement("div");
     taskContainer.dataset.isSomeday = "true";
     addDropZoneListeners(taskContainer);
 
@@ -1704,139 +1703,135 @@ document.addEventListener('coloris:pick', event => {
   }
 });
 
-//share calendar code
-document.addEventListener('DOMContentLoaded', () => {
-  // Modal elements
-  const shareModal = document.getElementById('shareModal'); // Your modal container
-  const shareModalOverlay = document.getElementById('shareModalOverlay');
-  const closeShareModalBtn = document.getElementById('closeShareModalBtn');
-  const shareEmailInput = document.getElementById('shareEmailInput');
-  const shareBtn = document.getElementById('shareBtn');
-  const sharedWithList = document.getElementById('sharedWithList');
-  const shareTaskBtn = document.getElementById('share-task-btn'); // The main button to open the modal
 
-  // --- FUNCTIONS ---
+// share model
+// --- SHARE MODAL ELEMENTS ---
+const shareModal = document.getElementById('shareModal');
+const shareModalOverlay = document.getElementById('shareModalOverlay');
+const closeShareModalBtn = document.getElementById('closeShareModalBtn');
+const shareEmailInput = document.getElementById('shareEmailInput');
+const shareBtn = document.getElementById('shareBtn');
+const sharedWithList = document.getElementById('sharedWithList');
+const shareTaskBtn = document.querySelector('.Sharetask'); // Your SVG button
 
-  // Opens the modal and populates it with data for the CURRENTLY selected calendar
-  async function openShareModal() {
-    const calendarId = window.getSelectedCalendarId(); 
-    if (!calendarId) {
-      alert("Please select a calendar first.");
-      return;
-    }
-
-    try {
-      const res = await fetch(`${API_BASE_URL}/api/calendars/${calendarId}/shared-with`, {
-        headers: { 'Authorization': `Bearer ${localStorage.getItem("token")}` },
-        credentials: "include",
-      });
-      if (res.status === 403) {
-        alert("You can only share calendars that you own.");
-        return;
-      }
-      if (!res.ok) throw new Error('Could not fetch shared list');
-
-      const users = await res.json();
-      renderSharedWithList(users);
-
-      // Show the modal
-      shareModal.style.display = 'block';
-      shareModalOverlay.style.display = 'block';
-
-    } catch (error) {
-      console.error(error);
-      alert('Could not open sharing options.');
-    }
-  }
-
-  function closeShareModal() {
-    shareModal.style.display = 'none';
-    shareModalOverlay.style.display = 'none';
-    shareEmailInput.value = '';
-  }
-
-  function renderSharedWithList(users) {
-    sharedWithList.innerHTML = '';
-    if (users.length === 0) {
-      sharedWithList.innerHTML = '<li>Not shared with anyone yet.</li>';
-      return;
-    }
-    users.forEach(user => {
-      const li = document.createElement('li');
-      li.innerHTML = `
-                <span>${user.email}</span>
-                <button class="unshare-btn" data-email="${user.email}">Unshare</button>
-            `;
-      sharedWithList.appendChild(li);
+// --- FUNCTIONS ---
+async function openShareModal() {
+  // Fetch the list of users already shared with
+  try {
+    const res = await fetch('https://tweek-web-app-2.onrender.com/api/tasks/shared-with', {
+      headers: { 'Authorization': `Bearer ${localStorage.getItem("token")}` },
+      credentials: 'include'
     });
+    if (!res.ok) throw new Error('Could not fetch shared list');
+
+    const users = await res.json();
+    renderSharedWithList(users);
+
+    // Show the modal
+    shareModal.style.display = 'block';
+    shareModalOverlay.style.display = 'block';
+
+  } catch (error) {
+    console.error(error);
+    alert('Could not open sharing options.');
+  }
+}
+
+function closeShareModal() {
+  shareModal.style.display = 'none';
+  shareModalOverlay.style.display = 'none';
+  shareEmailInput.value = ''; // Clear input
+}
+
+function renderSharedWithList(users) {
+  sharedWithList.innerHTML = ''; // Clear current list
+  if (users.length === 0) {
+    sharedWithList.innerHTML = '<li>You haven\'t shared your tasks with anyone yet.</li>';
+    return;
   }
 
-  // --- EVENT LISTENERS ---
-
-  if (shareTaskBtn) {
-    shareTaskBtn.addEventListener('click', openShareModal);
-  }
-  closeShareModalBtn.addEventListener('click', closeShareModal);
-  shareModalOverlay.addEventListener('click', closeShareModal);
-
-  // Share button inside modal
-  shareBtn.addEventListener('click', async () => {
-    const calendarId = window.getSelectedCalendarId();
-    const email = shareEmailInput.value.trim();
-    if (!email) return alert('Please enter an email address.');
-
-    try {
-      const res = await fetch(`${API_BASE_URL}/api/calendars/${calendarId}/share`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem("token")}`
-        },
-        body: JSON.stringify({ shareWithEmail: email }),
-        credentials: 'include'
-      });
-
-      const result = await res.json();
-      if (!res.ok) throw new Error(result.error || 'Failed to share.');
-
-      alert(result.message);
-      shareEmailInput.value = '';
-      await openShareModal(); // Refresh the list
-
-    } catch (error) {
-      alert(`Error: ${error.message}`);
-    }
+  users.forEach(user => {
+    const li = document.createElement('li');
+    li.innerHTML = `
+            <span>${user.email}</span>
+            <button class="unshare-btn" data-email="${user.email}">Unshare</button>
+        `;
+    sharedWithList.appendChild(li);
   });
+}
 
-  // Unshare button clicks (event delegation)
-  sharedWithList.addEventListener('click', async (e) => {
-    if (!e.target.classList.contains('unshare-btn')) return;
+// --- EVENT LISTENERS ---
+if (shareTaskBtn) {
+  shareTaskBtn.addEventListener('click', openShareModal);
+}
 
-    const calendarId = window.getSelectedCalendarId();
+closeShareModalBtn.addEventListener('click', closeShareModal);
+shareModalOverlay.addEventListener('click', closeShareModal);
+
+// Share button inside modal
+shareBtn.addEventListener('click', async () => {
+  const email = shareEmailInput.value.trim();
+  if (!email) {
+    alert('Please enter an email address.');
+    return;
+  }
+
+  try {
+    const res = await fetch('https://tweek-web-app-2.onrender.com/api/tasks/share', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${localStorage.getItem("token")}`
+      },
+      credentials: 'include',
+      body: JSON.stringify({ shareWithEmail: email })
+    });
+
+    const result = await res.json();
+
+    if (!res.ok) {
+      throw new Error(result.error || 'Failed to share.');
+    }
+
+    alert(result.message);
+    shareEmailInput.value = ''; // Clear input
+    openShareModal(); // Refresh the list
+
+  } catch (error) {
+    console.error(error);
+    alert(`Error: ${error.message}`);
+  }
+});
+
+// Unshare button clicks (using event delegation)
+sharedWithList.addEventListener('click', async (e) => {
+  if (e.target.classList.contains('unshare-btn')) {
     const email = e.target.dataset.email;
-    if (!confirm(`Stop sharing this calendar with ${email}?`)) return;
+    if (!confirm(`Are you sure you want to unshare your tasks with ${email}?`)) {
+      return;
+    }
 
     try {
-      const res = await fetch(`${API_BASE_URL}/api/calendars/${calendarId}/unshare`, {
+      const res = await fetch('https://tweek-web-app-2.onrender.com/api/tasks/unshare', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${localStorage.getItem("token")}`
         },
-        body: JSON.stringify({ unshareWithEmail: email }),
-        credentials: 'include'
+        credentials: 'include',
+        body: JSON.stringify({ unshareWithEmail: email })
       });
-
       const result = await res.json();
       if (!res.ok) throw new Error(result.error);
 
       alert(result.message);
-      e.target.parentElement.remove(); // Remove from UI
+      e.target.parentElement.remove(); // Remove the user from the list UI
 
     } catch (error) {
+      console.error(error);
       alert(`Error: ${error.message}`);
     }
-  });
+  }
 });
 
 // This script assumes you have a way to get the user's auth token
@@ -1877,8 +1872,7 @@ document.addEventListener('DOMContentLoaded', () => {
     try {
       // This endpoint is the new GET /api/calendars from the backend section
       const response = await fetch(`${API_BASE_URL}/api/calendars`, {
-        headers: { 'Authorization': `Bearer ${getAuthToken()}` },
-        credentials: 'include'
+        headers: { 'Authorization': `Bearer ${getAuthToken()}` }
       });
       if (!response.ok) throw new Error('Failed to fetch calendars');
 
@@ -1899,7 +1893,7 @@ document.addEventListener('DOMContentLoaded', () => {
       // The unique ID for filtering is now the calendar's own ID
       const calendarId = calendar._id;
       selectedCalendarIds.push(calendarId); // Select all by default
-      console.log("Rendering calendar:", calendar.name, "ID:", calendarId);
+
       const calendarItem = document.createElement('label');
       calendarItem.className = 'calendar-item';
       calendarItem.setAttribute('for', `cal-checkbox-${calendarId}`);
@@ -1993,7 +1987,6 @@ document.addEventListener('DOMContentLoaded', () => {
     renderVisibleTasks();
   }
 
-  
   // --- 4. RENDERING LOGIC ---
 
   // // Builds the HTML for the calendar list in the dropdown
@@ -2891,163 +2884,148 @@ document.addEventListener("click", (e) => {
   }
 });
 
-// --- Constants and State ---
-// It's good practice to keep API URLs and DOM elements at the top.
-const calendarListContainer = document.getElementById("calendar-list-container");
-const authTriggerBtn = document.getElementById("auth-trigger");
-
-let allCalendars = []; // Store fetched calendars to avoid re-fetching
 let selectedCalendarId = null;
 
-// --- Main Logic ---
+function renderCalendars(calendars) {
+  const container = document.getElementById("calendar-list-container");
+  container.innerHTML = "";
 
-// This is now the single entry point when the dropdown is clicked.
-async function onCalendarDropdownOpen() {
-  // Only fetch the list of calendars if we haven't already.
-  if (allCalendars.length > 0) {
+  if (!calendars.length) {
+    container.innerHTML = "<p>No calendars found</p>";
     return;
   }
 
-  calendarListContainer.innerHTML = "<p>Loading calendars...</p>";
-  try {
-    const calendars = await fetchCalendars();
-    allCalendars = calendars; // Save the fetched calendars
-
-    if (allCalendars.length > 0) {
-      // If no calendar is selected, default to the first one.
-      selectedCalendarId = allCalendars[0].id;
-      renderCalendarList();
-      await loadAndRenderTasks(selectedCalendarId);
-    } else {
-      calendarListContainer.innerHTML = "<p>No calendars found.</p>";
-    }
-  } catch (err) {
-    console.error("Failed to initialize calendars:", err);
-    calendarListContainer.innerHTML = "<p>Error loading calendars.</p>";
-  }
-}
-
-// --- Data Fetching Functions ---
-
-// 1. Fetches the LIST of calendars from the API. Its only job is to get data.
-async function fetchCalendars() {
-  const token = localStorage.getItem("token"); // Don't forget the token!
-  const res = await fetch(`${API_BASE_URL}/api/calendars`, {
-    method: "GET",
-    headers: {
-      "Content-Type": "application/json",
-      // CRITICAL: Added Authorization header
-      "Authorization": `Bearer ${token}`
-    },
-    credentials: "include"
-  });
-  if (!res.ok) {
-    throw new Error('Failed to fetch calendars from API');
-  }
-  return await res.json();
-}
-
-// 2. Fetches the TASKS for a single calendar. Its only job is to get data.
-async function fetchTasksForCalendar(calendarId) {
-  const token = localStorage.getItem("token");
-  if (!calendarId) {
-    throw new Error("No calendar ID provided.");
-  }
-  const res = await fetch(`${API_BASE_URL}/api/calendars/${calendarId}/tasks`, {
-    headers: {
-      "Content-Type": "application/json",
-      // CRITICAL: Added Authorization header
-      "Authorization": `Bearer ${token}`
-    },
-    credentials: "include"
-  });
-  if (!res.ok) {
-    throw new Error(`Failed to fetch tasks: ${res.status}`);
-  }
-  return await res.json();
-}
-
-
-// --- DOM Rendering Functions ---
-
-// Renders the list of calendars. Its only job is to update the DOM.
-function renderCalendarList() {
-  calendarListContainer.innerHTML = ""; // Clear old list
-
-  allCalendars.forEach(cal => {
+  calendars.forEach(cal => {
     const calDiv = document.createElement("div");
-    calDiv.className = "calendar-item";
-    calDiv.dataset.calendarId = cal.id; // Use data-attribute for easy access
+    calDiv.classList.add("calendar-item");
 
+    // Highlight the active one
     if (cal.id === selectedCalendarId) {
       calDiv.classList.add("active");
     }
 
     calDiv.innerHTML = `
-            <span class="calendar-name">${cal.name}</span>
-            <small class="calendar-owner">
-                ${cal.isOwnedByCurrentUser ? "(You)" : "Shared by " + cal.owner.firstName}
-            </small>
-        `;
+      <span class="calendar-name">${cal.name}</span>
+      <small class="calendar-owner">
+        ${cal.isOwnedByCurrentUser ? "(You)" : "Shared by " + cal.owner.firstName}
+      </small>
+    `;
 
-    // Event listener to switch active calendar
-    calDiv.addEventListener("click", handleCalendarSelection);
-    calendarListContainer.appendChild(calDiv);
+    // Click to switch calendars
+    calDiv.addEventListener("click", () => {
+      selectedCalendarId = cal.id;
+      renderCalendars(calendars);     // re-render to update active highlight
+      loadCalendarData(selectedCalendarId); // load tasks for this calendar
+    });
+
+    container.appendChild(calDiv);
   });
 }
 
-// Loads and then renders tasks for the selected calendar.
-async function loadAndRenderTasks(calendarId) {
-  taskContainer.innerHTML = "<p>Loading tasks...</p>"; // Provide user feedback
-  try {
-    const tasks = await fetchTasksForCalendar(calendarId);
 
-    taskContainer.innerHTML = ""; // Clear "Loading..." message
+async function loadCalendarData(calendarId) {
+  try {
+    const res = await fetch(`${API_BASE_URL}/api/calendars/${calendarId}/tasks`, {
+      headers: { "Content-Type": "application/json" },
+      credentials: "include"
+    });
+
+    const tasks = await res.json();
+
+    const taskContainer = document.getElementById("task-container");
+    taskContainer.innerHTML = ""; // Clear previous tasks
+
     if (!tasks.length) {
-      taskContainer.innerHTML = "<p>No tasks found in this calendar.</p>";
+      taskContainer.innerHTML = "<p>No tasks found</p>";
       return;
     }
 
     tasks.forEach(task => {
       const taskDiv = document.createElement("div");
-      taskDiv.className = "task-item";
+      taskDiv.classList.add("task-item");
       taskDiv.innerText = task.title || "Untitled Task";
       taskContainer.appendChild(taskDiv);
     });
+
   } catch (err) {
     console.error("Error loading tasks:", err);
-    taskContainer.innerHTML = "<p>Could not load tasks.</p>";
   }
 }
 
-// --- Event Handlers ---
-function getSelectedCalendarId() {
-  return selectedCalendarId;
+
+async function loadCalendars() {
+  try {
+    const res = await fetch(`${API_BASE_URL}/api/calendars`, {
+      method: "GET",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include"
+    });
+
+    const calendars = await res.json();
+    const container = document.getElementById("calendar-list-container");
+    container.innerHTML = ""; // Clear old list
+
+    if (!calendars.length) {
+      container.innerHTML = "<p>No calendars found</p>";
+      return;
+    }
+
+    calendars.forEach(cal => {
+      const calDiv = document.createElement("div");
+      calDiv.classList.add("calendar-item");
+      if (cal.id === selectedCalendarId) calDiv.classList.add("active");
+
+      calDiv.innerHTML = `
+    <span class="calendar-name">${cal.name}</span>
+    <small class="calendar-owner">
+      ${cal.isOwnedByCurrentUser ? "(You)" : "Shared by " + cal.owner.firstName}
+    </small>
+  `;
+
+      calDiv.addEventListener("click", () => {
+        selectedCalendarId = cal.id;
+        loadCalendarData(selectedCalendarId);
+        renderCalendars(calendars);
+      });
+
+      container.appendChild(calDiv);
+    });
+
+    if (!selectedCalendarId) {
+      selectedCalendarId = calendars[0].id;
+      loadCalendarData(selectedCalendarId);
+    }
+
+    async function loadCalendarData(calendarId) {
+      if (!calendarId) {
+        console.error("No calendarId provided to loadCalendarData");
+        return;
+      }
+      try {
+        const res = await fetch(`${API_BASE_URL}/api/calendars/${calendarId}/tasks`, {
+          headers: { "Content-Type": "application/json" },
+          credentials: "include"
+        });
+
+        if (!res.ok) {
+          throw new Error(`Failed to fetch tasks: ${res.status}`);
+        }
+
+        const tasks = await res.json();
+        console.log("Tasks for calendar:", calendarId, tasks);
+        // render tasks in UI...
+      } catch (err) {
+        console.error("Error loading tasks:", err);
+      }
+    }
+  } catch (err) {
+    console.error("Error loading calendars:", err);
+  }
 }
 
-// Handles a click on a calendar item efficiently.
-async function handleCalendarSelection(event) {
-  // 'currentTarget' refers to the div the listener was attached to.
-  const clickedCalendarId = event.currentTarget.dataset.calendarId;
+// Load when dropdown opens
+document.getElementById("auth-trigger").addEventListener("click", () => {
+  loadCalendars();
+});
 
-  if (clickedCalendarId === selectedCalendarId) {
-    return; // Do nothing if the already-active calendar is clicked
-  }
 
-  selectedCalendarId = event.currentTarget.dataset.calendarId;
-
-  // More EFFICIENT: Update classes instead of re-rendering the whole list.
-  // 1. Remove 'active' from the previously active item
-  const oldActive = calendarListContainer.querySelector(".calendar-item.active");
-  if (oldActive) {
-    oldActive.classList.remove("active");
-  }
-  // 2. Add 'active' to the newly clicked item
-  event.currentTarget.classList.add("active");
-
-  // 3. Load the tasks for the new calendar
-  await loadAndRenderTasks(selectedCalendarId);
-}
-
-// --- Initial Setup ---
-authTriggerBtn.addEventListener("click", onCalendarDropdownOpen);
