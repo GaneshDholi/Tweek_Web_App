@@ -1705,8 +1705,6 @@ document.addEventListener('coloris:pick', event => {
 
 //share calendar code
 document.addEventListener('DOMContentLoaded', () => {
-  const API_BASE_URL = 'https://tweek-web-app-2.onrender.com';
-
   // Modal elements
   const shareModal = document.getElementById('share-modal'); // Your modal container
   const shareModalOverlay = document.getElementById('share-modal-overlay');
@@ -1729,6 +1727,7 @@ document.addEventListener('DOMContentLoaded', () => {
     try {
       const res = await fetch(`${API_BASE_URL}/api/calendars/${calendarId}/shared-with`, {
         headers: { 'Authorization': `Bearer ${localStorage.getItem("token")}` },
+        credentials: "include",
       });
       if (res.status === 403) {
         alert("You can only share calendars that you own.");
@@ -1792,7 +1791,8 @@ document.addEventListener('DOMContentLoaded', () => {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${localStorage.getItem("token")}`
         },
-        body: JSON.stringify({ shareWithEmail: email })
+        body: JSON.stringify({ shareWithEmail: email }),
+        credentials: 'include'
       });
 
       const result = await res.json();
@@ -1822,7 +1822,8 @@ document.addEventListener('DOMContentLoaded', () => {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${localStorage.getItem("token")}`
         },
-        body: JSON.stringify({ unshareWithEmail: email })
+        body: JSON.stringify({ unshareWithEmail: email }),
+        credentials: 'include'
       });
 
       const result = await res.json();
@@ -1875,7 +1876,8 @@ document.addEventListener('DOMContentLoaded', () => {
     try {
       // This endpoint is the new GET /api/calendars from the backend section
       const response = await fetch(`${API_BASE_URL}/api/calendars`, {
-        headers: { 'Authorization': `Bearer ${getAuthToken()}` }
+        headers: { 'Authorization': `Bearer ${getAuthToken()}` },
+        credentials: 'include'
       });
       if (!response.ok) throw new Error('Failed to fetch calendars');
 
@@ -2900,66 +2902,68 @@ let selectedCalendarId = null;
 
 // This is now the single entry point when the dropdown is clicked.
 async function onCalendarDropdownOpen() {
-    // Only fetch the list of calendars if we haven't already.
+  // Only fetch the list of calendars if we haven't already.
+  if (allCalendars.length > 0) {
+    return;
+  }
+
+  calendarListContainer.innerHTML = "<p>Loading calendars...</p>";
+  try {
+    const calendars = await fetchCalendars();
+    allCalendars = calendars; // Save the fetched calendars
+
     if (allCalendars.length > 0) {
-        return;
+      // If no calendar is selected, default to the first one.
+      selectedCalendarId = allCalendars[0].id;
+      renderCalendarList();
+      await loadAndRenderTasks(selectedCalendarId);
+    } else {
+      calendarListContainer.innerHTML = "<p>No calendars found.</p>";
     }
-
-    calendarListContainer.innerHTML = "<p>Loading calendars...</p>";
-    try {
-        const calendars = await fetchCalendars();
-        allCalendars = calendars; // Save the fetched calendars
-
-        if (allCalendars.length > 0) {
-            // If no calendar is selected, default to the first one.
-            selectedCalendarId = allCalendars[0].id;
-            renderCalendarList();
-            await loadAndRenderTasks(selectedCalendarId);
-        } else {
-            calendarListContainer.innerHTML = "<p>No calendars found.</p>";
-        }
-    } catch (err) {
-        console.error("Failed to initialize calendars:", err);
-        calendarListContainer.innerHTML = "<p>Error loading calendars.</p>";
-    }
+  } catch (err) {
+    console.error("Failed to initialize calendars:", err);
+    calendarListContainer.innerHTML = "<p>Error loading calendars.</p>";
+  }
 }
 
 // --- Data Fetching Functions ---
 
 // 1. Fetches the LIST of calendars from the API. Its only job is to get data.
 async function fetchCalendars() {
-    const token = localStorage.getItem("token"); // Don't forget the token!
-    const res = await fetch(`${API_BASE_URL}/api/calendars`, {
-        method: "GET",
-        headers: {
-            "Content-Type": "application/json",
-            // CRITICAL: Added Authorization header
-            "Authorization": `Bearer ${token}`
-        },
-    });
-    if (!res.ok) {
-        throw new Error('Failed to fetch calendars from API');
-    }
-    return await res.json();
+  const token = localStorage.getItem("token"); // Don't forget the token!
+  const res = await fetch(`${API_BASE_URL}/api/calendars`, {
+    method: "GET",
+    headers: {
+      "Content-Type": "application/json",
+      // CRITICAL: Added Authorization header
+      "Authorization": `Bearer ${token}`,
+      credentials: "include"
+    },
+  });
+  if (!res.ok) {
+    throw new Error('Failed to fetch calendars from API');
+  }
+  return await res.json();
 }
 
 // 2. Fetches the TASKS for a single calendar. Its only job is to get data.
 async function fetchTasksForCalendar(calendarId) {
-    const token = localStorage.getItem("token");
-    if (!calendarId) {
-        throw new Error("No calendar ID provided.");
-    }
-    const res = await fetch(`${API_BASE_URL}/api/calendars/${calendarId}/tasks`, {
-        headers: {
-            "Content-Type": "application/json",
-            // CRITICAL: Added Authorization header
-            "Authorization": `Bearer ${token}`
-        },
-    });
-    if (!res.ok) {
-        throw new Error(`Failed to fetch tasks: ${res.status}`);
-    }
-    return await res.json();
+  const token = localStorage.getItem("token");
+  if (!calendarId) {
+    throw new Error("No calendar ID provided.");
+  }
+  const res = await fetch(`${API_BASE_URL}/api/calendars/${calendarId}/tasks`, {
+    headers: {
+      "Content-Type": "application/json",
+      // CRITICAL: Added Authorization header
+      "Authorization": `Bearer ${token}`,
+      credentials: "include"
+    },
+  });
+  if (!res.ok) {
+    throw new Error(`Failed to fetch tasks: ${res.status}`);
+  }
+  return await res.json();
 }
 
 
@@ -2967,78 +2971,78 @@ async function fetchTasksForCalendar(calendarId) {
 
 // Renders the list of calendars. Its only job is to update the DOM.
 function renderCalendarList() {
-    calendarListContainer.innerHTML = ""; // Clear old list
+  calendarListContainer.innerHTML = ""; // Clear old list
 
-    allCalendars.forEach(cal => {
-        const calDiv = document.createElement("div");
-        calDiv.className = "calendar-item";
-        calDiv.dataset.calendarId = cal.id; // Use data-attribute for easy access
+  allCalendars.forEach(cal => {
+    const calDiv = document.createElement("div");
+    calDiv.className = "calendar-item";
+    calDiv.dataset.calendarId = cal.id; // Use data-attribute for easy access
 
-        if (cal.id === selectedCalendarId) {
-            calDiv.classList.add("active");
-        }
+    if (cal.id === selectedCalendarId) {
+      calDiv.classList.add("active");
+    }
 
-        calDiv.innerHTML = `
+    calDiv.innerHTML = `
             <span class="calendar-name">${cal.name}</span>
             <small class="calendar-owner">
                 ${cal.isOwnedByCurrentUser ? "(You)" : "Shared by " + cal.owner.firstName}
             </small>
         `;
 
-        // Event listener to switch active calendar
-        calDiv.addEventListener("click", handleCalendarSelection);
-        calendarListContainer.appendChild(calDiv);
-    });
+    // Event listener to switch active calendar
+    calDiv.addEventListener("click", handleCalendarSelection);
+    calendarListContainer.appendChild(calDiv);
+  });
 }
 
 // Loads and then renders tasks for the selected calendar.
 async function loadAndRenderTasks(calendarId) {
-    taskContainer.innerHTML = "<p>Loading tasks...</p>"; // Provide user feedback
-    try {
-        const tasks = await fetchTasksForCalendar(calendarId);
-        
-        taskContainer.innerHTML = ""; // Clear "Loading..." message
-        if (!tasks.length) {
-            taskContainer.innerHTML = "<p>No tasks found in this calendar.</p>";
-            return;
-        }
+  taskContainer.innerHTML = "<p>Loading tasks...</p>"; // Provide user feedback
+  try {
+    const tasks = await fetchTasksForCalendar(calendarId);
 
-        tasks.forEach(task => {
-            const taskDiv = document.createElement("div");
-            taskDiv.className = "task-item";
-            taskDiv.innerText = task.title || "Untitled Task";
-            taskContainer.appendChild(taskDiv);
-        });
-    } catch (err) {
-        console.error("Error loading tasks:", err);
-        taskContainer.innerHTML = "<p>Could not load tasks.</p>";
+    taskContainer.innerHTML = ""; // Clear "Loading..." message
+    if (!tasks.length) {
+      taskContainer.innerHTML = "<p>No tasks found in this calendar.</p>";
+      return;
     }
+
+    tasks.forEach(task => {
+      const taskDiv = document.createElement("div");
+      taskDiv.className = "task-item";
+      taskDiv.innerText = task.title || "Untitled Task";
+      taskContainer.appendChild(taskDiv);
+    });
+  } catch (err) {
+    console.error("Error loading tasks:", err);
+    taskContainer.innerHTML = "<p>Could not load tasks.</p>";
+  }
 }
 
 // --- Event Handlers ---
 
 // Handles a click on a calendar item efficiently.
 async function handleCalendarSelection(event) {
-    // 'currentTarget' refers to the div the listener was attached to.
-    const clickedCalendarId = event.currentTarget.dataset.calendarId;
+  // 'currentTarget' refers to the div the listener was attached to.
+  const clickedCalendarId = event.currentTarget.dataset.calendarId;
 
-    if (clickedCalendarId === selectedCalendarId) {
-        return; // Do nothing if the already-active calendar is clicked
-    }
-    
-    selectedCalendarId = clickedCalendarId;
+  if (clickedCalendarId === selectedCalendarId) {
+    return; // Do nothing if the already-active calendar is clicked
+  }
 
-    // More EFFICIENT: Update classes instead of re-rendering the whole list.
-    // 1. Remove 'active' from the previously active item
-    const oldActive = calendarListContainer.querySelector(".calendar-item.active");
-    if (oldActive) {
-        oldActive.classList.remove("active");
-    }
-    // 2. Add 'active' to the newly clicked item
-    event.currentTarget.classList.add("active");
+  selectedCalendarId = clickedCalendarId;
 
-    // 3. Load the tasks for the new calendar
-    await loadAndRenderTasks(selectedCalendarId);
+  // More EFFICIENT: Update classes instead of re-rendering the whole list.
+  // 1. Remove 'active' from the previously active item
+  const oldActive = calendarListContainer.querySelector(".calendar-item.active");
+  if (oldActive) {
+    oldActive.classList.remove("active");
+  }
+  // 2. Add 'active' to the newly clicked item
+  event.currentTarget.classList.add("active");
+
+  // 3. Load the tasks for the new calendar
+  await loadAndRenderTasks(selectedCalendarId);
 }
 
 // --- Initial Setup ---
