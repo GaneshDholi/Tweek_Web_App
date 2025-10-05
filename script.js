@@ -2936,9 +2936,9 @@ async function fetchCalendars() {
     headers: {
       "Content-Type": "application/json",
       // CRITICAL: Added Authorization header
-      "Authorization": `Bearer ${token}`,
-      credentials: "include"
+      "Authorization": `Bearer ${token}`
     },
+    credentials: "include"
   });
   if (!res.ok) {
     throw new Error('Failed to fetch calendars from API');
