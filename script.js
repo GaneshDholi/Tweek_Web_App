@@ -1715,14 +1715,11 @@ document.addEventListener('DOMContentLoaded', () => {
   const sharedWithList = document.getElementById('sharedWithList');
   const shareTaskBtn = document.getElementById('share-task-btn'); // The main button to open the modal
 
-  function getSelectedCalendarId() {
-    return selectedCalendarId;
-  }
   // --- FUNCTIONS ---
 
   // Opens the modal and populates it with data for the CURRENTLY selected calendar
   async function openShareModal() {
-    const calendarId = window.getSelectedCalendarId(); // Get ID from the other script
+    const calendarId = window.getSelectedCalendarId(); 
     if (!calendarId) {
       alert("Please select a calendar first.");
       return;
@@ -1902,7 +1899,7 @@ document.addEventListener('DOMContentLoaded', () => {
       // The unique ID for filtering is now the calendar's own ID
       const calendarId = calendar._id;
       selectedCalendarIds.push(calendarId); // Select all by default
-
+      console.log("Rendering calendar:", calendar.name, "ID:", calendarId);
       const calendarItem = document.createElement('label');
       calendarItem.className = 'calendar-item';
       calendarItem.setAttribute('for', `cal-checkbox-${calendarId}`);
@@ -1996,6 +1993,7 @@ document.addEventListener('DOMContentLoaded', () => {
     renderVisibleTasks();
   }
 
+  
   // --- 4. RENDERING LOGIC ---
 
   // // Builds the HTML for the calendar list in the dropdown
@@ -2959,9 +2957,9 @@ async function fetchTasksForCalendar(calendarId) {
     headers: {
       "Content-Type": "application/json",
       // CRITICAL: Added Authorization header
-      "Authorization": `Bearer ${token}`,
-      credentials: "include"
+      "Authorization": `Bearer ${token}`
     },
+    credentials: "include"
   });
   if (!res.ok) {
     throw new Error(`Failed to fetch tasks: ${res.status}`);
