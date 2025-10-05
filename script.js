@@ -1706,8 +1706,8 @@ document.addEventListener('coloris:pick', event => {
 //share calendar code
 document.addEventListener('DOMContentLoaded', () => {
   // Modal elements
-  const shareModal = document.getElementById('share-modal'); // Your modal container
-  const shareModalOverlay = document.getElementById('share-modal-overlay');
+  const shareModal = document.getElementById('shareModal'); // Your modal container
+  const shareModalOverlay = document.getElementById('shareModalOverlay');
   const closeShareModalBtn = document.getElementById('closeShareModalBtn');
   const shareEmailInput = document.getElementById('shareEmailInput');
   const shareBtn = document.getElementById('shareBtn');
