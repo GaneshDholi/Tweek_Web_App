@@ -1781,12 +1781,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Share button inside modal
   shareBtn.addEventListener('click', async () => {
-    const calendarId = window.getSelectedCalendarId();
+    // const calendarId = window.getSelectedCalendarId();
     const email = shareEmailInput.value.trim();
     if (!email) return alert('Please enter an email address.');
 
     try {
-      const res = await fetch(`${API_BASE_URL}/api/calendars/${calendarId}/share`, {
+      const res = await fetch(`${API_BASE_URL}/api/calendars/${email}}/share`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
